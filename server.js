@@ -159,7 +159,7 @@ app.post('/api/fetch-doc', async (req, res) => {
     res.json({
       success: true,
       docId: docId,
-      slidesUrl: `/viewer.html?src=/docs/${docId}/content.html`
+      slidesUrl: `/slides.html?src=${docId}`
     });
 
   } catch (error) {
