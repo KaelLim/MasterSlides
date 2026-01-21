@@ -117,26 +117,35 @@
     }
 
     .page-indicator {
-      font-size: 48px;
-      font-weight: bold;
-      color: var(--color-secondary);
-      font-family: var(--font-family-body);
-      letter-spacing: 0.1em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 16px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .page-indicator .current {
-      font-size: 72px;
+      font-size: 42px;
+      font-weight: bold;
+      color: var(--color-secondary);
+      line-height: 1;
     }
 
     .page-indicator .separator {
-      font-size: 32px;
-      opacity: 0.6;
-      margin: 10px 0;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      margin: 6px 0;
+      font-weight: normal;
     }
 
     .page-indicator .total {
-      font-size: 36px;
-      opacity: 0.8;
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1;
     }
 
     /* ===========================
@@ -492,6 +501,68 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
+    /* ===========================
+       Lightbox
+       =========================== */
+    .lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 20000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      cursor: pointer;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      cursor: default;
+    }
+
+    .lightbox-caption {
+      margin-top: 20px;
+      color: white;
+      font-size: 18px;
+      text-align: center;
+      max-width: 80vw;
+      line-height: 1.6;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .lightbox-close:hover {
+      opacity: 1;
+    }
+
+    /* 讓內容圖片可點擊 */
+    .manuscript img {
+      cursor: zoom-in;
+    }
+
     /* 載入訊息 */
     .loading-message {
       font-size: 32px;
@@ -502,6 +573,13 @@
   </style>
 </head>
 <body>
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+  </div>
+
   <!-- Sidebar Overlay -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -538,7 +616,10 @@
     </div>
     <div class="settings-section">
       <button class="fullscreen-btn" id="toggleNavBtn">
-        <span id="toggleNavIcon">👁</span>
+        <svg id="toggleNavIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
         <span id="toggleNavText">隱藏導航列</span>
       </button>
     </div>
@@ -553,7 +634,7 @@
       </button>
       <div class="page-indicator">
         <span class="current" id="currentPage">1</span>
-        <span class="separator">/</span>
+        <span class="separator">───</span>
         <span class="total" id="totalPages">?</span>
       </div>
     </aside>
@@ -782,7 +863,7 @@
       if (savedNavHidden === 'true') {
         navPermanentlyHidden = true;
         slideNav.style.display = 'none';
-        document.getElementById('toggleNavIcon').textContent = '👁‍🗨';
+        document.getElementById('toggleNavIcon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
         document.getElementById('toggleNavText').textContent = '顯示導航列';
       }
     }
@@ -985,14 +1066,17 @@
 
     function toggleNavVisibility() {
       navPermanentlyHidden = !navPermanentlyHidden;
+      const eyeOpen = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      const eyeClosed = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+
       if (navPermanentlyHidden) {
         slideNav.style.display = 'none';
-        document.getElementById('toggleNavIcon').textContent = '👁‍🗨';
+        document.getElementById('toggleNavIcon').innerHTML = eyeClosed;
         document.getElementById('toggleNavText').textContent = '顯示導航列';
         localStorage.setItem(STORAGE_KEYS.navHidden, 'true');
       } else {
         slideNav.style.display = 'flex';
-        document.getElementById('toggleNavIcon').textContent = '👁';
+        document.getElementById('toggleNavIcon').innerHTML = eyeOpen;
         document.getElementById('toggleNavText').textContent = '隱藏導航列';
         localStorage.setItem(STORAGE_KEYS.navHidden, 'false');
       }
@@ -1104,6 +1188,58 @@
           }
         }
       }, { passive: true });
+
+      // Lightbox
+      initLightbox();
+    }
+
+    // ===========================
+    // Lightbox
+    // ===========================
+    function initLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      const lightboxCaption = document.getElementById('lightboxCaption');
+      const lightboxClose = document.querySelector('.lightbox-close');
+
+      // 點擊圖片開啟 lightbox
+      manuscript.addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG' && !e.target.classList.contains('table-image')) {
+          openLightbox(e.target.src, e.target.alt);
+        }
+      });
+
+      // 點擊關閉按鈕
+      lightboxClose.onclick = closeLightbox;
+
+      // 點擊遮罩關閉（但不是點擊圖片）
+      lightbox.onclick = (e) => {
+        if (e.target === lightbox) {
+          closeLightbox();
+        }
+      };
+
+      // ESC 關閉
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+          closeLightbox();
+        }
+      });
+    }
+
+    function openLightbox(src, caption) {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      const lightboxCaption = document.getElementById('lightboxCaption');
+
+      lightboxImg.src = src;
+      lightboxCaption.textContent = caption || '';
+      lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      lightbox.classList.remove('active');
     }
 
     // 啟動
