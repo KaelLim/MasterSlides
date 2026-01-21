@@ -188,7 +188,19 @@ app.post('/api/fetch-doc', async (req, res) => {
 });
 
 // 啟動伺服器
-app.listen(PORT, () => {
-  console.log(`伺服器已啟動：http://localhost:${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => {
+  console.log(`伺服器已啟動：http://${HOST}:${PORT}`);
   console.log(`上傳頁面：http://localhost:${PORT}/upload.html`);
+  if (HOST === '0.0.0.0') {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          console.log(`內網存取：http://${iface.address}:${PORT}`);
+        }
+      }
+    }
+  }
 });

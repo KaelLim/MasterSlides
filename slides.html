@@ -1164,31 +1164,18 @@
 
       // 觸控滑動
       let touchStartX = 0;
-      let touchStartY = 0;
       document.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
       }, { passive: true });
 
       document.addEventListener('touchend', (e) => {
         const touchEndX = e.changedTouches[0].screenX;
-        const touchEndY = e.changedTouches[0].screenY;
         const diffX = touchStartX - touchEndX;
-        const diffY = touchStartY - touchEndY;
 
-        // 根據模式判斷滑動方向
-        if (isVerticalMode()) {
-          // 直書模式：上下滑動
-          if (Math.abs(diffY) > 50 && Math.abs(diffY) > Math.abs(diffX)) {
-            if (diffY > 0) nextPage();
-            else prevPage();
-          }
-        } else {
-          // 橫書模式：左右滑動
-          if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
-            if (diffX > 0) nextPage();
-            else prevPage();
-          }
+        // 統一使用左右滑動翻頁（像翻書一樣）
+        if (Math.abs(diffX) > 50) {
+          if (diffX > 0) nextPage();  // 往左滑 = 下一頁
+          else prevPage();            // 往右滑 = 上一頁
         }
       }, { passive: true });
 
