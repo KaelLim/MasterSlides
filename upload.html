@@ -257,7 +257,6 @@
     const message = document.getElementById('message');
     const result = document.getElementById('result');
     const goToSlides = document.getElementById('goToSlides');
-    const goToViewer = document.getElementById('goToViewer');
 
     // 自動偵測貼上 Google Docs URL
     docUrlInput.addEventListener('paste', (e) => {
@@ -305,7 +304,6 @@
         message.className = 'message success';
         message.textContent = '文件下載成功！';
         goToSlides.href = data.slidesUrl;
-        goToViewer.href = data.viewerUrl;
         result.className = 'result show';
 
       } catch (error) {

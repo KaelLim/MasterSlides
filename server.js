@@ -155,12 +155,11 @@ app.post('/api/fetch-doc', async (req, res) => {
     // 刪除暫存 MD 檔
     fs.unlinkSync(tempMdPath);
 
-    // 成功 - 返回 viewer URLs
+    // 成功 - 返回 viewer URL
     res.json({
       success: true,
       docId: docId,
-      slidesUrl: `/slides2.html?src=/docs/${docId}/content.html`,
-      viewerUrl: `/viewer.html?src=/docs/${docId}/content.html`
+      slidesUrl: `/viewer.html?src=/docs/${docId}/content.html`
     });
 
   } catch (error) {

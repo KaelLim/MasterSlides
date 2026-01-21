@@ -463,14 +463,6 @@
     .fullscreen-btn:hover {
       background: rgba(255, 255, 255, 0.2);
     }
-
-    /* 載入訊息 */
-    .loading-message {
-      font-size: 32px;
-      color: var(--color-text-secondary);
-      text-align: center;
-      padding: 100px;
-    }
   </style>
 </head>
 <body>
@@ -534,8 +526,34 @@
     <main class="content-area" id="contentArea">
       <div class="manuscript-container" id="manuscriptContainer">
         <article class="manuscript" id="manuscript">
-          <!-- 內容將由 JavaScript 動態載入 -->
-          <p class="loading-message">載入中...</p>
+        <h1>二〇二六年元月五日</h1>
+        <p>慈濟慈善事業基金會</p>
+        <p>志業分享</p>
+        <p>共五項議題</p>
+        <p>連線準備中請稍候</p>
+
+        <h2>第一項：慈善志業</h2>
+        <p>慈濟基金會自1966年成立以來，秉持「為佛教、為眾生」的理念，致力於慈善、醫療、教育、人文四大志業。在全球各地推動人道救援、賑災援助、社區關懷等工作，讓愛心跨越國界、種族、宗教的藩籬。</p>
+        <p>我們相信，每一個善念都能化為實際的力量，每一次付出都能為世界帶來改變。透過志工們的無私奉獻，我們持續在世界各個角落播下希望的種子。</p>
+        <p>今年度我們在全球救災行動中，援助了超過50個國家，幫助數百萬受災民眾重建家園。從地震、水災到戰爭難民，我們始終站在第一線，用愛心溫暖每一顆受傷的心靈。</p>
+
+        <h2>第二項：醫療志業</h2>
+        <p>慈濟醫療體系以「人本醫療、尊重生命」為核心價值，在台灣設有七家醫院，提供高品質的醫療服務。我們不僅治療疾病，更關懷病人的身心靈健康。</p>
+        <p>國際慈濟人醫會的義診足跡遍及全球，為偏遠地區的民眾提供免費的醫療服務。每一位醫護志工都帶著感恩的心，用專業與愛心守護生命。</p>
+        <p>在疫情期間，我們的醫療團隊更是不眠不休地投入防疫工作，為社會築起堅實的健康防線。這份堅持與付出，正是慈濟醫療精神的最佳展現。</p>
+
+        <h2>第三項：教育志業</h2>
+        <p>教育是改變生命的力量。慈濟教育體系從幼兒園到研究所，完整的教育網絡培育無數優秀人才。我們注重品德教育，期望培養出具有人文素養、關懷社會的未來領袖。</p>
+        <p>在偏鄉教育方面，我們持續推動課輔計畫、獎助學金制度，讓每一個孩子都有公平的受教機會。因為我們相信，教育能翻轉人生，知識能改變命運。</p>
+
+        <h2>第四項：人文志業</h2>
+        <p>大愛電視台、慈濟月刊、經典雜誌等媒體平台，傳播正向能量與人文關懷。我們記錄善的足跡，分享感人的故事，讓更多人看見世界的美好。</p>
+        <p>靜思語的智慧話語，啟發無數人的心靈。證嚴上人的開示，引導我們在紛擾的世界中找到內心的平靜與方向。</p>
+
+        <h2>第五項：環保志業</h2>
+        <p>環保是慈濟重要的使命之一。從1990年證嚴上人呼籲「用鼓掌的雙手做環保」開始，全台灣已設立超過八千個環保站，十萬多位環保志工每天勤做資源回收。</p>
+        <p>我們推廣素食、減塑、節能減碳等環保生活，希望每個人都能從日常生活做起，為地球盡一份心力。因為我們只有一個地球，需要大家共同守護。</p>
+        <p>感恩大家的參與，讓我們一起為更美好的世界努力！</p>
         </article>
       </div>
 
@@ -579,32 +597,8 @@
     // ===========================
     // 初始化
     // ===========================
-    async function init() {
-      // 從 URL 參數取得內容來源
-      const params = new URLSearchParams(window.location.search);
-      const contentUrl = params.get('src');
-
-      if (!contentUrl) {
-        manuscript.innerHTML = '<p style="color: var(--color-secondary); font-size: 24px;">請提供 src 參數<br><br>例如: slides2.html?src=content.html<br>或: slides2.html?src=docs/abc123/content.html</p>';
-        return;
-      }
-
-      // 載入內容
-      try {
-        const response = await fetch(contentUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const htmlContent = await response.text();
-        manuscript.innerHTML = htmlContent;
-      } catch (error) {
-        manuscript.innerHTML = `<p style="color: #ff6b6b; font-size: 24px;">載入失敗: ${error.message}<br><br>路徑: ${contentUrl}</p>`;
-        return;
-      }
-
-      // 載入設定
+    function init() {
       loadSettings();
-
       // 等待 container 計算完成
       requestAnimationFrame(() => {
         updatePageCount();
