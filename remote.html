@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>簡報遙控器</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+      padding: 20px;
+      padding-bottom: 100px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #5FCFC3;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .status.connected {
+      color: #4CAF50;
+    }
+
+    .status.error {
+      color: #F44336;
+    }
+
+    .page-display {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .page-display .current {
+      font-size: 56px;
+      font-weight: bold;
+      color: #FFD700;
+    }
+
+    .page-display .separator {
+      font-size: 20px;
+      color: #666;
+      margin: 0 8px;
+    }
+
+    .page-display .total {
+      font-size: 28px;
+      color: #888;
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .controls button {
+      flex: 1;
+      height: 100px;
+      font-size: 48px;
+      background: rgba(95, 207, 195, 0.2);
+      border: 2px solid #5FCFC3;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .controls button:active {
+      background: #5FCFC3;
+      transform: scale(0.95);
+    }
+
+    .controls button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* 圖片區域 */
+    .images-section {
+      margin-top: 10px;
+    }
+
+    .images-section h2 {
+      color: #5FCFC3;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .images-grid.empty {
+      display: block;
+      color: #666;
+      font-size: 14px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+
+    .image-thumb {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .image-thumb:active {
+      border-color: #5FCFC3;
+      transform: scale(0.95);
+    }
+
+    .image-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .error-message {
+      background: rgba(244, 67, 54, 0.2);
+      border: 1px solid #F44336;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .error-message a {
+      color: #5FCFC3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>簡報遙控器</h1>
+    <div class="status" id="status">連線中...</div>
+
+    <div id="errorBox" style="display: none;" class="error-message">
+      <p>無法連線到簡報</p>
+      <p>請確認簡報頁面已開啟遙控功能</p>
+    </div>
+
+    <div id="mainControls">
+      <div class="page-display">
+        <span class="current" id="currentPage">-</span>
+        <span class="separator">/</span>
+        <span class="total" id="totalPages">-</span>
+      </div>
+
+      <div class="controls">
+        <button id="prevBtn">‹</button>
+        <button id="nextBtn">›</button>
+      </div>
+
+      <!-- 圖片區域 -->
+      <div class="images-section">
+        <h2>本頁圖片</h2>
+        <div class="images-grid" id="imagesGrid">
+          <span class="empty">此頁沒有圖片</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('id');
+    let socket = null;
+
+    if (!roomId) {
+      document.getElementById('status').textContent = '缺少房間 ID';
+      document.getElementById('status').classList.add('error');
+      document.getElementById('mainControls').style.display = 'none';
+      document.getElementById('errorBox').style.display = 'block';
+    } else {
+      socket = io();
+
+      socket.on('connect', () => {
+        console.log('已連線到伺服器');
+        socket.emit('join', roomId);
+      });
+
+      socket.on('sync', (data) => {
+        document.getElementById('status').textContent = '已連線';
+        document.getElementById('status').classList.add('connected');
+        document.getElementById('currentPage').textContent = data.currentPage;
+        document.getElementById('totalPages').textContent = data.totalPages;
+
+        // 更新圖片列表
+        updateImages(data.images || []);
+      });
+
+      socket.on('error', (msg) => {
+        document.getElementById('status').textContent = msg;
+        document.getElementById('status').classList.add('error');
+        document.getElementById('errorBox').style.display = 'block';
+      });
+
+      socket.on('disconnect', () => {
+        document.getElementById('status').textContent = '已斷線';
+        document.getElementById('status').classList.remove('connected');
+        document.getElementById('status').classList.add('error');
+      });
+
+      function sendCommand(action) {
+        socket.emit('command', { roomId, action });
+      }
+
+      document.getElementById('prevBtn').onclick = () => sendCommand('prev');
+      document.getElementById('nextBtn').onclick = () => sendCommand('next');
+    }
+
+    // 更新圖片列表
+    function updateImages(images) {
+      const grid = document.getElementById('imagesGrid');
+
+      if (!images || images.length === 0) {
+        grid.innerHTML = '';
+        grid.classList.add('empty');
+        grid.textContent = '此頁沒有圖片';
+        return;
+      }
+
+      grid.classList.remove('empty');
+      grid.innerHTML = images.map((img, i) => `
+        <div class="image-thumb" data-src="${img.src}">
+          <img src="${img.src}" alt="圖片 ${i + 1}">
+        </div>
+      `).join('');
+
+      // 綁定點擊事件 - 發送 toggle 命令
+      grid.querySelectorAll('.image-thumb').forEach(thumb => {
+        thumb.onclick = () => {
+          if (socket && roomId) {
+            socket.emit('command', {
+              roomId,
+              action: 'toggleLightbox',
+              src: thumb.dataset.src
+            });
+          }
+        };
+      });
+    }
+  </script>
+</body>
+</html>

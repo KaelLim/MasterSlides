@@ -3,9 +3,16 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { marked } = require('marked');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 const PORT = 3000;
+
+// 儲存房間狀態
+const rooms = new Map();
 
 // 建立 docs 資料夾存放下載的 MD 檔案
 const docsDir = path.join(__dirname, 'docs');
@@ -187,9 +194,68 @@ app.post('/api/fetch-doc', async (req, res) => {
   }
 });
 
+// Socket.io 遙控功能
+io.on('connection', (socket) => {
+  console.log('用戶連線:', socket.id);
+
+  // 簡報端：建立房間
+  socket.on('host', (roomId) => {
+    socket.join(roomId);
+    rooms.set(roomId, {
+      hostId: socket.id,
+      currentPage: 1,
+      totalPages: 1
+    });
+    console.log(`簡報建立房間: ${roomId}`);
+  });
+
+  // 遙控端：加入房間
+  socket.on('join', (roomId) => {
+    if (rooms.has(roomId)) {
+      socket.join(roomId);
+      const room = rooms.get(roomId);
+      socket.emit('sync', room);
+      // 通知簡報端有遙控器連線
+      socket.to(roomId).emit('remote-joined');
+      console.log(`遙控加入房間: ${roomId}`);
+    } else {
+      socket.emit('error', '房間不存在');
+    }
+  });
+
+  // 簡報端：同步狀態
+  socket.on('state', (data) => {
+    if (rooms.has(data.roomId)) {
+      const room = rooms.get(data.roomId);
+      room.currentPage = data.currentPage;
+      room.totalPages = data.totalPages;
+      room.images = data.images || [];
+      socket.to(data.roomId).emit('sync', room);
+    }
+  });
+
+  // 遙控端：發送指令
+  socket.on('command', (data) => {
+    console.log(`遙控指令: ${data.action} -> 房間 ${data.roomId}`);
+    // 傳遞完整的 data 物件（包含 action 和可能的 src）
+    socket.to(data.roomId).emit('command', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('用戶斷線:', socket.id);
+    // 清理該用戶建立的房間
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.hostId === socket.id) {
+        rooms.delete(roomId);
+        console.log(`房間已關閉: ${roomId}`);
+      }
+    }
+  });
+});
+
 // 啟動伺服器
 const HOST = process.env.HOST || '0.0.0.0';
-app.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, () => {
   console.log(`伺服器已啟動：http://${HOST}:${PORT}`);
   console.log(`上傳頁面：http://localhost:${PORT}/upload.html`);
   if (HOST === '0.0.0.0') {

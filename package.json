@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "express": "^5.2.1",
-    "marked": "^17.0.0"
+    "marked": "^17.0.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3"
   }
 }

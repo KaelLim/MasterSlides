@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     /* ===========================
        CSS Variables
@@ -618,6 +620,89 @@
       text-align: center;
       padding: 100px;
     }
+
+    /* ===========================
+       遙控 Modal
+       =========================== */
+    .remote-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 30000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .remote-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .remote-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .remote-modal-close:hover {
+      opacity: 1;
+    }
+
+    .remote-modal * {
+      writing-mode: horizontal-tb;
+    }
+
+    .remote-modal h2 {
+      color: #5FCFC3;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .remote-modal p {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    #qrcode {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .remote-url {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #5FCFC3;
+      word-break: break-all;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .remote-status {
+      margin-top: 20px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    .remote-status.connected {
+      color: #4CAF50;
+    }
   </style>
 </head>
 <body>
@@ -677,6 +762,25 @@
         <span id="toggleNavText">隱藏導航列</span>
       </button>
     </div>
+    <div class="settings-section">
+      <button class="fullscreen-btn" id="remoteBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        <span>遙控器</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 遙控 Modal -->
+  <div class="remote-modal" id="remoteModal">
+    <span class="remote-modal-close" id="remoteModalClose">&times;</span>
+    <h2>掃描 QR Code 開啟遙控器</h2>
+    <p>使用手機掃描下方 QR Code</p>
+    <div id="qrcode"></div>
+    <div class="remote-url" id="remoteUrl"></div>
+    <div class="remote-status" id="remoteStatus">等待連線...</div>
   </div>
 
   <!-- 主要 Flex 布局 -->
@@ -787,6 +891,7 @@
       requestAnimationFrame(() => {
         updatePageCount();
         initEventListeners();
+        initRemote();
         resetNavHideTimer();
       });
     }
@@ -983,6 +1088,7 @@
         manuscript.style.transform = `translateX(-${currentPage * containerWidth}px)`;
       }
       updatePageDisplay();
+      syncRemoteState();
     }
 
     function prevPage() {
@@ -1437,6 +1543,175 @@
       const lightbox = document.getElementById('lightbox');
       lightbox.classList.remove('active');
       resetLightboxZoom();
+    }
+
+    // ===========================
+    // 遙控功能
+    // ===========================
+    let socket = null;
+    let roomId = null;
+
+    function initRemote() {
+      // 產生房間 ID
+      roomId = Math.random().toString(36).substring(2, 8);
+
+      // 連接 Socket.io
+      socket = io();
+
+      socket.on('connect', () => {
+        console.log('已連線到伺服器');
+        socket.emit('host', roomId);
+      });
+
+      // 遙控端連線成功
+      socket.on('remote-joined', () => {
+        document.getElementById('remoteStatus').textContent = '遙控器已連線！';
+        document.getElementById('remoteStatus').classList.add('connected');
+        // 2 秒後關閉 modal
+        setTimeout(() => {
+          closeRemoteModal();
+        }, 2000);
+      });
+
+      socket.on('command', (data) => {
+        // data 可能是字串(舊格式)或物件(新格式)
+        const action = typeof data === 'string' ? data : data.action;
+        console.log('收到遙控指令:', action);
+
+        switch(action) {
+          case 'prev':
+            prevPage();
+            break;
+          case 'next':
+            nextPage();
+            break;
+          case 'first':
+            goToPage(0);
+            break;
+          case 'last':
+            goToPage(totalPages - 1);
+            break;
+          case 'fullscreen':
+            toggleFullscreen();
+            break;
+          case 'toggleMode':
+            if (isVerticalMode()) {
+              setHorizontalMode();
+            } else {
+              setVerticalMode();
+            }
+            break;
+          case 'toggleLightbox':
+            if (data.src) {
+              const lightbox = document.getElementById('lightbox');
+              const lightboxImg = document.getElementById('lightboxImg');
+
+              if (lightbox.classList.contains('active')) {
+                // Lightbox 已開啟
+                if (lightboxImg.src === data.src) {
+                  // 同一張圖 → 關閉
+                  closeLightbox();
+                } else {
+                  // 不同圖 → 切換
+                  openLightbox(data.src, '');
+                }
+              } else {
+                // Lightbox 未開啟 → 開啟
+                openLightbox(data.src, '');
+              }
+            }
+            break;
+        }
+        // 同步狀態給遙控端
+        syncRemoteState();
+      });
+
+      // 遙控按鈕
+      document.getElementById('remoteBtn').onclick = openRemoteModal;
+      document.getElementById('remoteModalClose').onclick = closeRemoteModal;
+      document.getElementById('remoteModal').onclick = (e) => {
+        if (e.target.id === 'remoteModal') closeRemoteModal();
+      };
+    }
+
+    function syncRemoteState() {
+      if (socket && roomId) {
+        // 獲取當前頁面的圖片
+        const images = getCurrentPageImages();
+
+        socket.emit('state', {
+          roomId,
+          currentPage: currentPage + 1,
+          totalPages,
+          images
+        });
+      }
+    }
+
+    // 獲取當前頁面可見的圖片
+    function getCurrentPageImages() {
+      const containerWidth = manuscriptContainer.clientWidth;
+      const containerHeight = manuscriptContainer.clientHeight;
+      const images = manuscript.querySelectorAll('img');
+      const visibleImages = [];
+
+      images.forEach(img => {
+        const rect = img.getBoundingClientRect();
+        const containerRect = manuscriptContainer.getBoundingClientRect();
+
+        // 計算圖片相對於 container 的位置
+        const imgLeft = rect.left - containerRect.left;
+        const imgTop = rect.top - containerRect.top;
+        const imgRight = imgLeft + rect.width;
+        const imgBottom = imgTop + rect.height;
+
+        // 檢查圖片是否在可視範圍內（至少 50% 可見）
+        const visibleWidth = Math.min(imgRight, containerWidth) - Math.max(imgLeft, 0);
+        const visibleHeight = Math.min(imgBottom, containerHeight) - Math.max(imgTop, 0);
+
+        if (visibleWidth > rect.width * 0.5 && visibleHeight > rect.height * 0.5) {
+          visibleImages.push({
+            src: img.src,
+            alt: img.alt || ''
+          });
+        }
+      });
+
+      return visibleImages;
+    }
+
+    function openRemoteModal() {
+      const modal = document.getElementById('remoteModal');
+      const qrcodeEl = document.getElementById('qrcode');
+      const urlEl = document.getElementById('remoteUrl');
+
+      // 清除舊的 QR Code
+      qrcodeEl.innerHTML = '';
+
+      // 產生遙控 URL
+      const host = window.location.hostname;
+      const port = window.location.port;
+      const remoteUrl = `http://${host}${port ? ':' + port : ''}/remote.html?id=${roomId}`;
+
+      // 產生 QR Code
+      new QRCode(qrcodeEl, {
+        text: remoteUrl,
+        width: 200,
+        height: 200
+      });
+
+      urlEl.textContent = remoteUrl;
+      modal.classList.add('active');
+
+      // 關閉 sidebar
+      closeSidebar();
+
+      // 同步初始狀態
+      syncRemoteState();
+    }
+
+    function closeRemoteModal() {
+      document.getElementById('remoteModal').classList.remove('active');
     }
 
     // 啟動
