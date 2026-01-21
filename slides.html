@@ -1246,10 +1246,10 @@
         const touchEndX = e.changedTouches[0].screenX;
         const diffX = touchStartX - touchEndX;
 
-        // 統一使用左右滑動翻頁（像翻書一樣）
+        // 統一使用左右滑動翻頁
         if (Math.abs(diffX) > 50) {
-          if (diffX > 0) nextPage();  // 往左滑 = 下一頁
-          else prevPage();            // 往右滑 = 上一頁
+          if (diffX > 0) prevPage();  // 往左滑 = 上一頁
+          else nextPage();            // 往右滑 = 下一頁
         }
       }, { passive: true });
 
