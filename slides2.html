@@ -625,6 +625,10 @@
         }
         const htmlContent = await response.text();
         manuscript.innerHTML = htmlContent;
+
+        // 修正圖片路徑（相對於 contentUrl 的目錄）
+        const baseUrl = contentUrl.substring(0, contentUrl.lastIndexOf('/') + 1);
+        fixImagePaths(baseUrl);
       } catch (error) {
         manuscript.innerHTML = `<p style="color: #ff6b6b; font-size: 24px;">載入失敗: ${error.message}<br><br>路徑: ${contentUrl}</p>`;
         return;
@@ -641,6 +645,24 @@
         updatePageCount();
         initEventListeners();
         resetNavHideTimer();
+      });
+    }
+
+    // ===========================
+    // ===========================
+    // 修正圖片路徑
+    // ===========================
+    function fixImagePaths(baseUrl) {
+      const images = manuscript.querySelectorAll('img');
+      images.forEach(img => {
+        const src = img.getAttribute('src');
+        // 跳過已經是絕對路徑、data URI 或完整 URL 的圖片
+        if (!src || src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) {
+          return;
+        }
+        // 轉換相對路徑
+        img.src = baseUrl + src;
+        console.log(`圖片路徑修正: ${src} → ${img.src}`);
       });
     }
 
