@@ -279,6 +279,18 @@
     }
 
     /* ===========================
+       分頁線（hr = page break）
+       =========================== */
+    hr {
+      border: none;
+      margin: 0;
+      padding: 0;
+      height: 0;
+      visibility: hidden;
+      break-after: column;
+    }
+
+    /* ===========================
        導航列（absolute 定位）
        =========================== */
     .slide-nav {
@@ -637,29 +649,50 @@
 
       console.log(`發現 ${tables.length} 個表格，開始轉換...`);
 
+      // 取得容器寬度計算 95%
+      const containerWidth = manuscriptContainer.clientWidth * 0.95;
+
       for (const table of tables) {
         try {
-          // 暫時設定表格樣式以便截圖
-          const originalStyle = table.getAttribute('style') || '';
-          table.style.cssText = originalStyle + `
+          // 強制橫式渲染，寬度 95%
+          table.style.cssText = `
+            writing-mode: horizontal-tb;
+            width: ${containerWidth}px;
             background: rgba(0, 0, 0, 0.3);
             color: white;
             border-collapse: collapse;
-            font-size: 16px;
-            padding: 10px;
+            font-size: 18px;
           `;
 
-          // 設定 td/th 樣式
-          const cells = table.querySelectorAll('td, th');
-          cells.forEach(cell => {
-            cell.style.cssText = `
+          // 設定 td 樣式
+          const tds = table.querySelectorAll('td');
+          tds.forEach(td => {
+            td.style.cssText = `
+              writing-mode: horizontal-tb;
               border: 1px solid rgba(255, 255, 255, 0.3);
-              padding: 8px 12px;
+              padding: 10px 14px;
               color: white;
+              vertical-align: middle;
+              text-align: left;
             `;
           });
 
-          // 使用 html2canvas 轉換
+          // 設定 th 標題樣式（深藍色、置中）
+          const headers = table.querySelectorAll('th');
+          headers.forEach(th => {
+            th.style.cssText = `
+              writing-mode: horizontal-tb;
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              padding: 10px 14px;
+              color: white;
+              vertical-align: middle;
+              text-align: center;
+              background: #1a365d;
+              font-weight: bold;
+            `;
+          });
+
+          // 使用 html2canvas 轉換（橫式渲染）
           const canvas = await html2canvas(table, {
             backgroundColor: 'transparent',
             scale: 2,
@@ -672,7 +705,8 @@
           img.className = 'table-image';
           img.alt = '表格';
           img.style.cssText = `
-            max-width: 90%;
+            width: 95%;
+            max-width: 95%;
             height: auto;
             display: block;
             margin: 20px auto;
