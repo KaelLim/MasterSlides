@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上傳 Google Docs - 慈濟簡報系統</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #5FCFC3;
+      margin: 0 0 10px 0;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #B0B0B0;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #E8E8E8;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid rgba(95, 207, 195, 0.3);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #5FCFC3;
+    }
+
+    input[type="text"]::placeholder {
+      color: #666;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #5FCFC3 0%, #3BA99C 100%);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(95, 207, 195, 0.4);
+    }
+
+    .btn-primary:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+      color: white;
+      width: 100%;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .message.error {
+      background: rgba(244, 67, 54, 0.2);
+      border: 1px solid #F44336;
+      color: #FF8A80;
+      display: block;
+      white-space: pre-line;
+    }
+
+    .message.success {
+      background: rgba(76, 175, 80, 0.2);
+      border: 1px solid #4CAF50;
+      color: #A5D6A7;
+      display: block;
+    }
+
+    .loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #5FCFC3;
+      margin-top: 20px;
+    }
+
+    .loading.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(95, 207, 195, 0.3);
+      border-top: 3px solid #5FCFC3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .result {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .help {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .help h3 {
+      color: #FFD700;
+      font-size: 16px;
+      margin: 0 0 10px 0;
+    }
+
+    .help ol {
+      color: #B0B0B0;
+      font-size: 13px;
+      padding-left: 20px;
+      margin: 0;
+      line-height: 1.8;
+    }
+
+    .help code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Google Docs 簡報轉換</h1>
+    <p class="subtitle">將 Google Docs 文件轉換為簡報格式</p>
+
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="docUrl">Google Docs 網址</label>
+        <input
+          type="text"
+          id="docUrl"
+          placeholder="https://docs.google.com/document/d/xxxxx/edit"
+          required
+        >
+      </div>
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        開始轉換
+      </button>
+    </form>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span>正在下載並處理文件...</span>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="result" id="result">
+      <a href="#" class="btn btn-success" id="goToSlides" style="margin-bottom: 10px;">
+        前往簡報（CSS Columns）
+      </a>
+      <a href="#" class="btn btn-primary" id="goToViewer">
+        前往簡報（Paged.js）
+      </a>
+    </div>
+
+    <div class="help">
+      <h3>使用說明</h3>
+      <ol>
+        <li>開啟您的 Google Docs 文件</li>
+        <li>點擊右上角「共用」按鈕</li>
+        <li>將存取權限改為「任何知道連結的人都可檢視」</li>
+        <li>複製網址並貼到上方輸入框</li>
+        <li>點擊「開始轉換」</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const docUrlInput = document.getElementById('docUrl');
+    const submitBtn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const message = document.getElementById('message');
+    const result = document.getElementById('result');
+    const goToSlides = document.getElementById('goToSlides');
+    const goToViewer = document.getElementById('goToViewer');
+
+    // 自動偵測貼上 Google Docs URL
+    docUrlInput.addEventListener('paste', (e) => {
+      setTimeout(() => {
+        const url = docUrlInput.value.trim();
+        if (url && url.includes('docs.google.com/document')) {
+          doConvert(url);
+        }
+      }, 100);
+    });
+
+    // 也支援手動提交
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = docUrlInput.value.trim();
+      if (!url) return;
+      doConvert(url);
+    });
+
+    async function doConvert(url) {
+
+      // 重置狀態
+      message.className = 'message';
+      message.textContent = '';
+      result.className = 'result';
+      submitBtn.disabled = true;
+      loading.className = 'loading show';
+
+      try {
+        const response = await fetch('/api/fetch-doc', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || '發生未知錯誤');
+        }
+
+        // 成功
+        message.className = 'message success';
+        message.textContent = '文件下載成功！';
+        goToSlides.href = data.slidesUrl;
+        goToViewer.href = data.viewerUrl;
+        result.className = 'result show';
+
+      } catch (error) {
+        message.className = 'message error';
+        message.textContent = error.message;
+      } finally {
+        submitBtn.disabled = false;
+        loading.className = 'loading';
+      }
+    }
+  </script>
+</body>
+</html>

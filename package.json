@@ -1,0 +1,14 @@
+{
+  "name": "slides",
+  "version": "1.0.0",
+  "description": "Google Docs to Slides converter using Paged.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "marked": "^17.0.0"
+  }
+}

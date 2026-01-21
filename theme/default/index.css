@@ -1,0 +1,748 @@
+/**
+ * Tzu Chi Presentation Theme
+ * 慈濟簡報主題樣式 - 直書分頁版
+ */
+
+/* ===========================
+   CSS Variables / 變數設定
+   =========================== */
+:root {
+  /* 主色系 */
+  --color-primary: #5FCFC3;
+  --color-primary-light: #7EDDD3;
+  --color-secondary: #FFD700;
+  --color-accent: #FF8C00;
+
+  /* 文字色系 */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #E8E8E8;
+  --color-text-muted: #B0B0B0;
+
+  /* 表格 */
+  --color-table-header: #3366CC;
+
+  /* 導航 */
+  --color-nav-bg: #4A5899;
+
+  /* 字體 */
+  --font-family-heading: "Noto Serif TC", "PMingLiU", "細明體", serif;
+  --font-family-body: "Noto Sans TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+
+  /* 字體縮放 */
+  --font-scale: 1;
+}
+
+/* ===========================
+   分頁設定 / Page Setup
+   =========================== */
+@page {
+  size: 100vw 100vh;
+  margin: 0;
+  padding: 0;
+  background-image: url('background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* 頁碼 - 左上方，距頂部約 25%，金黃色 */
+  @top-left {
+    content: counter(page);
+    color: #FFD700;
+    font-size: 72px;
+    font-family: var(--font-family-body);
+    font-weight: bold;
+    padding-top: 25vh;
+    padding-left: 3vw;
+  }
+}
+
+/* ===========================
+   基礎樣式 / Base
+   =========================== */
+html {
+  /* 根據視窗大小動態調整基準字體 */
+  /* 以 1920x1080 為基準，1vmin ≈ 10.8px */
+  font-size: calc(clamp(16px, 2.5vmin, 40px) * var(--font-scale));
+}
+
+/* 預設鎖定捲動，防止 Paged.js 處理期間使用者滾動 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden !important;
+  background: #1a1a2e;
+}
+
+body {
+  font-family: var(--font-family-body);
+  color: var(--color-text-primary);
+}
+
+/* ===========================
+   Paged.js 頁面樣式
+   =========================== */
+.pagedjs_page {
+  background-image: url('background.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.pagedjs_page_content {
+  writing-mode: vertical-rl;
+  padding: 60px;
+  max-width: 90vw;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  margin-left: auto;  /* 內容靠右，避開左邊頁碼 */
+}
+
+/* ===========================
+   標題樣式 / Headings (直書)
+   =========================== */
+h1, h2, h3, h4 {
+  font-family: var(--font-family-heading);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.15em;
+  line-height: 1.6;
+  margin: 0;
+}
+
+h1 {
+  font-size: calc(clamp(60px, 10vmin, 120px) * var(--font-scale));
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-right: 2rem;
+}
+
+h2 {
+  font-size: calc(clamp(54px, 9.5vmin, 114px) * var(--font-scale));
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+h3 {
+  font-size: calc(clamp(48px, 9vmin, 108px) * var(--font-scale));
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+h4 {
+  font-size: calc(clamp(42px, 8vmin, 96px) * var(--font-scale));
+  color: var(--color-primary-light);
+}
+
+/* ===========================
+   內容區 / Content
+   =========================== */
+.content {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  height: 100%;
+  gap: 40px;
+}
+
+/* ===========================
+   段落 / Paragraphs
+   =========================== */
+p {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: calc(clamp(40px, 7.5vmin, 80px) * var(--font-scale));
+  line-height: 1.8;
+  letter-spacing: 0.1em;
+  margin: 0 1rem;
+  color: var(--color-text-primary);
+}
+
+/* ===========================
+   列表 / Lists (直書)
+   =========================== */
+ul, ol {
+  writing-mode: vertical-rl;
+  list-style-position: inside;
+  margin: 0 30px;
+  padding: 0;
+}
+
+li {
+  font-size: calc(clamp(40px, 7.5vmin, 80px) * var(--font-scale));
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+  margin-bottom: 1rem;
+}
+
+li::marker {
+  color: var(--color-primary);
+}
+
+/* ===========================
+   表格 / Tables
+   =========================== */
+table {
+  writing-mode: horizontal-tb;  /* 表格保持橫書 */
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 40px auto;
+  max-width: 90vw;
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+thead {
+  background: var(--color-table-header);
+}
+
+th {
+  color: white;
+  font-size: 1.5rem;
+  padding: 20px 30px;
+  text-align: center;
+  font-weight: 600;
+}
+
+td {
+  font-size: 1.2rem;
+  padding: 15px 25px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+tr:nth-child(even) {
+  background: rgba(255,255,255,0.05);
+}
+
+/* ===========================
+   強調文字 / Emphasis
+   =========================== */
+strong, b {
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+em, i {
+  color: var(--color-accent);
+}
+
+/* ===========================
+   引用 / Blockquote
+   =========================== */
+blockquote {
+  writing-mode: vertical-rl;
+  border-right: 4px solid var(--color-primary);
+  padding-right: 20px;
+  margin: 0 40px;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+/* ===========================
+   分隔線 / HR (分頁符)
+   =========================== */
+hr {
+  break-before: page;
+  page-break-before: always;
+  display: block;
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  border: none;
+}
+
+/* ===========================
+   圖片 / Images
+   =========================== */
+img {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  margin: 20px auto;
+  /* 允許 Paged.js 自然分頁 */
+  break-inside: avoid;
+}
+
+figure {
+  writing-mode: horizontal-tb;
+  text-align: center;
+  margin: 20px;
+}
+
+figcaption {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin-top: 10px;
+}
+
+/* ===========================
+   特殊頁面類型
+   =========================== */
+
+/* 封面頁 */
+.cover {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.cover h1 {
+  font-size: 4rem;
+  margin-bottom: 40px;
+}
+
+.cover .subtitle {
+  font-size: 2rem;
+  color: var(--color-text-secondary);
+}
+
+.cover .date {
+  font-size: 1.8rem;
+  color: var(--color-secondary);
+  margin-top: 60px;
+}
+
+/* 感恩頁 */
+.gratitude {
+  justify-content: center;
+  align-items: center;
+}
+
+.gratitude h2 {
+  font-size: 4rem;
+  color: var(--color-primary);
+}
+
+/* 章節標題頁 */
+.section-title {
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: 200px;
+}
+
+.section-title h2 {
+  font-size: 3.5rem;
+}
+
+.section-title .reporter {
+  font-size: 1.6rem;
+  color: var(--color-text-secondary);
+  margin-top: 40px;
+}
+
+/* ===========================
+   歌詞 / Lyrics
+   =========================== */
+.lyrics {
+  writing-mode: vertical-rl;
+  text-align: center;
+  line-height: 2.5;
+  font-size: 1.4rem;
+}
+
+.lyrics .credit {
+  color: var(--color-secondary);
+  font-size: 1.2rem;
+  margin-right: 40px;
+}
+
+/* ===========================
+   Paged.js 分頁控制
+   =========================== */
+
+table, figure, blockquote {
+  break-inside: avoid;
+}
+
+/* 表格轉換後的圖片 */
+img.table-image {
+  display: block !important;
+  max-width: 85vw !important;
+  max-height: 70vh !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  margin: 20px auto;
+}
+
+/* ===========================
+   列印 / Print
+   =========================== */
+@media print {
+  section {
+    page-break-after: always;
+  }
+}
+
+/* ===========================
+   橫書模式 / Horizontal Mode
+   =========================== */
+body.horizontal-mode .pagedjs_page_content {
+  writing-mode: horizontal-tb;
+}
+
+body.horizontal-mode h1,
+body.horizontal-mode h2,
+body.horizontal-mode h3,
+body.horizontal-mode h4 {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  letter-spacing: 0.05em;
+  margin-right: 0;
+  margin-bottom: 1rem;
+}
+
+body.horizontal-mode .content {
+  writing-mode: horizontal-tb;
+  flex-direction: column;
+}
+
+body.horizontal-mode p {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  margin: 1rem 0;
+}
+
+body.horizontal-mode ul,
+body.horizontal-mode ol {
+  writing-mode: horizontal-tb;
+  margin: 30px 0;
+}
+
+body.horizontal-mode blockquote {
+  writing-mode: horizontal-tb;
+  border-right: none;
+  border-left: 4px solid var(--color-primary);
+  padding-right: 0;
+  padding-left: 20px;
+  margin: 40px 0;
+}
+
+body.horizontal-mode .lyrics {
+  writing-mode: horizontal-tb;
+}
+
+body.horizontal-mode .pagedjs_page_content {
+  padding: 60px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.horizontal-mode img {
+  display: block !important;
+  margin: 20px auto !important;
+  max-width: 70vw !important;
+  max-height: 60vh !important;
+  float: none !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* ===========================
+   Slider 模式樣式
+   =========================== */
+body.slider-mode {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+body.slider-mode .pagedjs_pages {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1a1a2e;
+}
+
+body.slider-mode .pagedjs_page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  visibility: hidden;
+  opacity: 0;
+}
+
+body.slider-mode .pagedjs_page.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+body.slider-mode .pagedjs_sheet,
+body.slider-mode .pagedjs_pagebox,
+body.slider-mode .pagedjs_area {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ===========================
+   導航列
+   =========================== */
+.slide-nav {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  z-index: 9999;
+  background: rgba(0,0,0,0.5);
+  padding: 15px 30px;
+  border-radius: 50px;
+}
+
+.slide-nav.auto-hidden {
+  opacity: 0.3;
+}
+
+.slide-nav:hover {
+  opacity: 1;
+}
+
+.slide-nav button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.slide-nav button:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+.slide-nav .page-info {
+  color: white;
+  font-size: 18px;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* ===========================
+   Sidebar 設定面板
+   =========================== */
+
+/* 漢堡選單按鈕 */
+.hamburger-btn {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  z-index: 10001;
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.hamburger-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.hamburger-btn span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+}
+
+/* 漢堡按鈕變 X */
+.hamburger-btn.active span:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Sidebar 面板 */
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: -320px;
+  width: 300px;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 10000;
+  padding: 100px 20px 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+/* Overlay */
+.sidebar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 設定區塊 */
+.settings-section {
+  margin-bottom: 30px;
+}
+
+.settings-section h3 {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  writing-mode: horizontal-tb;
+}
+
+/* 字體大小控制 */
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.font-size-control button {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.font-size-control button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.font-size-control .size-display {
+  flex: 1;
+  text-align: center;
+  color: white;
+  font-size: 16px;
+}
+
+/* 切換按鈕組 */
+.toggle-group {
+  display: flex;
+  gap: 10px;
+}
+
+.toggle-group button {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toggle-group button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-group button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* 字體選擇 */
+.font-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.font-select button {
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.font-select button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.font-select button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* 全螢幕按鈕 */
+.fullscreen-btn {
+  width: 100%;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

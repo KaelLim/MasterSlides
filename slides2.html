@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>慈濟慈善事業基金會 志業分享</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    /* ===========================
+       CSS Variables
+       =========================== */
+    :root {
+      --color-primary: #5FCFC3;
+      --color-primary-light: #7EDDD3;
+      --color-secondary: #FFD700;
+      --color-accent: #FF8C00;
+      --color-text-primary: #FFFFFF;
+      --color-text-secondary: #E8E8E8;
+      --font-family-heading: "Noto Serif TC", serif;
+      --font-family-body: "Noto Sans TC", sans-serif;
+      --font-scale: 1;
+      --left-panel-width: 100px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    body {
+      font-family: var(--font-family-body);
+      color: var(--color-text-primary);
+      background: #1a1a2e;
+    }
+
+    /* ===========================
+       主要 Flex 布局
+       =========================== */
+    .app-layout {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background-image: url('theme/default/background.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* ===========================
+       左側面板（漢堡 + 頁碼）
+       =========================== */
+    .left-panel {
+      width: var(--left-panel-width);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+      position: relative;
+      z-index: 100;
+    }
+
+    .hamburger-btn {
+      width: 50px;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      padding: 0;
+      margin-bottom: 30px;
+    }
+
+    .hamburger-btn:hover {
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .hamburger-btn span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .hamburger-btn.active span:nth-child(1) {
+      transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .hamburger-btn.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-btn.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* 頁碼指示器 - 橫向顯示 */
+    .page-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-weight: bold;
+      color: var(--color-secondary);
+      font-family: var(--font-family-body);
+    }
+
+    .page-indicator .current {
+      font-size: 48px;
+    }
+
+    .page-indicator .separator {
+      font-size: 24px;
+      opacity: 0.6;
+      margin: 5px 0;
+    }
+
+    .page-indicator .total {
+      font-size: 28px;
+      opacity: 0.8;
+    }
+
+    /* ===========================
+       內容區（Container Query）
+       =========================== */
+    .content-area {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      padding: 40px 60px;
+      container-type: size;
+      container-name: content;
+    }
+
+    /* ===========================
+       稿紙容器
+       =========================== */
+    .manuscript-container {
+      width: 100%;
+      height: 100%;
+      container-type: size;
+      container-name: manuscript;
+    }
+
+    /* 直書模式：使用 vertical-rl，自然水平溢出 */
+    .manuscript {
+      width: 100cqw;
+      height: 100%;
+      overflow: hidden;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    /* 橫書模式：使用 CSS Columns */
+    body.horizontal-mode .manuscript {
+      writing-mode: horizontal-tb;
+      column-width: 100cqw;
+      column-fill: auto;
+      column-gap: 0;
+    }
+
+    body.horizontal-mode .manuscript h1,
+    body.horizontal-mode .manuscript h2,
+    body.horizontal-mode .manuscript h3,
+    body.horizontal-mode .manuscript h4,
+    body.horizontal-mode .manuscript p,
+    body.horizontal-mode .manuscript ul,
+    body.horizontal-mode .manuscript ol,
+    body.horizontal-mode .manuscript li {
+      writing-mode: horizontal-tb;
+    }
+
+    /* ===========================
+       <hr> 分頁（橫書模式）
+       =========================== */
+    body.horizontal-mode hr {
+      break-after: column;
+      visibility: hidden;
+      margin: 0;
+      padding: 0;
+      border: none;
+      height: 0;
+      width: 100%;
+    }
+
+    /* 直書模式的 hr - 隱藏但保留空間讓內容自然分隔 */
+    hr {
+      visibility: hidden;
+      margin: 0;
+      padding: 0;
+      border: none;
+      height: 100cqh;
+      width: 0;
+    }
+
+    /* ===========================
+       標題樣式
+       =========================== */
+    h1, h2, h3, h4 {
+      font-family: var(--font-family-heading);
+      letter-spacing: 0.15em;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: calc(clamp(48px, 8cqi, 100px) * var(--font-scale));
+      color: var(--color-primary);
+      font-weight: 700;
+      margin-right: 1.5rem;
+    }
+
+    h2 {
+      font-size: calc(clamp(42px, 7cqi, 90px) * var(--font-scale));
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    h3 {
+      font-size: calc(clamp(36px, 6cqi, 80px) * var(--font-scale));
+      color: var(--color-secondary);
+      font-weight: 600;
+    }
+
+    h4 {
+      font-size: calc(clamp(30px, 5cqi, 70px) * var(--font-scale));
+      color: var(--color-primary-light);
+    }
+
+    /* ===========================
+       段落
+       =========================== */
+    p {
+      font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale));
+      line-height: 1.8;
+      letter-spacing: 0.1em;
+      margin: 0 0.8rem;
+      color: var(--color-text-primary);
+    }
+
+    /* ===========================
+       列表
+       =========================== */
+    ul, ol {
+      list-style-position: inside;
+      margin: 0 20px;
+      padding: 0;
+    }
+
+    li {
+      font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale));
+      line-height: 1.8;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.8rem;
+    }
+
+    /* 橫書模式列表調整 */
+    body.horizontal-mode ul,
+    body.horizontal-mode ol {
+      margin: 20px 0;
+    }
+
+    body.horizontal-mode li {
+      margin-bottom: 0.5rem;
+    }
+
+    li::marker {
+      color: var(--color-primary);
+    }
+
+    /* ===========================
+       圖片
+       =========================== */
+    img {
+      display: block;
+      max-width: 80%;
+      max-height: 70cqh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      margin: 20px auto;
+    }
+
+    /* 表格轉圖片後的樣式 */
+    .table-image {
+      max-width: 90%;
+      max-height: 80cqh;
+      height: auto;
+      margin: 20px auto;
+    }
+
+    /* ===========================
+       Sidebar 設定面板
+       =========================== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -320px;
+      width: 300px;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10000;
+      padding: 100px 20px 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .sidebar-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .settings-section {
+      margin-bottom: 30px;
+    }
+
+    .settings-section h3 {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin: 0 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      writing-mode: horizontal-tb;
+    }
+
+    .font-size-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .font-size-control button {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .font-size-control button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .font-size-control .size-display {
+      flex: 1;
+      text-align: center;
+      color: white;
+      font-size: 16px;
+    }
+
+    .toggle-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .toggle-group button {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .toggle-group button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .toggle-group button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .font-select {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .font-select button {
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .font-select button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .font-select button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .fullscreen-btn {
+      width: 100%;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ===========================
+       載入中提示
+       =========================== */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(26, 26, 46, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20000;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(95, 207, 195, 0.3);
+      border-top: 4px solid var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: var(--color-text-primary);
+      font-size: 18px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- 載入中提示 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">載入中...</div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar 設定面板 -->
+  <div class="sidebar" id="sidebar">
+    <div class="settings-section">
+      <h3>字體大小</h3>
+      <div class="font-size-control">
+        <button id="fontDecrease">A-</button>
+        <span class="size-display" id="fontSizeDisplay">100%</span>
+        <button id="fontIncrease">A+</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>文字方向</h3>
+      <div class="toggle-group">
+        <button id="verticalBtn" class="active">直書</button>
+        <button id="horizontalBtn">橫書</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>字體選擇</h3>
+      <div class="font-select">
+        <button data-font="Noto Sans TC" class="active" style="font-family: 'Noto Sans TC', sans-serif;">Noto Sans TC</button>
+        <button data-font="Noto Serif TC" style="font-family: 'Noto Serif TC', serif;">Noto Serif TC</button>
+        <button data-font="LXGW WenKai TC" style="font-family: 'LXGW WenKai TC', cursive;">LXGW WenKai TC</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <button class="fullscreen-btn" id="fullscreenBtn">
+        <span id="fullscreenIcon">⛶</span>
+        <span id="fullscreenText">全螢幕</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 主要 Flex 布局 -->
+  <div class="app-layout">
+    <!-- 左側面板 -->
+    <aside class="left-panel">
+      <button class="hamburger-btn" id="hamburgerBtn">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="page-indicator">
+        <span class="current" id="currentPage">1</span>
+        <span class="separator">/</span>
+        <span class="total" id="totalPages">?</span>
+      </div>
+    </aside>
+
+    <!-- 內容區 -->
+    <main class="content-area" id="contentArea">
+      <div class="manuscript-container">
+        <div class="manuscript" id="manuscript">
+          <!-- 內容會動態載入這裡 -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ===========================
+    // 變數與常數
+    // ===========================
+    const FONT_SCALES = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
+    const STORAGE_KEYS = {
+      fontSize: 'slides-font-size',
+      orientation: 'slides-orientation',
+      fontFamily: 'slides-font-family'
+    };
+
+    const manuscript = document.getElementById('manuscript');
+    const currentPageEl = document.getElementById('currentPage');
+    const totalPagesEl = document.getElementById('totalPages');
+    const fontSizeDisplayEl = document.getElementById('fontSizeDisplay');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+
+    let currentPage = 0;
+    let totalPages = 0;
+    let fontScale = 1;
+    let contentUrl = '';
+
+    // ===========================
+    // 初始化
+    // ===========================
+    async function init() {
+      // 從 URL 參數取得內容來源
+      const params = new URLSearchParams(window.location.search);
+      contentUrl = params.get('src');
+
+      if (contentUrl) {
+        await loadContent(contentUrl);
+      } else {
+        // 沒有指定來源，顯示提示
+        showError('請提供 src 參數，例如: slides2.html?src=content.html');
+        return;
+      }
+
+      loadSettings();
+      initEventListeners();
+    }
+
+    // ===========================
+    // 顯示錯誤
+    // ===========================
+    function showError(message) {
+      hideLoading();
+      manuscript.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; height: 100%; writing-mode: horizontal-tb;">
+          <div style="text-align: center; padding: 40px;">
+            <p style="color: #ff6b6b; font-size: 24px; writing-mode: horizontal-tb;">${message}</p>
+          </div>
+        </div>
+      `;
+      totalPages = 1;
+      updatePageDisplay();
+    }
+
+    // ===========================
+    // 載入中控制
+    // ===========================
+    function showLoading(text = '載入中...') {
+      loadingText.textContent = text;
+      loadingOverlay.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      loadingOverlay.classList.add('hidden');
+    }
+
+    // ===========================
+    // 動態載入內容
+    // ===========================
+    async function loadContent(url) {
+      showLoading('載入內容...');
+
+      try {
+        console.log('載入內容:', url);
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`無法載入內容: ${response.status}`);
+        }
+        let htmlContent = await response.text();
+
+        // 取得內容檔案的基礎路徑（用於解析相對路徑）
+        const basePath = url.substring(0, url.lastIndexOf('/') + 1);
+
+        // 處理相對路徑的圖片
+        htmlContent = htmlContent.replace(
+          /src="(?!http|\/)(images\/[^"]+)"/g,
+          `src="${basePath}$1"`
+        );
+
+        console.log('內容載入完成，開始處理...');
+
+        // 處理內容
+        await processContent(htmlContent);
+
+      } catch (error) {
+        console.error('載入失敗:', error);
+        showError(`載入失敗: ${error.message}`);
+      }
+    }
+
+    // ===========================
+    // 處理內容：載入 + 表格轉圖片
+    // ===========================
+    async function processContent(htmlContent) {
+      showLoading('處理內容...');
+
+      // 直接將內容放入 manuscript（保留 <hr> 讓 CSS 處理 break-after）
+      manuscript.innerHTML = htmlContent;
+
+      // 等待 DOM 更新
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      // 轉換表格為圖片
+      await convertTablesToImages();
+
+      // 計算頁數
+      calculatePages();
+
+      hideLoading();
+      console.log('處理完成');
+    }
+
+    // ===========================
+    // 表格轉圖片
+    // ===========================
+    async function convertTablesToImages() {
+      const tables = manuscript.querySelectorAll('table');
+
+      if (tables.length === 0) {
+        console.log('沒有找到表格');
+        return;
+      }
+
+      showLoading(`轉換表格 (0/${tables.length})...`);
+      console.log(`找到 ${tables.length} 個表格，開始轉換...`);
+
+      for (let i = 0; i < tables.length; i++) {
+        const table = tables[i];
+        showLoading(`轉換表格 (${i + 1}/${tables.length})...`);
+
+        try {
+          // 設定表格樣式
+          table.style.cssText = `
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            border-collapse: collapse;
+            font-size: 18px;
+            padding: 15px;
+            writing-mode: horizontal-tb;
+          `;
+
+          // 設定表格單元格樣式
+          table.querySelectorAll('th, td').forEach(cell => {
+            cell.style.cssText = `
+              padding: 14px 20px;
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              text-align: left;
+              writing-mode: horizontal-tb;
+            `;
+          });
+
+          table.querySelectorAll('th').forEach(cell => {
+            cell.style.cssText += `
+              background: rgba(95, 207, 195, 0.4);
+              font-weight: bold;
+              color: white;
+            `;
+          });
+
+          // 等待樣式套用
+          await new Promise(r => setTimeout(r, 50));
+
+          const canvas = await html2canvas(table, {
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            scale: 2,
+            logging: false,
+            useCORS: true
+          });
+
+          const img = document.createElement('img');
+          img.src = canvas.toDataURL('image/png');
+          img.alt = '表格';
+          img.className = 'table-image';
+
+          table.parentNode.replaceChild(img, table);
+
+          console.log(`表格 ${i + 1} 轉換完成`);
+        } catch (err) {
+          console.error(`表格 ${i + 1} 轉換失敗:`, err);
+        }
+      }
+
+      console.log('所有表格轉換完成');
+    }
+
+    // ===========================
+    // 計算頁數
+    // ===========================
+    function calculatePages() {
+      const isVertical = !document.body.classList.contains('horizontal-mode');
+
+      if (isVertical) {
+        // 直書模式：使用 scrollWidth（內容向左溢出）
+        const scrollWidth = manuscript.scrollWidth;
+        const viewWidth = manuscript.clientWidth;
+        totalPages = Math.ceil(scrollWidth / viewWidth);
+      } else {
+        // 橫書模式：使用 CSS Columns，用 scrollWidth
+        const scrollWidth = manuscript.scrollWidth;
+        const viewWidth = manuscript.clientWidth;
+        totalPages = Math.ceil(scrollWidth / viewWidth);
+      }
+
+      if (totalPages < 1) totalPages = 1;
+
+      console.log(`計算頁數: ${totalPages}`);
+      updatePageDisplay();
+    }
+
+    // ===========================
+    // 載入設定
+    // ===========================
+    function loadSettings() {
+      // 字體大小
+      const savedScale = localStorage.getItem(STORAGE_KEYS.fontSize);
+      if (savedScale) {
+        fontScale = parseFloat(savedScale);
+        if (!FONT_SCALES.includes(fontScale)) fontScale = 1.0;
+        setFontScale(fontScale, false);
+      }
+
+      // 文字方向
+      const savedOrientation = localStorage.getItem(STORAGE_KEYS.orientation);
+      if (savedOrientation === 'horizontal') {
+        document.body.classList.add('horizontal-mode');
+        document.getElementById('horizontalBtn').classList.add('active');
+        document.getElementById('verticalBtn').classList.remove('active');
+        // 重新計算頁數
+        setTimeout(calculatePages, 100);
+      }
+
+      // 字體
+      const savedFont = localStorage.getItem(STORAGE_KEYS.fontFamily);
+      if (savedFont) {
+        applyFont(savedFont, false);
+        document.querySelectorAll('.font-select button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.font === savedFont);
+        });
+      }
+    }
+
+    // ===========================
+    // 頁面顯示
+    // ===========================
+    function updatePageDisplay() {
+      currentPageEl.textContent = currentPage + 1;
+      totalPagesEl.textContent = totalPages;
+    }
+
+    function goToPage(pageIndex) {
+      if (pageIndex < 0) pageIndex = 0;
+      if (pageIndex >= totalPages) pageIndex = totalPages - 1;
+
+      currentPage = pageIndex;
+
+      const isVertical = !document.body.classList.contains('horizontal-mode');
+      const viewWidth = manuscript.clientWidth;
+
+      if (isVertical) {
+        // 直書模式 (vertical-rl)：scrollLeft 從 0 開始向負方向滾動
+        // 第一頁：scrollLeft = 0
+        // 第二頁：scrollLeft = -viewWidth
+        // 第 N 頁：scrollLeft = -(N-1) * viewWidth
+        manuscript.scrollLeft = -pageIndex * viewWidth;
+      } else {
+        // 橫書模式：正常向右滾動
+        manuscript.scrollLeft = pageIndex * viewWidth;
+      }
+
+      updatePageDisplay();
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        goToPage(currentPage - 1);
+      }
+    }
+
+    function nextPage() {
+      if (currentPage < totalPages - 1) {
+        goToPage(currentPage + 1);
+      }
+    }
+
+    // ===========================
+    // 字體大小
+    // ===========================
+    function setFontScale(scale, save = true) {
+      fontScale = scale;
+      document.documentElement.style.setProperty('--font-scale', scale);
+      fontSizeDisplayEl.textContent = Math.round(scale * 100) + '%';
+      if (save) {
+        localStorage.setItem(STORAGE_KEYS.fontSize, scale.toString());
+      }
+      // 重新計算頁數
+      setTimeout(calculatePages, 100);
+    }
+
+    function increaseFontSize() {
+      const idx = FONT_SCALES.indexOf(fontScale);
+      if (idx < FONT_SCALES.length - 1) {
+        setFontScale(FONT_SCALES[idx + 1]);
+      } else if (idx === -1) {
+        const larger = FONT_SCALES.filter(s => s > fontScale);
+        if (larger.length > 0) setFontScale(larger[0]);
+      }
+    }
+
+    function decreaseFontSize() {
+      const idx = FONT_SCALES.indexOf(fontScale);
+      if (idx > 0) {
+        setFontScale(FONT_SCALES[idx - 1]);
+      } else if (idx === -1) {
+        const smaller = FONT_SCALES.filter(s => s < fontScale);
+        if (smaller.length > 0) setFontScale(smaller[smaller.length - 1]);
+      }
+    }
+
+    // ===========================
+    // 字體選擇
+    // ===========================
+    function applyFont(fontFamily, save = true) {
+      document.body.style.fontFamily = `"${fontFamily}", sans-serif`;
+      if (save) {
+        localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
+      }
+    }
+
+    // ===========================
+    // 文字方向
+    // ===========================
+    function setVerticalMode() {
+      document.body.classList.remove('horizontal-mode');
+      document.getElementById('verticalBtn').classList.add('active');
+      document.getElementById('horizontalBtn').classList.remove('active');
+      localStorage.setItem(STORAGE_KEYS.orientation, 'vertical');
+      // 重置頁面位置並重新計算
+      currentPage = 0;
+      manuscript.scrollLeft = 0;
+      setTimeout(calculatePages, 100);
+    }
+
+    function setHorizontalMode() {
+      document.body.classList.add('horizontal-mode');
+      document.getElementById('horizontalBtn').classList.add('active');
+      document.getElementById('verticalBtn').classList.remove('active');
+      localStorage.setItem(STORAGE_KEYS.orientation, 'horizontal');
+      // 重置頁面位置並重新計算
+      currentPage = 0;
+      manuscript.scrollLeft = 0;
+      setTimeout(calculatePages, 100);
+    }
+
+    // ===========================
+    // Sidebar
+    // ===========================
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebarOverlay').classList.add('visible');
+      document.getElementById('hamburgerBtn').classList.add('active');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('visible');
+      document.getElementById('hamburgerBtn').classList.remove('active');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    }
+
+    // ===========================
+    // 全螢幕
+    // ===========================
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log('無法進入全螢幕:', err);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // ===========================
+    // 事件監聽
+    // ===========================
+    function initEventListeners() {
+      // 漢堡選單
+      document.getElementById('hamburgerBtn').onclick = toggleSidebar;
+      document.getElementById('sidebarOverlay').onclick = closeSidebar;
+
+      // 字體大小
+      document.getElementById('fontDecrease').onclick = decreaseFontSize;
+      document.getElementById('fontIncrease').onclick = increaseFontSize;
+
+      // 文字方向
+      document.getElementById('verticalBtn').onclick = setVerticalMode;
+      document.getElementById('horizontalBtn').onclick = setHorizontalMode;
+
+      // 字體選擇
+      document.querySelectorAll('.font-select button').forEach(btn => {
+        btn.onclick = function() {
+          document.querySelectorAll('.font-select button').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          applyFont(this.dataset.font);
+        };
+      });
+
+      // 全螢幕
+      document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
+
+      // 鍵盤控制
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const sidebar = document.getElementById('sidebar');
+          if (sidebar.classList.contains('open')) {
+            closeSidebar();
+            return;
+          }
+        }
+
+        switch(e.key) {
+          case 'ArrowRight':
+          case ' ':
+          case 'PageDown':
+          case 'ArrowDown':
+            e.preventDefault();
+            nextPage();
+            break;
+          case 'ArrowLeft':
+          case 'PageUp':
+          case 'ArrowUp':
+            e.preventDefault();
+            prevPage();
+            break;
+          case 'Home':
+            e.preventDefault();
+            goToPage(0);
+            break;
+          case 'End':
+            e.preventDefault();
+            goToPage(totalPages - 1);
+            break;
+        }
+      });
+
+      // 視窗大小改變
+      window.addEventListener('resize', () => {
+        setTimeout(calculatePages, 100);
+      });
+
+      // 觸控滑動
+      let touchStartX = 0;
+      let touchStartY = 0;
+      document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+
+        // 根據滑動方向判斷
+        if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+          if (Math.abs(diffX) > Math.abs(diffY)) {
+            // 水平滑動
+            if (diffX > 0) nextPage();
+            else prevPage();
+          } else {
+            // 垂直滑動
+            if (diffY > 0) nextPage();
+            else prevPage();
+          }
+        }
+      }, { passive: true });
+
+      // 點擊內容區翻頁
+      document.getElementById('contentArea').addEventListener('click', (e) => {
+        // 避免點擊其他元素時觸發
+        if (e.target.closest('.sidebar') || e.target.closest('.hamburger-btn')) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+
+        // 點擊左半部分：上一頁，右半部分：下一頁
+        if (clickX < width / 2) {
+          prevPage();
+        } else {
+          nextPage();
+        }
+      });
+    }
+
+    // 啟動
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
