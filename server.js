@@ -102,6 +102,12 @@ app.post('/api/fetch-doc', async (req, res) => {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
+      // 跳過「分頁 N」標記（可能是標題或純文字）
+      if (/^#*\s*分頁\s*\d+\s*$/.test(line.trim())) {
+        console.log(`移除分頁標記: ${line}`);
+        continue;
+      }
+
       // 檢查是否為圖片引用定義行: [image1]: <data:image/...;base64,...>
       const refMatch = line.match(/^\[([^\]]+)\]:\s*<data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)>$/);
 
