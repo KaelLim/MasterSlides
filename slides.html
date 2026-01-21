@@ -531,7 +531,56 @@
       object-fit: contain;
       border-radius: 8px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      cursor: default;
+      cursor: grab;
+      touch-action: none;
+      transition: transform 0.1s ease-out;
+    }
+
+    .lightbox img:active {
+      cursor: grabbing;
+    }
+
+    .lightbox-controls {
+      position: absolute;
+      bottom: 80px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .lightbox-controls button {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox-controls button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .lightbox-zoom-info {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .lightbox-zoom-info.show {
+      opacity: 1;
     }
 
     .lightbox-caption {
@@ -575,7 +624,13 @@
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
     <span class="lightbox-close">&times;</span>
+    <div class="lightbox-zoom-info" id="lightboxZoomInfo">100%</div>
     <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-controls">
+      <button id="zoomOutBtn">−</button>
+      <button id="zoomResetBtn">⟲</button>
+      <button id="zoomInBtn">+</button>
+    </div>
     <div class="lightbox-caption" id="lightboxCaption"></div>
   </div>
 
@@ -817,7 +872,6 @@
           const img = document.createElement('img');
           img.src = canvas.toDataURL('image/png');
           img.className = 'table-image';
-          img.alt = '表格';
           img.style.cssText = `
             width: 95%;
             max-width: 95%;
@@ -1204,12 +1258,21 @@
     }
 
     // ===========================
-    // Lightbox
+    // Lightbox with Zoom
     // ===========================
+    let lbZoom = 1;
+    let lbPosX = 0;
+    let lbPosY = 0;
+    let lbIsDragging = false;
+    let lbStartX = 0;
+    let lbStartY = 0;
+    let lbPinchStartDist = 0;
+    let lbPinchStartZoom = 1;
+    let lbLastTap = 0;
+
     function initLightbox() {
       const lightbox = document.getElementById('lightbox');
       const lightboxImg = document.getElementById('lightboxImg');
-      const lightboxCaption = document.getElementById('lightboxCaption');
       const lightboxClose = document.querySelector('.lightbox-close');
 
       // 點擊圖片開啟 lightbox
@@ -1222,7 +1285,7 @@
       // 點擊關閉按鈕
       lightboxClose.onclick = closeLightbox;
 
-      // 點擊遮罩關閉（但不是點擊圖片）
+      // 點擊遮罩關閉（但不是點擊圖片或控制項）
       lightbox.onclick = (e) => {
         if (e.target === lightbox) {
           closeLightbox();
@@ -1235,6 +1298,128 @@
           closeLightbox();
         }
       });
+
+      // 縮放按鈕
+      document.getElementById('zoomInBtn').onclick = () => setLightboxZoom(lbZoom + 0.25);
+      document.getElementById('zoomOutBtn').onclick = () => setLightboxZoom(lbZoom - 0.25);
+      document.getElementById('zoomResetBtn').onclick = resetLightboxZoom;
+
+      // 滑鼠滾輪縮放
+      lightboxImg.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setLightboxZoom(lbZoom + delta);
+      });
+
+      // 禁止圖片預設拖曳
+      lightboxImg.addEventListener('dragstart', (e) => e.preventDefault());
+
+      // 滑鼠拖曳
+      lightboxImg.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (lbZoom > 1) {
+          lbIsDragging = true;
+          lbStartX = e.clientX - lbPosX;
+          lbStartY = e.clientY - lbPosY;
+          lightboxImg.style.cursor = 'grabbing';
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (lbIsDragging) {
+          e.preventDefault();
+          lbPosX = e.clientX - lbStartX;
+          lbPosY = e.clientY - lbStartY;
+          updateLightboxTransform();
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (lbIsDragging) {
+          lbIsDragging = false;
+          document.getElementById('lightboxImg').style.cursor = lbZoom > 1 ? 'grab' : 'default';
+        }
+      });
+
+      // 觸控：雙擊縮放
+      lightboxImg.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lbLastTap < 300 && e.touches.length === 0) {
+          e.preventDefault();
+          if (lbZoom > 1) {
+            resetLightboxZoom();
+          } else {
+            setLightboxZoom(2);
+          }
+        }
+        lbLastTap = now;
+      });
+
+      // 觸控：捏合縮放 & 拖曳
+      lightboxImg.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          lbPinchStartDist = getPinchDistance(e.touches);
+          lbPinchStartZoom = lbZoom;
+        } else if (e.touches.length === 1 && lbZoom > 1) {
+          lbIsDragging = true;
+          lbStartX = e.touches[0].clientX - lbPosX;
+          lbStartY = e.touches[0].clientY - lbPosY;
+        }
+      });
+
+      lightboxImg.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          const dist = getPinchDistance(e.touches);
+          const scale = dist / lbPinchStartDist;
+          setLightboxZoom(lbPinchStartZoom * scale);
+        } else if (e.touches.length === 1 && lbIsDragging) {
+          e.preventDefault();
+          lbPosX = e.touches[0].clientX - lbStartX;
+          lbPosY = e.touches[0].clientY - lbStartY;
+          updateLightboxTransform();
+        }
+      });
+
+      lightboxImg.addEventListener('touchend', () => {
+        lbIsDragging = false;
+      });
+    }
+
+    function getPinchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function setLightboxZoom(zoom) {
+      lbZoom = Math.max(0.5, Math.min(5, zoom));
+      if (lbZoom <= 1) {
+        lbPosX = 0;
+        lbPosY = 0;
+      }
+      updateLightboxTransform();
+      showZoomInfo();
+    }
+
+    function resetLightboxZoom() {
+      lbZoom = 1;
+      lbPosX = 0;
+      lbPosY = 0;
+      updateLightboxTransform();
+      showZoomInfo();
+    }
+
+    function updateLightboxTransform() {
+      const img = document.getElementById('lightboxImg');
+      img.style.transform = `translate(${lbPosX}px, ${lbPosY}px) scale(${lbZoom})`;
+    }
+
+    function showZoomInfo() {
+      const info = document.getElementById('lightboxZoomInfo');
+      info.textContent = Math.round(lbZoom * 100) + '%';
+      info.classList.add('show');
+      setTimeout(() => info.classList.remove('show'), 1000);
     }
 
     function openLightbox(src, caption) {
@@ -1242,6 +1427,7 @@
       const lightboxImg = document.getElementById('lightboxImg');
       const lightboxCaption = document.getElementById('lightboxCaption');
 
+      resetLightboxZoom();
       lightboxImg.src = src;
       lightboxCaption.textContent = caption || '';
       lightbox.classList.add('active');
@@ -1250,6 +1436,7 @@
     function closeLightbox() {
       const lightbox = document.getElementById('lightbox');
       lightbox.classList.remove('active');
+      resetLightboxZoom();
     }
 
     // 啟動
