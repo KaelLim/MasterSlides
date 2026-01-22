@@ -1,0 +1,20 @@
+services:
+  slides:
+    build:
+      context: .
+      args:
+        - REPO_URL=https://github.com/KaelLim/MasterSlides.git
+        - BRANCH=main
+    container_name: master-slides
+    ports:
+      - "3000:3000"
+    volumes:
+      - slides-data:/app/docs
+    environment:
+      - APP_STAGE=alpha
+      - APP_VERSION=1.0.0
+      - APP_SHOW_BADGE=true
+    restart: unless-stopped
+
+volumes:
+  slides-data:

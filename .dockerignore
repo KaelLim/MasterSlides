@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+docs/*
+!docs/.gitkeep
+.git
+.gitignore
+*.md
+.DS_Store

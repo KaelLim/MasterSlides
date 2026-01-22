@@ -14,6 +14,33 @@ const PORT = 3000;
 // 儲存房間狀態
 const rooms = new Map();
 
+// 讀取應用程式設定（支援環境變數覆蓋）
+function loadAppConfig() {
+  let config = { stage: 'beta', version: '1.0.0', showBadge: true };
+
+  // 從 config.json 讀取
+  const configPath = path.join(__dirname, 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    } catch (e) {
+      console.error('讀取 config.json 失敗:', e.message);
+    }
+  }
+
+  // 環境變數覆蓋（Docker 用）
+  if (process.env.APP_STAGE) config.stage = process.env.APP_STAGE;
+  if (process.env.APP_VERSION) config.version = process.env.APP_VERSION;
+  if (process.env.APP_SHOW_BADGE !== undefined) {
+    config.showBadge = process.env.APP_SHOW_BADGE === 'true';
+  }
+
+  return config;
+}
+
+const appConfig = loadAppConfig();
+console.log(`應用程式版本: ${appConfig.stage} v${appConfig.version}`);
+
 // 建立 docs 資料夾存放下載的 MD 檔案
 const docsDir = path.join(__dirname, 'docs');
 if (!fs.existsSync(docsDir)) {
@@ -189,6 +216,11 @@ app.get('/slides', (req, res) => {
   res.redirect('/slides.html' + (req.query.src ? '?src=' + req.query.src : ''));
 });
 
+// API: 取得應用程式設定（供 badge.js 使用）
+app.get('/api/config', (req, res) => {
+  res.json(appConfig);
+});
+
 // URL 直接轉換：模擬 Google Docs URL 格式
 // 例如：/document/d/1EJi4AabcbPV2Eqhx.../edit?tab=t.0
 // 使用 regex 匹配 docId（支援任何後續路徑）
@@ -235,6 +267,7 @@ app.get(/^\/document\/d\/([a-zA-Z0-9_-]+)/, async (req, res) => {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+        <script src="/badge.js" defer></script>
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
