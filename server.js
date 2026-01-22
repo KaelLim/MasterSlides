@@ -31,6 +31,148 @@ function generateContentHtml(contentHtml) {
   return contentHtml;
 }
 
+// 處理 Google Doc 下載與轉換（共用邏輯）
+async function processGoogleDoc(docId) {
+  const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=md`;
+
+  // 使用 Doc ID 作為目錄名稱
+  const docDir = path.join(docsDir, docId);
+  const imagesDir = path.join(docDir, 'images');
+  const tempMdPath = path.join(docDir, 'temp.md');
+  const contentFilepath = path.join(docDir, 'content.html');
+
+  // 建立目錄結構（覆蓋舊檔案）
+  if (!fs.existsSync(docDir)) {
+    fs.mkdirSync(docDir, { recursive: true });
+  }
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+  }
+
+  // 使用 curl 下載 MD（-L 跟隨重定向，-f 失敗時回傳錯誤）
+  const curlCmd = `curl -L -f -o "${tempMdPath}" "${exportUrl}"`;
+  try {
+    execSync(curlCmd, { timeout: 30000, stdio: 'pipe' });
+  } catch (curlError) {
+    const errMsg = curlError.stderr ? curlError.stderr.toString() : curlError.message;
+
+    // 根據 HTTP 狀態碼判斷錯誤原因
+    if (errMsg.includes('401')) {
+      const err = new Error('文件需要登入才能存取');
+      err.code = 'UNAUTHORIZED';
+      err.hint = '請確認文件已設為「任何人都可檢視」';
+      throw err;
+    } else if (errMsg.includes('403')) {
+      const err = new Error('沒有權限存取此文件');
+      err.code = 'FORBIDDEN';
+      err.hint = '請確認文件已設為「任何人都可檢視」';
+      throw err;
+    } else if (errMsg.includes('404')) {
+      const err = new Error('找不到此文件');
+      err.code = 'NOT_FOUND';
+      err.hint = '請確認文件 ID 正確，且文件尚未被刪除';
+      throw err;
+    } else if (errMsg.includes('Could not resolve host')) {
+      const err = new Error('無法連線到 Google');
+      err.code = 'NETWORK';
+      err.hint = '請檢查網路連線';
+      throw err;
+    } else {
+      const err = new Error('下載失敗');
+      err.code = 'UNKNOWN';
+      err.hint = errMsg;
+      throw err;
+    }
+  }
+
+  // 檢查檔案是否存在且有內容
+  if (!fs.existsSync(tempMdPath)) {
+    throw new Error('下載失敗：檔案未建立');
+  }
+
+  const stats = fs.statSync(tempMdPath);
+  if (stats.size === 0) {
+    fs.unlinkSync(tempMdPath); // 刪除空檔案
+    const err = new Error('無法存取文件。請確認：\n1. 文件已設為「任何人都可檢視」\n2. 網址正確無誤');
+    err.code = 'FORBIDDEN';
+    throw err;
+  }
+
+  // 讀取 MD 並轉換為 HTML
+  let markdown = fs.readFileSync(tempMdPath, 'utf-8');
+
+  // 將 base64 圖片轉換為實際檔案
+  let imageCount = 0;
+
+  // 逐行處理，找出圖片引用定義
+  const lines = markdown.split('\n');
+  const processedLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // 跳過「分頁 N」標記（可能是標題或純文字）
+    if (/^#*\s*分頁\s*\d+\s*$/.test(line.trim())) {
+      console.log(`移除分頁標記: ${line}`);
+      continue;
+    }
+
+    // 檢查是否為圖片引用定義行: [image1]: <data:image/...;base64,...>
+    const refMatch = line.match(/^\[([^\]]+)\]:\s*<data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)>$/);
+
+    if (refMatch) {
+      const [, refName, format, base64Data] = refMatch;
+      imageCount++;
+
+      const ext = format === 'jpeg' ? 'jpg' : format;
+      const imgFilename = `img_${imageCount}.${ext}`;
+      const imgPath = path.join(imagesDir, imgFilename);
+
+      // 清理 base64 數據
+      const cleanBase64 = base64Data.replace(/[\r\n\s]/g, '');
+
+      console.log(`找到圖片 ${refName}: format=${format}, base64長度=${cleanBase64.length}`);
+
+      try {
+        const buffer = Buffer.from(cleanBase64, 'base64');
+        if (buffer.length > 0) {
+          fs.writeFileSync(imgPath, buffer);
+          console.log(`已儲存圖片: ${imgFilename} (${buffer.length} bytes)`);
+          // 替換為檔案路徑（相對於 index.html）
+          processedLines.push(`[${refName}]: images/${imgFilename}`);
+        } else {
+          console.error(`圖片 ${refName} buffer 為空`);
+          processedLines.push(line);
+        }
+      } catch (err) {
+        console.error(`圖片轉換失敗 ${refName}: ${err.message}`);
+        processedLines.push(line);
+      }
+    } else {
+      processedLines.push(line);
+    }
+  }
+
+  markdown = processedLines.join('\n');
+
+  console.log(`共處理 ${imageCount} 張圖片`);
+
+  // 轉換為 HTML
+  marked.setOptions({ breaks: true, gfm: true });
+  const contentHtml = marked.parse(markdown);
+
+  // 生成純內容 HTML
+  const pureContent = generateContentHtml(contentHtml);
+
+  // 儲存內容檔案
+  fs.writeFileSync(contentFilepath, pureContent, 'utf-8');
+
+  // 刪除暫存 MD 檔
+  fs.unlinkSync(tempMdPath);
+
+  return { success: true, docId };
+}
+
 // 靜態檔案服務
 app.use(express.static(__dirname));
 app.use('/docs', express.static(docsDir));
@@ -47,6 +189,144 @@ app.get('/slides', (req, res) => {
   res.redirect('/slides.html' + (req.query.src ? '?src=' + req.query.src : ''));
 });
 
+// URL 直接轉換：模擬 Google Docs URL 格式
+// 例如：/document/d/1EJi4AabcbPV2Eqhx.../edit?tab=t.0
+// 使用 regex 匹配 docId（支援任何後續路徑）
+app.get(/^\/document\/d\/([a-zA-Z0-9_-]+)/, async (req, res) => {
+  const docId = req.params[0];
+
+  console.log(`[URL 轉換] 收到請求: docId=${docId}`);
+
+  try {
+    await processGoogleDoc(docId);
+    console.log(`[URL 轉換] 成功，重導向至 /slides.html?src=${docId}`);
+    res.redirect(`/slides.html?src=${docId}`);
+  } catch (error) {
+    console.error(`[URL 轉換] 失敗: ${error.message}`);
+
+    // 根據錯誤代碼決定 HTTP 狀態碼
+    const statusCodes = {
+      'UNAUTHORIZED': 401,
+      'FORBIDDEN': 403,
+      'NOT_FOUND': 404,
+      'NETWORK': 503,
+      'UNKNOWN': 500
+    };
+    const httpStatus = statusCodes[error.code] || 500;
+
+    // 錯誤圖示 (Material Icons)
+    const errorIcons = {
+      'UNAUTHORIZED': 'lock',
+      'FORBIDDEN': 'block',
+      'NOT_FOUND': 'search_off',
+      'NETWORK': 'wifi_off',
+      'UNKNOWN': 'error_outline'
+    };
+    const icon = errorIcons[error.code] || 'error_outline';
+
+    res.status(httpStatus).send(`
+      <!DOCTYPE html>
+      <html lang="zh-TW">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>轉換失敗</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #1a1a2e;
+            background-image: url('/theme/default/background.jpg');
+            background-size: cover;
+            background-position: center;
+          }
+          .container {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 50px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+          }
+          .icon {
+            font-size: 72px;
+            color: #ff6b6b;
+            margin-bottom: 24px;
+          }
+          h1 {
+            color: #ff6b6b;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+          }
+          .hint {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+          }
+          .doc-id {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 24px;
+            word-break: break-all;
+          }
+          .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            transition: all 0.2s;
+          }
+          .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+          }
+          .material-icons-round {
+            font-size: 24px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon"><span class="material-icons-round" style="font-size: 72px;">${icon}</span></div>
+          <h1>${error.message}</h1>
+          <p class="hint">${error.hint || ''}</p>
+          <div class="doc-id">${docId}</div>
+          <br>
+          <a href="/upload.html" class="btn">
+            <span class="material-icons-round">arrow_back</span>
+            返回上傳頁面
+          </a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+});
+
 // API: 下載 Google Docs 為 Markdown
 app.post('/api/fetch-doc', async (req, res) => {
   const { url } = req.body;
@@ -61,112 +341,8 @@ app.post('/api/fetch-doc', async (req, res) => {
     return res.status(400).json({ error: '無效的 Google Docs 網址格式' });
   }
 
-  const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=md`;
-
-  // 使用 Doc ID 作為目錄名稱
-  const docDir = path.join(docsDir, docId);
-  const imagesDir = path.join(docDir, 'images');
-  const tempMdPath = path.join(docDir, 'temp.md');
-  const contentFilepath = path.join(docDir, 'content.html');
-
   try {
-    // 建立目錄結構（覆蓋舊檔案）
-    if (!fs.existsSync(docDir)) {
-      fs.mkdirSync(docDir, { recursive: true });
-    }
-    if (!fs.existsSync(imagesDir)) {
-      fs.mkdirSync(imagesDir, { recursive: true });
-    }
-
-    // 使用 curl 下載 MD（-L 跟隨重定向，-f 失敗時回傳錯誤）
-    const curlCmd = `curl -L -f -o "${tempMdPath}" "${exportUrl}"`;
-    execSync(curlCmd, { timeout: 30000 });
-
-    // 檢查檔案是否存在且有內容
-    if (!fs.existsSync(tempMdPath)) {
-      return res.status(500).json({ error: '下載失敗：檔案未建立' });
-    }
-
-    const stats = fs.statSync(tempMdPath);
-    if (stats.size === 0) {
-      fs.unlinkSync(tempMdPath); // 刪除空檔案
-      return res.status(403).json({
-        error: '無法存取文件。請確認：\n1. 文件已設為「任何人都可檢視」\n2. 網址正確無誤'
-      });
-    }
-
-    // 讀取 MD 並轉換為 HTML
-    let markdown = fs.readFileSync(tempMdPath, 'utf-8');
-
-    // 將 base64 圖片轉換為實際檔案
-    // Google Docs 格式: [image1]: <data:image/png;base64,XXXX>
-    let imageCount = 0;
-
-    // 逐行處理，找出圖片引用定義
-    const lines = markdown.split('\n');
-    const processedLines = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // 跳過「分頁 N」標記（可能是標題或純文字）
-      if (/^#*\s*分頁\s*\d+\s*$/.test(line.trim())) {
-        console.log(`移除分頁標記: ${line}`);
-        continue;
-      }
-
-      // 檢查是否為圖片引用定義行: [image1]: <data:image/...;base64,...>
-      const refMatch = line.match(/^\[([^\]]+)\]:\s*<data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)>$/);
-
-      if (refMatch) {
-        const [, refName, format, base64Data] = refMatch;
-        imageCount++;
-
-        const ext = format === 'jpeg' ? 'jpg' : format;
-        const imgFilename = `img_${imageCount}.${ext}`;
-        const imgPath = path.join(imagesDir, imgFilename);
-
-        // 清理 base64 數據
-        const cleanBase64 = base64Data.replace(/[\r\n\s]/g, '');
-
-        console.log(`找到圖片 ${refName}: format=${format}, base64長度=${cleanBase64.length}`);
-
-        try {
-          const buffer = Buffer.from(cleanBase64, 'base64');
-          if (buffer.length > 0) {
-            fs.writeFileSync(imgPath, buffer);
-            console.log(`已儲存圖片: ${imgFilename} (${buffer.length} bytes)`);
-            // 替換為檔案路徑（相對於 index.html）
-            processedLines.push(`[${refName}]: images/${imgFilename}`);
-          } else {
-            console.error(`圖片 ${refName} buffer 為空`);
-            processedLines.push(line);
-          }
-        } catch (err) {
-          console.error(`圖片轉換失敗 ${refName}: ${err.message}`);
-          processedLines.push(line);
-        }
-      } else {
-        processedLines.push(line);
-      }
-    }
-
-    markdown = processedLines.join('\n');
-
-    console.log(`共處理 ${imageCount} 張圖片`);
-
-    // 轉換為 HTML
-    marked.setOptions({ breaks: true, gfm: true });
-    const contentHtml = marked.parse(markdown);
-
-    // 生成純內容 HTML
-    const pureContent = generateContentHtml(contentHtml);
-
-    // 儲存內容檔案
-    fs.writeFileSync(contentFilepath, pureContent, 'utf-8');
-
-    // 刪除暫存 MD 檔
-    fs.unlinkSync(tempMdPath);
+    await processGoogleDoc(docId);
 
     // 成功 - 返回 viewer URL
     res.json({
@@ -176,13 +352,8 @@ app.post('/api/fetch-doc', async (req, res) => {
     });
 
   } catch (error) {
-    // 清理可能產生的暫存檔案
-    if (fs.existsSync(tempMdPath)) {
-      fs.unlinkSync(tempMdPath);
-    }
-
-    // curl 錯誤處理
-    if (error.message.includes('exit code 22') || error.message.includes('403') || error.message.includes('401')) {
+    // 錯誤處理
+    if (error.code === 'FORBIDDEN' || error.message.includes('exit code 22') || error.message.includes('403') || error.message.includes('401')) {
       return res.status(403).json({
         error: '權限不足！請確認文件已設為「任何人都可檢視」'
       });

@@ -4,136 +4,166 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>上傳 Google Docs - 慈濟簡報系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <style>
+    :root {
+      --color-primary: #5FCFC3;
+      --color-primary-light: #7EDDD3;
+      --color-secondary: #FFD700;
+    }
+
+    .material-icons-round {
+      font-size: inherit;
+      vertical-align: middle;
+    }
+
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      margin: 0;
-      padding: 40px 20px;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
+      background: #1a1a2e;
+      background-image: url('theme/default/background.jpg');
+      background-size: cover;
+      background-position: center;
     }
 
     .container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
       padding: 40px;
-      max-width: 600px;
+      max-width: 500px;
       width: 100%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     h1 {
-      color: #5FCFC3;
-      margin: 0 0 10px 0;
-      font-size: 28px;
+      color: var(--color-primary);
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 10px;
     }
 
     .subtitle {
-      color: #B0B0B0;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 18px;
+      margin-bottom: 35px;
+    }
+
+    .section {
       margin-bottom: 30px;
-      font-size: 14px;
     }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      color: #E8E8E8;
-      margin-bottom: 8px;
+    .section-title {
       font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     input[type="text"] {
       width: 100%;
-      padding: 15px;
-      border: 2px solid rgba(95, 207, 195, 0.3);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.05);
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
       color: white;
-      font-size: 14px;
-      transition: border-color 0.3s;
+      font-size: 18px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:hover {
+      background: rgba(255, 255, 255, 0.15);
     }
 
     input[type="text"]:focus {
       outline: none;
-      border-color: #5FCFC3;
+      border-color: var(--color-primary);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     input[type="text"]::placeholder {
-      color: #666;
+      color: rgba(255, 255, 255, 0.3);
     }
 
     .btn {
-      padding: 15px 30px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.3s;
+      width: 100%;
+      padding: 16px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      font-size: 18px;
       font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #5FCFC3 0%, #3BA99C 100%);
+      background: rgba(255, 255, 255, 0.1);
       color: white;
-      width: 100%;
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(95, 207, 195, 0.4);
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .btn-primary:disabled {
-      background: #666;
+      opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
     }
 
     .btn-success {
-      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-      color: white;
-      width: 100%;
-      text-decoration: none;
-      display: inline-block;
-      text-align: center;
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #1a1a2e;
+      font-weight: 500;
     }
 
     .btn-success:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+      background: var(--color-primary-light);
+      border-color: var(--color-primary-light);
     }
 
     .message {
-      padding: 15px;
-      border-radius: 10px;
+      padding: 16px 18px;
+      border-radius: 8px;
       margin-top: 20px;
+      font-size: 16px;
       display: none;
     }
 
     .message.error {
-      background: rgba(244, 67, 54, 0.2);
-      border: 1px solid #F44336;
-      color: #FF8A80;
+      background: rgba(255, 107, 107, 0.15);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      color: #ff6b6b;
       display: block;
       white-space: pre-line;
     }
 
     .message.success {
-      background: rgba(76, 175, 80, 0.2);
-      border: 1px solid #4CAF50;
-      color: #A5D6A7;
+      background: rgba(95, 207, 195, 0.15);
+      border: 1px solid rgba(95, 207, 195, 0.3);
+      color: var(--color-primary);
       display: block;
     }
 
@@ -141,9 +171,10 @@
       display: none;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      color: #5FCFC3;
+      gap: 12px;
+      color: var(--color-primary);
       margin-top: 20px;
+      font-size: 16px;
     }
 
     .loading.show {
@@ -151,12 +182,12 @@
     }
 
     .spinner {
-      width: 24px;
-      height: 24px;
-      border: 3px solid rgba(95, 207, 195, 0.3);
-      border-top: 3px solid #5FCFC3;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(95, 207, 195, 0.3);
+      border-top: 2px solid var(--color-primary);
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
@@ -165,7 +196,7 @@
     }
 
     .result {
-      margin-top: 20px;
+      margin-top: 15px;
       display: none;
     }
 
@@ -174,30 +205,22 @@
     }
 
     .help {
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .help h3 {
-      color: #FFD700;
-      font-size: 16px;
-      margin: 0 0 10px 0;
+      margin-top: 25px;
     }
 
     .help ol {
-      color: #B0B0B0;
-      font-size: 13px;
-      padding-left: 20px;
-      margin: 0;
-      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 16px;
+      padding-left: 22px;
+      line-height: 2;
     }
 
     .help code {
       background: rgba(255, 255, 255, 0.1);
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 4px;
       font-family: monospace;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -207,8 +230,8 @@
     <p class="subtitle">將 Google Docs 文件轉換為簡報格式</p>
 
     <form id="uploadForm">
-      <div class="form-group">
-        <label for="docUrl">Google Docs 網址</label>
+      <div class="section">
+        <div class="section-title">Google Docs 網址</div>
         <input
           type="text"
           id="docUrl"
@@ -217,6 +240,7 @@
         >
       </div>
       <button type="submit" class="btn btn-primary" id="submitBtn">
+        <span class="material-icons-round">sync</span>
         開始轉換
       </button>
     </form>
@@ -230,19 +254,21 @@
 
     <div class="result" id="result">
       <a href="#" class="btn btn-success" id="goToSlides">
+        <span class="material-icons-round">slideshow</span>
         前往簡報
       </a>
     </div>
 
     <div class="help">
-      <h3>使用說明</h3>
-      <ol>
-        <li>開啟您的 Google Docs 文件</li>
-        <li>點擊右上角「共用」按鈕</li>
-        <li>將存取權限改為「任何知道連結的人都可檢視」</li>
-        <li>複製網址並貼到上方輸入框</li>
-        <li>點擊「開始轉換」</li>
-      </ol>
+      <div class="section">
+        <div class="section-title">使用說明</div>
+        <ol>
+          <li>開啟您的 Google Docs 文件</li>
+          <li>點擊右上角「共用」按鈕</li>
+          <li>將權限改為「任何人都可檢視」</li>
+          <li>複製網址並貼到上方輸入框</li>
+        </ol>
+      </div>
     </div>
   </div>
 
@@ -274,7 +300,6 @@
     });
 
     async function doConvert(url) {
-
       // 重置狀態
       message.className = 'message';
       message.textContent = '';
@@ -299,7 +324,7 @@
 
         // 成功
         message.className = 'message success';
-        message.textContent = '文件下載成功！';
+        message.textContent = '文件轉換成功！';
         goToSlides.href = data.slidesUrl;
         result.className = 'result show';
 

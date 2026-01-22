@@ -441,6 +441,10 @@
       color: white;
       font-size: 14px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .toggle-group button:hover {
@@ -453,12 +457,7 @@
     }
 
     .font-select {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .font-select button {
+      width: 100%;
       padding: 12px 15px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -466,40 +465,79 @@
       color: white;
       font-size: 16px;
       cursor: pointer;
-      text-align: left;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
     }
 
-    .font-select button:hover {
-      background: rgba(255, 255, 255, 0.2);
+    .font-select:hover {
+      background-color: rgba(255, 255, 255, 0.2);
     }
 
-    .font-select button.active {
-      background: var(--color-primary);
+    .font-select:focus {
+      outline: none;
       border-color: var(--color-primary);
     }
 
-    .fullscreen-btn {
-      width: 100%;
-      padding: 15px;
+    .font-select option {
+      background: #1a1a2e;
+      color: white;
+      padding: 10px;
+    }
+
+    .icon-btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .icon-btn {
+      position: relative;
+      width: 50px;
+      height: 50px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
+      border-radius: 12px;
       color: white;
-      font-size: 16px;
+      font-size: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
     }
 
-    .fullscreen-btn:hover {
+    .icon-btn:hover {
       background: rgba(255, 255, 255, 0.2);
     }
 
-    .fullscreen-btn.active {
+    .icon-btn.active {
       background: var(--color-primary);
       border-color: var(--color-primary);
+    }
+
+    .icon-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+      pointer-events: none;
+    }
+
+    .icon-btn:hover::after {
+      opacity: 1;
+      visibility: visible;
     }
 
     /* ===========================
@@ -742,6 +780,107 @@
     .remote-status.connected {
       color: #4CAF50;
     }
+
+    /* ===========================
+       快捷鍵說明 Modal
+       =========================== */
+    .help-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 30000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .help-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .help-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .help-modal-close:hover {
+      opacity: 1;
+    }
+
+    .help-modal * {
+      writing-mode: horizontal-tb;
+    }
+
+    .help-content {
+      max-width: 900px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .help-content h2 {
+      color: #5FCFC3;
+      font-size: 28px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .help-columns {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+    }
+
+    @media (max-width: 700px) {
+      .help-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .help-column h3 {
+      color: #FFD700;
+      font-size: 16px;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .help-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      color: #E8E8E8;
+      font-size: 14px;
+    }
+
+    .help-item span {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 4px 8px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #333;
+      background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 0 #999, inset 0 0 0 1px #fff;
+      margin: 0 2px;
+    }
   </style>
 </head>
 <body>
@@ -778,42 +917,54 @@
     <div class="settings-section">
       <h3>文字方向</h3>
       <div class="toggle-group">
-        <button id="verticalBtn" class="active">直書</button>
-        <button id="horizontalBtn">橫書</button>
+        <button id="verticalBtn" class="active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+            <polyline points="8 7 12 3 16 7"></polyline>
+            <polyline points="8 17 12 21 16 17"></polyline>
+          </svg>
+          直書
+        </button>
+        <button id="horizontalBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <polyline points="7 8 3 12 7 16"></polyline>
+            <polyline points="17 8 21 12 17 16"></polyline>
+          </svg>
+          橫書
+        </button>
       </div>
     </div>
     <div class="settings-section">
       <h3>字體選擇</h3>
-      <div class="font-select">
-        <button data-font="DFKai-SB" class="active" style="font-family: 'DFKai-SB', 'BiauKai', '標楷體', serif;">標楷體</button>
-        <button data-font="Noto Sans TC" style="font-family: 'Noto Sans TC', sans-serif;">Noto Sans TC</button>
-        <button data-font="Noto Serif TC" style="font-family: 'Noto Serif TC', serif;">Noto Serif TC</button>
-        <button data-font="LXGW WenKai TC" style="font-family: 'LXGW WenKai TC', cursive;">LXGW WenKai TC</button>
+      <select class="font-select" id="fontSelect">
+        <option value="DFKai-SB" selected>標楷體</option>
+        <option value="Noto Sans TC">Noto Sans TC</option>
+        <option value="Noto Serif TC">Noto Serif TC</option>
+        <option value="LXGW WenKai TC">LXGW WenKai TC</option>
+      </select>
+    </div>
+    <div class="settings-section">
+      <div class="icon-btn-row">
+        <button class="icon-btn" id="fullscreenBtn" data-tooltip="全螢幕">
+          <span id="fullscreenIcon">⛶</span>
+        </button>
+        <button class="icon-btn" id="toggleNavBtn" data-tooltip="隱藏導航列">
+          <svg id="toggleNavIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button class="icon-btn" id="remoteBtn" data-tooltip="遙控器">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+        </button>
+        <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明">
+          <span style="font-size: 18px; font-weight: bold;">?</span>
+        </button>
       </div>
-    </div>
-    <div class="settings-section">
-      <button class="fullscreen-btn" id="fullscreenBtn">
-        <span id="fullscreenIcon">⛶</span>
-        <span id="fullscreenText">全螢幕</span>
-      </button>
-    </div>
-    <div class="settings-section">
-      <button class="fullscreen-btn" id="toggleNavBtn">
-        <svg id="toggleNavIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-          <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-        <span id="toggleNavText">隱藏導航列</span>
-      </button>
-    </div>
-    <div class="settings-section">
-      <button class="fullscreen-btn" id="remoteBtn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-          <line x1="12" y1="18" x2="12.01" y2="18"></line>
-        </svg>
-        <span>遙控器</span>
-      </button>
     </div>
   </div>
 
@@ -825,6 +976,43 @@
     <div id="qrcode"></div>
     <div class="remote-url" id="remoteUrl"></div>
     <div class="remote-status" id="remoteStatus">等待連線...</div>
+  </div>
+
+  <!-- 快捷鍵說明 Modal -->
+  <div class="help-modal" id="helpModal">
+    <span class="help-modal-close">&times;</span>
+    <div class="help-content">
+      <h2>快捷鍵說明</h2>
+      <div class="help-columns">
+        <div class="help-column">
+          <h3>導航</h3>
+          <div class="help-item"><kbd>→</kbd> / <kbd>Space</kbd> / <kbd>PageDown</kbd><span>下一頁</span></div>
+          <div class="help-item"><kbd>←</kbd> / <kbd>PageUp</kbd><span>上一頁</span></div>
+          <div class="help-item"><kbd>Home</kbd><span>第一頁</span></div>
+          <div class="help-item"><kbd>End</kbd><span>最後一頁</span></div>
+          <div class="help-item"><kbd>G</kbd><span>跳至指定頁</span></div>
+        </div>
+        <div class="help-column">
+          <h3>顯示控制</h3>
+          <div class="help-item"><kbd>F</kbd> / <kbd class="mod-key">Cmd</kbd>+<kbd>Enter</kbd><span>全螢幕</span></div>
+          <div class="help-item"><kbd>S</kbd> / <kbd class="mod-key">Cmd</kbd>+<kbd>,</kbd><span>側邊欄</span></div>
+          <div class="help-item"><kbd>O</kbd><span>切換直書/橫書</span></div>
+          <div class="help-item"><kbd>N</kbd><span>隱藏/顯示導航列</span></div>
+        </div>
+        <div class="help-column">
+          <h3>字體控制</h3>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>=</kbd><span>字體放大</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>-</kbd><span>字體縮小</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>0</kbd><span>重設字體</span></div>
+        </div>
+        <div class="help-column">
+          <h3>其他</h3>
+          <div class="help-item"><kbd>R</kbd><span>遙控器 QR Code</span></div>
+          <div class="help-item"><kbd>?</kbd> / <kbd>H</kbd><span>快捷鍵說明</span></div>
+          <div class="help-item"><kbd>Escape</kbd><span>關閉彈窗</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 主要 Flex 布局 -->
@@ -878,6 +1066,74 @@
       navHidden: 'slides-nav-hidden'
     };
 
+    // ===========================
+    // 平台偵測
+    // ===========================
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const modKey = isMac ? 'Cmd' : 'Ctrl';
+
+    // ===========================
+    // 快捷鍵定義
+    // ===========================
+    const HOTKEYS = {
+      // 導航
+      'ArrowRight': 'nextPage',
+      ' ': 'nextPage',
+      'PageDown': 'nextPage',
+      'ArrowLeft': 'prevPage',
+      'PageUp': 'prevPage',
+      'Home': 'firstPage',
+      'End': 'lastPage',
+      'g': 'goToPage',
+      'G': 'goToPage',
+      // 顯示控制
+      'f': 'fullscreen',
+      'F': 'fullscreen',
+      's': 'sidebar',
+      'S': 'sidebar',
+      'o': 'toggleOrientation',
+      'O': 'toggleOrientation',
+      'n': 'toggleNav',
+      'N': 'toggleNav',
+      'r': 'remoteQR',
+      'R': 'remoteQR',
+      // 其他
+      '?': 'help',
+      'h': 'help',
+      'H': 'help',
+      'Escape': 'closeModal'
+    };
+
+    const COMBO_HOTKEYS = {
+      'Enter': 'fullscreen',
+      '=': 'fontIncrease',
+      '+': 'fontIncrease',
+      '-': 'fontDecrease',
+      '0': 'fontReset',
+      ',': 'sidebar'
+    };
+
+    const ACTIONS = {
+      nextPage: () => nextPage(),
+      prevPage: () => prevPage(),
+      firstPage: () => goToPage(0),
+      lastPage: () => goToPage(totalPages - 1),
+      goToPage: () => showGoToPageDialog(),
+      fullscreen: () => toggleFullscreen(),
+      sidebar: () => toggleSidebar(),
+      toggleOrientation: () => {
+        if (isVerticalMode()) setHorizontalMode();
+        else setVerticalMode();
+      },
+      toggleNav: () => toggleNavVisibility(),
+      remoteQR: () => openRemoteModal(),
+      help: () => showHelpModal(),
+      closeModal: () => closeAllModals(),
+      fontIncrease: () => increaseFontSize(),
+      fontDecrease: () => decreaseFontSize(),
+      fontReset: () => setFontScale(1.0)
+    };
+
     const contentArea = document.getElementById('contentArea');
     const manuscriptContainer = document.getElementById('manuscriptContainer');
     const manuscript = document.getElementById('manuscript');
@@ -927,6 +1183,9 @@
 
       // 載入設定
       loadSettings();
+
+      // 更新快捷鍵說明中的 Cmd/Ctrl 文字
+      updateModKeyDisplay();
 
       // 轉換 table 為圖片
       await convertTablesToImages();
@@ -1063,9 +1322,7 @@
       const savedFont = localStorage.getItem(STORAGE_KEYS.fontFamily);
       if (savedFont) {
         applyFont(savedFont, false);
-        document.querySelectorAll('.font-select button').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.font === savedFont);
-        });
+        document.getElementById('fontSelect').value = savedFont;
       }
 
       // 導航列
@@ -1074,7 +1331,7 @@
         navPermanentlyHidden = true;
         slideNav.style.display = 'none';
         document.getElementById('toggleNavIcon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
-        document.getElementById('toggleNavText').textContent = '顯示導航列';
+        document.getElementById('toggleNavBtn').dataset.tooltip = '顯示導航列';
       }
     }
 
@@ -1263,17 +1520,13 @@
 
     function updateFullscreenButton() {
       const btn = document.getElementById('fullscreenBtn');
-      const icon = document.getElementById('fullscreenIcon');
-      const text = document.getElementById('fullscreenText');
 
       if (document.fullscreenElement) {
         btn.classList.add('active');
-        icon.textContent = '⛶';
-        text.textContent = '退出全螢幕';
+        btn.dataset.tooltip = '退出全螢幕';
       } else {
         btn.classList.remove('active');
-        icon.textContent = '⛶';
-        text.textContent = '全螢幕';
+        btn.dataset.tooltip = '全螢幕';
       }
     }
 
@@ -1305,12 +1558,12 @@
       if (navPermanentlyHidden) {
         slideNav.style.display = 'none';
         document.getElementById('toggleNavIcon').innerHTML = eyeClosed;
-        document.getElementById('toggleNavText').textContent = '顯示導航列';
+        document.getElementById('toggleNavBtn').dataset.tooltip = '顯示導航列';
         localStorage.setItem(STORAGE_KEYS.navHidden, 'true');
       } else {
         slideNav.style.display = 'flex';
         document.getElementById('toggleNavIcon').innerHTML = eyeOpen;
-        document.getElementById('toggleNavText').textContent = '隱藏導航列';
+        document.getElementById('toggleNavBtn').dataset.tooltip = '隱藏導航列';
         localStorage.setItem(STORAGE_KEYS.navHidden, 'false');
       }
     }
@@ -1336,13 +1589,9 @@
       document.getElementById('horizontalBtn').onclick = setHorizontalMode;
 
       // 字體選擇
-      document.querySelectorAll('.font-select button').forEach(btn => {
-        btn.onclick = function() {
-          document.querySelectorAll('.font-select button').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-          applyFont(this.dataset.font);
-        };
-      });
+      document.getElementById('fontSelect').onchange = function() {
+        applyFont(this.value);
+      };
 
       // 全螢幕
       document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
@@ -1350,38 +1599,26 @@
       // 導航列顯示切換
       document.getElementById('toggleNavBtn').onclick = toggleNavVisibility;
 
-      // 鍵盤控制
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const sidebar = document.getElementById('sidebar');
-          if (sidebar.classList.contains('open')) {
-            closeSidebar();
-            return;
-          }
-        }
-        showNav();
-        switch(e.key) {
-          case 'ArrowRight':
-          case ' ':
-          case 'PageDown':
-            e.preventDefault();
-            nextPage();
-            break;
-          case 'ArrowLeft':
-          case 'PageUp':
-            e.preventDefault();
-            prevPage();
-            break;
-          case 'Home':
-            e.preventDefault();
-            goToPage(0);
-            break;
-          case 'End':
-            e.preventDefault();
-            goToPage(totalPages - 1);
-            break;
-        }
-      });
+      // Help Modal 關閉
+      const helpModalClose = document.querySelector('.help-modal-close');
+      if (helpModalClose) {
+        helpModalClose.onclick = closeHelpModal;
+      }
+      const helpModal = document.getElementById('helpModal');
+      if (helpModal) {
+        helpModal.onclick = (e) => {
+          if (e.target === helpModal) closeHelpModal();
+        };
+      }
+
+      // Help 按鈕
+      const helpBtn = document.getElementById('helpBtn');
+      if (helpBtn) {
+        helpBtn.onclick = showHelpModal;
+      }
+
+      // 鍵盤控制（使用統一處理函式）
+      document.addEventListener('keydown', handleKeydown);
 
       // 滑鼠移動顯示導航列
       document.addEventListener('mousemove', showNav);
@@ -1447,13 +1684,6 @@
           closeLightbox();
         }
       };
-
-      // ESC 關閉
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && lightbox.classList.contains('active')) {
-          closeLightbox();
-        }
-      });
 
       // 縮放按鈕
       document.getElementById('zoomInBtn').onclick = () => setLightboxZoom(lbZoom + 0.25);
@@ -1762,6 +1992,98 @@
 
     function closeRemoteModal() {
       document.getElementById('remoteModal').classList.remove('active');
+    }
+
+    // ===========================
+    // 快捷鍵輔助函式
+    // ===========================
+    function showGoToPageDialog() {
+      const input = prompt(`跳至頁面 (1-${totalPages}):`);
+      if (input !== null) {
+        const page = parseInt(input, 10);
+        if (!isNaN(page) && page >= 1 && page <= totalPages) {
+          goToPage(page - 1);
+        }
+      }
+    }
+
+    function closeAllModals() {
+      const lightbox = document.getElementById('lightbox');
+      const remoteModal = document.getElementById('remoteModal');
+      const helpModal = document.getElementById('helpModal');
+      const sidebar = document.getElementById('sidebar');
+
+      // 優先順序：lightbox → remote → help → sidebar
+      if (lightbox.classList.contains('active')) {
+        closeLightbox();
+      } else if (remoteModal.classList.contains('active')) {
+        closeRemoteModal();
+      } else if (helpModal && helpModal.classList.contains('active')) {
+        closeHelpModal();
+      } else if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      }
+    }
+
+    function showHelpModal() {
+      const modal = document.getElementById('helpModal');
+      if (modal) {
+        modal.classList.add('active');
+        closeSidebar();
+      }
+    }
+
+    function closeHelpModal() {
+      const modal = document.getElementById('helpModal');
+      if (modal) {
+        modal.classList.remove('active');
+      }
+    }
+
+    function updateModKeyDisplay() {
+      // 更新所有 .mod-key 元素的文字
+      const modKeys = document.querySelectorAll('.mod-key');
+      modKeys.forEach(el => {
+        el.textContent = modKey;
+      });
+    }
+
+    // ===========================
+    // 統一鍵盤事件處理
+    // ===========================
+    function handleKeydown(e) {
+      // 檢查是否在輸入框中
+      const tagName = e.target.tagName.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+        return;
+      }
+
+      const hasModKey = isMac ? e.metaKey : e.ctrlKey;
+      const key = e.key;
+
+      // 優先檢查組合鍵
+      if (hasModKey && !e.shiftKey && !e.altKey) {
+        const action = COMBO_HOTKEYS[key];
+        if (action && ACTIONS[action]) {
+          e.preventDefault();
+          ACTIONS[action]();
+          showNav();
+          return;
+        }
+      }
+
+      // 檢查單一鍵（無修飾鍵）
+      if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        const action = HOTKEYS[key];
+        if (action && ACTIONS[action]) {
+          e.preventDefault();
+          ACTIONS[action]();
+          if (action !== 'closeModal') {
+            showNav();
+          }
+          return;
+        }
+      }
     }
 
     // 啟動
