@@ -21,8 +21,7 @@
       --color-accent: #FF8C00;
       --color-text-primary: #FFFFFF;
       --color-text-secondary: #E8E8E8;
-      --font-family-heading: "Noto Serif TC", serif;
-      --font-family-body: "Noto Sans TC", sans-serif;
+      --font-family-body: "DFKai-SB", "BiauKai", "標楷體", serif;
       --font-scale: 1;
       --mode-scale: 1.6;  /* 直式 +60% */
       --left-panel-width: 100px;
@@ -212,7 +211,7 @@
        標題樣式
        =========================== */
     h1, h2, h3, h4 {
-      font-family: var(--font-family-heading);
+      font-family: var(--font-family-body);
       writing-mode: vertical-rl;
       text-orientation: mixed;
       letter-spacing: 0.15em;
@@ -515,12 +514,12 @@
       background: rgba(0, 0, 0, 0.95);
       z-index: 20000;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       opacity: 0;
       visibility: hidden;
       cursor: pointer;
+      padding: 60px;
     }
 
     .lightbox.active {
@@ -528,8 +527,37 @@
       visibility: visible;
     }
 
+    /* 圖文容器 - 直式模式（預設） */
+    .lightbox-content {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 30px;
+      width: 100vw;
+      height: 80vh;
+    }
+
+    /* 橫式模式 */
+    body.horizontal-mode .lightbox-content {
+      flex-direction: row;
+    }
+
+    .lightbox-image-wrap {
+      flex: 1 1 70%;
+      max-width: 70%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* 無 caption 時圖片可擴展 */
+    .lightbox-content:has(.lightbox-caption:empty) .lightbox-image-wrap {
+      max-width: 100%;
+    }
+
     .lightbox img {
-      max-width: 90vw;
+      max-width: 100%;
       max-height: 80vh;
       object-fit: contain;
       border-radius: 8px;
@@ -543,9 +571,28 @@
       cursor: grabbing;
     }
 
+    .lightbox-caption {
+      flex: 0 0 30%;
+      color: white;
+      font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
+      line-height: 1.8;
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    .lightbox-caption:empty {
+      display: none;
+    }
+
+    /* 橫式模式文字 */
+    body.horizontal-mode .lightbox-caption {
+      writing-mode: horizontal-tb;
+    }
+
     .lightbox-controls {
       position: absolute;
-      bottom: 80px;
+      bottom: 20px;
       display: flex;
       gap: 10px;
     }
@@ -584,15 +631,6 @@
 
     .lightbox-zoom-info.show {
       opacity: 1;
-    }
-
-    .lightbox-caption {
-      margin-top: 20px;
-      color: white;
-      font-size: 18px;
-      text-align: center;
-      max-width: 80vw;
-      line-height: 1.6;
     }
 
     .lightbox-close {
@@ -711,13 +749,17 @@
   <div class="lightbox" id="lightbox">
     <span class="lightbox-close">&times;</span>
     <div class="lightbox-zoom-info" id="lightboxZoomInfo">100%</div>
-    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-content">
+      <div class="lightbox-image-wrap">
+        <img id="lightboxImg" src="" alt="">
+      </div>
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
     <div class="lightbox-controls">
       <button id="zoomOutBtn">−</button>
       <button id="zoomResetBtn">⟲</button>
       <button id="zoomInBtn">+</button>
     </div>
-    <div class="lightbox-caption" id="lightboxCaption"></div>
   </div>
 
   <!-- Sidebar Overlay -->
@@ -743,7 +785,8 @@
     <div class="settings-section">
       <h3>字體選擇</h3>
       <div class="font-select">
-        <button data-font="Noto Sans TC" class="active" style="font-family: 'Noto Sans TC', sans-serif;">Noto Sans TC</button>
+        <button data-font="DFKai-SB" class="active" style="font-family: 'DFKai-SB', 'BiauKai', '標楷體', serif;">標楷體</button>
+        <button data-font="Noto Sans TC" style="font-family: 'Noto Sans TC', sans-serif;">Noto Sans TC</button>
         <button data-font="Noto Serif TC" style="font-family: 'Noto Serif TC', serif;">Noto Serif TC</button>
         <button data-font="LXGW WenKai TC" style="font-family: 'LXGW WenKai TC', cursive;">LXGW WenKai TC</button>
       </div>
@@ -1140,7 +1183,13 @@
     // 字體選擇
     // ===========================
     function applyFont(fontFamily, save = true) {
-      document.body.style.fontFamily = `"${fontFamily}", sans-serif`;
+      let fontValue;
+      if (fontFamily === 'DFKai-SB') {
+        fontValue = '"DFKai-SB", "BiauKai", "標楷體", serif';
+      } else {
+        fontValue = `"${fontFamily}", sans-serif`;
+      }
+      document.documentElement.style.setProperty('--font-family-body', fontValue);
       if (save) {
         localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
       }
