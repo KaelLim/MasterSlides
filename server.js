@@ -208,6 +208,10 @@ app.use('/docs', express.static(docsDir));
 app.use(express.json());
 
 // 路由重導向
+app.get('/', (req, res) => {
+  res.redirect('/upload.html');
+});
+
 app.get('/upload', (req, res) => {
   res.redirect('/upload.html');
 });
