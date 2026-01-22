@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Google Docs to Slides converter that transforms Google Docs markdown exports into paginated HTML presentations using Paged.js. Designed for the Tzu Chi Buddhist organization with Traditional Chinese vertical text layout support.
+Google Docs to Slides converter that transforms Google Docs markdown exports into paginated HTML presentations. Designed for the Tzu Chi Buddhist organization with Traditional Chinese vertical text layout support.
 
 ## Commands
 
@@ -14,6 +14,9 @@ npm start
 
 # Build static slides.html from content.md
 npm run build
+
+# Docker deployment
+docker compose up -d
 ```
 
 ## Architecture
@@ -24,70 +27,125 @@ npm run build
 /
 ├── theme/
 │   └── default/
-│       ├── index.css          # All CSS (theme + slider + sidebar + nav)
+│       ├── index.css          # Theme CSS
 │       └── background.jpg     # Theme background image
-├── slides.js                  # Core JavaScript (slider, settings, sidebar)
-├── slides.html                # Static build output
-├── build.js                   # Static build script
+├── docs/                      # Generated presentations
+│   └── <google-doc-id>/
+│       ├── content.html
+│       └── images/
 ├── server.js                  # Express server
-├── content.md                 # Static build source
-└── docs/
-    └── <google-doc-id>/       # Uses Google Doc ID as directory name
-        ├── index.html         # Presentation
-        └── images/            # Extracted images
-            └── img_*.{jpeg,png}
+├── slides.html                # Presentation viewer
+├── upload.html                # Google Docs URL input form
+├── badge.js                   # Version badge display
+├── config.json                # App configuration
+├── Dockerfile                 # Docker image definition
+├── docker-compose.yml         # Docker deployment
+└── build.js                   # Static build script
 ```
 
 ### Core Components
 
-**server.js** - Express server with two main functions:
-1. Static file serving for the presentation viewer
-2. `POST /api/fetch-doc` API endpoint that:
-   - Accepts Google Docs URL
-   - Extracts Doc ID from URL (e.g., `1EJi4AabcbPV2Eqhx...`)
-   - Downloads markdown via Google export API
-   - Extracts base64-encoded images to `docs/<docId>/images/`
-   - Converts markdown to HTML using marked.js
-   - Generates `docs/<docId>/index.html`
-   - Overwrites existing files on re-upload
+**server.js** - Express server:
+- Static file serving
+- `GET /` - Redirect to upload.html
+- `GET /api/config` - App configuration (version badge)
+- `GET /document/d/:docId/*` - Google Docs URL redirect (auto-convert)
+- `POST /api/fetch-doc` - Manual Google Docs conversion API
+- Socket.io for remote control
 
-**build.js** - Static build script that:
-- Reads `content.md`
-- Generates `slides.html` with references to external CSS/JS
+**slides.html** - Presentation viewer:
+- Vertical/horizontal text modes
+- Keyboard shortcuts (hotkeys)
+- Settings sidebar
+- Lightbox for images
+- Remote control via QR code
 
-**theme/default/index.css** - All presentation styling:
-- Paged.js CSS for print-ready pagination
-- Vertical text support (`writing-mode: vertical-rl`)
-- Slider mode styles
-- Sidebar settings panel
-- Navigation bar styles
+**config.json** - App configuration:
+```json
+{
+  "stage": "alpha",      // alpha | beta | rc | stable
+  "version": "1.0.0",
+  "showBadge": true
+}
+```
 
-**slides.js** - Core JavaScript functionality:
-- Slider navigation (keyboard, touch, buttons)
-- Settings sidebar (font size, orientation, font family)
-- Fullscreen control
-- Auto-hiding navigation bar
+**badge.js** - Auto-displays version badge on all pages
+
+## Routes
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/` | GET | Redirect to /upload.html |
+| `/upload.html` | GET | Upload page |
+| `/slides.html?src=<docId>` | GET | Presentation viewer |
+| `/document/d/<docId>/*` | GET | Google Docs URL redirect |
+| `/api/config` | GET | App configuration |
+| `/api/fetch-doc` | POST | Convert Google Docs |
+
+## Hotkeys
+
+| Key | Action |
+|-----|--------|
+| `→` / `Space` / `PageDown` | Next page |
+| `←` / `PageUp` | Previous page |
+| `Home` / `End` | First / Last page |
+| `G` | Go to page |
+| `F` | Fullscreen |
+| `S` | Sidebar |
+| `O` | Toggle orientation |
+| `N` | Toggle navigation |
+| `R` | Remote QR code |
+| `?` / `H` | Help |
+| `Cmd/Ctrl` + `=` / `-` / `0` | Font size |
+
+## Docker Deployment
+
+```bash
+# Download files
+curl -O https://raw.githubusercontent.com/KaelLim/MasterSlides/main/Dockerfile
+curl -O https://raw.githubusercontent.com/KaelLim/MasterSlides/main/docker-compose.yml
+
+# Deploy
+docker compose up -d
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_STAGE` | Version stage | alpha |
+| `APP_VERSION` | Version number | 1.0.0 |
+| `APP_SHOW_BADGE` | Show badge | true |
+
+### Docker Commands
+
+```bash
+docker compose ps          # Status
+docker compose logs -f     # Logs
+docker compose restart     # Restart
+docker compose build --no-cache && docker compose up -d  # Update
+```
+
+## Google Docs Integration
+
+Documents must be shared as "Anyone with the link can view".
+
+**Two ways to convert:**
+1. **URL Redirect**: Change `docs.google.com` to your server domain
+   ```
+   https://docs.google.com/document/d/xxx/edit
+   → https://your-server.com/document/d/xxx/edit
+   ```
+2. **Upload Page**: Paste URL at `/upload.html`
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `server.js` | Express server with Google Docs fetch API |
-| `build.js` | Static build from content.md |
-| `slides.js` | Core JavaScript for all presentations |
-| `theme/default/index.css` | Theme CSS with Paged.js integration |
-| `upload.html` | Google Docs URL input form |
-| `content.md` | Source markdown for static build |
-| `docs/` | Generated presentations (Doc ID-named) |
-
-## Google Docs Integration
-
-Documents must be shared as "Anyone with the link can view" for the fetch API to work. The server uses curl to download the markdown export format.
-
-## Theme System
-
-Themes are stored in `theme/<theme-name>/` directories. Each theme contains:
-- `index.css` - Complete theme styling
-- `background.jpg` - Background image
-
-CSS paths use relative references (`background.jpg`) for portability.
+| `server.js` | Express server, API, routes |
+| `slides.html` | Presentation viewer with hotkeys |
+| `upload.html` | Google Docs URL input |
+| `config.json` | Version/stage configuration |
+| `badge.js` | Version badge component |
+| `Dockerfile` | Docker image (GitHub clone) |
+| `docker-compose.yml` | Docker deployment |
