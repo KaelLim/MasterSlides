@@ -242,14 +242,14 @@
 
       grid.classList.remove('empty')
       grid.innerHTML = images.map((img, i) => `
-        <div class="image-thumb" data-src="${img.src}">
+        <div class="image-thumb" data-src="${img.src}" data-alt="${(img.alt || '').replace(/"/g, '&quot;')}">
           <img src="${img.src}" alt="圖片 ${i + 1}">
         </div>
       `).join('')
 
       grid.querySelectorAll('.image-thumb').forEach(thumb => {
         thumb.onclick = () => {
-          sendCommand('toggleLightbox', { src: thumb.dataset.src })
+          sendCommand('toggleLightbox', { src: thumb.dataset.src, alt: thumb.dataset.alt || '' })
         }
       })
     }
