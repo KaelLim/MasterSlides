@@ -4,148 +4,119 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Google Docs to Slides converter that transforms Google Docs markdown exports into paginated HTML presentations. Designed for the Tzu Chi Buddhist organization with Traditional Chinese vertical text layout support.
+MasterSlides: A Google Docs to paginated HTML presentation converter for the Tzu Chi Buddhist organization. Supports Traditional Chinese vertical text layout, remote control via Socket.io, and self-hosted Supabase backend.
 
 ## Commands
 
 ```bash
-# Start development server (http://localhost:3000)
-npm start
+# Development (local)
+npm start                    # http://localhost:3000
 
-# Build static slides.html from content.md
-npm run build
+# Development (Docker with hot reload)
+docker build -f Dockerfile.dev -t slides:dev . && docker run -p 3000:3000 -v $(pwd):/app slides:dev
 
-# Docker deployment
-docker compose up -d
+# Production
+docker compose up -d         # Uses Dockerfile (clones from GitHub)
 ```
+
+No test framework is configured. No linter configured. No build step required (vanilla JS).
 
 ## Architecture
 
-### Directory Structure
+### Data Flow
 
 ```
-/
-├── theme/
-│   └── default/
-│       ├── index.css          # Theme CSS
-│       └── background.jpg     # Theme background image
-├── docs/                      # Generated presentations
-│   └── <google-doc-id>/
-│       ├── content.html
-│       └── images/
-├── server.js                  # Express server
-├── slides.html                # Presentation viewer
-├── upload.html                # Google Docs URL input form
-├── badge.js                   # Version badge display
-├── config.json                # App configuration
-├── Dockerfile                 # Docker image definition
-├── docker-compose.yml         # Docker deployment
-└── build.js                   # Static build script
+Google Docs (shared publicly)
+    ↓ curl download as markdown
+server.js processGoogleDoc()
+    ├─ Extract base64 images → /docs/<docId>/images/
+    ├─ Convert markdown → HTML (via marked)
+    └─ Save → /docs/<docId>/content.html
+    ↓
+slides.html?src=<docId>
+    ├─ Fetch content.html, paginate into slides
+    ├─ Vertical/horizontal text modes (CSS --mode-scale)
+    └─ Optional: Socket.io remote control (room-based)
 ```
 
-### Core Components
+### Key Components
 
-**server.js** - Express server:
-- Static file serving
-- `GET /` - Redirect to upload.html
-- `GET /api/config` - App configuration (version badge)
-- `GET /document/d/:docId/*` - Google Docs URL redirect (auto-convert)
-- `POST /api/fetch-doc` - Manual Google Docs conversion API
-- Socket.io for remote control
+**server.js** — Express 5 server + Socket.io:
+- Routes: `/` → upload.html, `/api/fetch-doc` (POST), `/document/d/:docId/*` (GET, auto-convert), `/api/config`
+- `processGoogleDoc(docId)`: Downloads markdown export, extracts base64 images to files, converts to HTML
+- Socket.io rooms: Host creates room → remote.html joins → bidirectional page control
+- Error handling returns styled HTML error pages with Chinese messages based on HTTP status
 
-**slides.html** - Presentation viewer:
-- Vertical/horizontal text modes
-- Keyboard shortcuts (hotkeys)
-- Settings sidebar
-- Lightbox for images
-- Remote control via QR code
+**slides.html** — Presentation viewer (~60KB, self-contained):
+- Font scaling: `--font-scale` × `--mode-scale` (vertical=1.6, horizontal=0.8)
+- Primary fonts: DFKai-SB/BiauKai/標楷體 (Traditional Chinese serif)
+- Lightbox: Click-to-zoom images with touch gestures
+- Remote: Generates QR code linking to remote.html with room ID
 
-**config.json** - App configuration:
-```json
-{
-  "stage": "alpha",      // alpha | beta | rc | stable
-  "version": "1.0.0",
-  "showBadge": true
-}
+**remote.html** — Mobile remote control interface (Socket.io client)
+
+**badge.js** — IIFE that fetches `/api/config` and shows colored version badge (alpha=red, beta=orange, rc=blue, stable=hidden)
+
+### Configuration Priority
+
+Environment variables > `config.json` > hardcoded defaults
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_STAGE` | alpha/beta/rc/stable | alpha |
+| `APP_VERSION` | Version string | 1.0.0 |
+| `APP_SHOW_BADGE` | Show version badge | true |
+
+### Supabase Self-Hosting (deployment/)
+
+The `deployment/supabase-official/docker/` directory contains a full Supabase self-hosted setup integrated with MasterSlides via Kong API Gateway:
+
+```
+Kong (:8000) — Single entry point
+├── /studio/*        → Supabase Studio (custom image with basePath=/studio)
+├── /api/platform/*  → Studio API (path rewrite to /studio/api/platform/*)
+├── /api/v1/*        → Studio API (path rewrite to /studio/api/v1/*)
+├── /rest/v1/*       → PostgREST
+├── /auth/v1/*       → GoTrue
+├── /storage/v1/*    → Storage
+├── /realtime/v1/*   → Realtime
+└── /*               → App catch-all (profile-dependent)
 ```
 
-**badge.js** - Auto-displays version badge on all pages
+**Two modes:**
+- `docker compose up` — Development (root → Studio)
+- `docker compose --profile app up` — Production (root → MasterSlides)
+
+See `deployment/supabase-official/docker/tech.md` for full technical documentation.
+
+## Key Architectural Decisions
+
+- **No frontend framework**: Vanilla HTML/CSS/JS, no bundler, no transpilation
+- **File-based storage**: Generated presentations stored in `/docs/<docId>/` (not database)
+- **Base64 extraction**: Google Docs markdown embeds images as base64; server extracts to files and rewrites references
+- **Docker production image clones from GitHub** (not local build context) — configured via `REPO_URL` and `BRANCH` build args
+- **Socket.io rooms are in-memory only** — no persistence, state lost on restart
+- **Custom Studio image required** for sub-path deployment — `NEXT_PUBLIC_BASE_PATH=/studio` must be set at build time
+- **macOS Docker Storage fix**: `docker-compose.override.yml` switches Storage volume from bind mount to named volume (xattr support)
 
 ## Routes
 
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/` | GET | Redirect to /upload.html |
-| `/upload.html` | GET | Upload page |
 | `/slides.html?src=<docId>` | GET | Presentation viewer |
-| `/document/d/<docId>/*` | GET | Google Docs URL redirect |
-| `/api/config` | GET | App configuration |
-| `/api/fetch-doc` | POST | Convert Google Docs |
+| `/document/d/<docId>/*` | GET | Google Docs URL redirect (auto-convert) |
+| `/api/config` | GET | App config for badge |
+| `/api/fetch-doc` | POST | Convert Google Docs to presentation |
 
-## Hotkeys
+## Hotkeys (slides.html)
 
-| Key | Action |
-|-----|--------|
-| `→` / `Space` / `PageDown` | Next page |
-| `←` / `PageUp` | Previous page |
-| `Home` / `End` | First / Last page |
-| `G` | Go to page |
-| `F` | Fullscreen |
-| `S` | Sidebar |
-| `O` | Toggle orientation |
-| `N` | Toggle navigation |
-| `R` | Remote QR code |
-| `?` / `H` | Help |
-| `Cmd/Ctrl` + `=` / `-` / `0` | Font size |
+Navigation: `→`/`Space`/`PageDown` (next), `←`/`PageUp` (prev), `Home`/`End` (first/last), `G` (go to page)
+Display: `F` (fullscreen), `S` (sidebar), `O` (orientation), `N` (navigation toggle)
+Other: `R` (remote QR), `?`/`H` (help), `Cmd/Ctrl + =/- /0` (font size)
 
-## Docker Deployment
+## Google Docs Requirements
 
-```bash
-# Download files
-curl -O https://raw.githubusercontent.com/KaelLim/MasterSlides/main/Dockerfile
-curl -O https://raw.githubusercontent.com/KaelLim/MasterSlides/main/docker-compose.yml
-
-# Deploy
-docker compose up -d
-```
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `APP_STAGE` | Version stage | alpha |
-| `APP_VERSION` | Version number | 1.0.0 |
-| `APP_SHOW_BADGE` | Show badge | true |
-
-### Docker Commands
-
-```bash
-docker compose ps          # Status
-docker compose logs -f     # Logs
-docker compose restart     # Restart
-docker compose build --no-cache && docker compose up -d  # Update
-```
-
-## Google Docs Integration
-
-Documents must be shared as "Anyone with the link can view".
-
-**Two ways to convert:**
-1. **URL Redirect**: Change `docs.google.com` to your server domain
-   ```
-   https://docs.google.com/document/d/xxx/edit
-   → https://your-server.com/document/d/xxx/edit
-   ```
-2. **Upload Page**: Paste URL at `/upload.html`
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `server.js` | Express server, API, routes |
-| `slides.html` | Presentation viewer with hotkeys |
-| `upload.html` | Google Docs URL input |
-| `config.json` | Version/stage configuration |
-| `badge.js` | Version badge component |
-| `Dockerfile` | Docker image (GitHub clone) |
-| `docker-compose.yml` | Docker deployment |
+Documents must be shared as "Anyone with the link can view". Two conversion methods:
+1. **URL redirect**: Replace `docs.google.com` with your server domain in the URL
+2. **Upload page**: Paste URL at `/upload.html`
