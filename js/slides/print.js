@@ -2,15 +2,21 @@ import { state, dom } from './state.js';
 import { isVerticalMode } from './navigation.js';
 
 let printContainer = null;
+let printStyle = null;
 
 function buildPrintPages() {
-  // Remove existing print container if any
   cleanup();
 
   const containerW = dom.manuscriptContainer.clientWidth;
   const containerH = dom.manuscriptContainer.clientHeight;
   const vertical = isVerticalMode();
   const totalPages = state.totalPages;
+
+  // Set @page size to exactly match the manuscript container dimensions
+  printStyle = document.createElement('style');
+  printStyle.id = 'printPageStyle';
+  printStyle.textContent = `@page { size: ${containerW}px ${containerH}px; margin: 0; }`;
+  document.head.appendChild(printStyle);
 
   // Create print container
   printContainer = document.createElement('div');
@@ -20,25 +26,17 @@ function buildPrintPages() {
     const page = document.createElement('div');
     page.className = 'print-page';
 
-    // Background wrapper (reproduces .app-layout background)
+    // Background (reproduces .app-layout background)
     const bgWrap = document.createElement('div');
     bgWrap.className = 'print-page-bg';
 
-    // Content wrapper (reproduces .content-area padding)
-    const contentWrap = document.createElement('div');
-    contentWrap.className = 'print-page-content';
-
-    // Manuscript clip area (reproduces .manuscript-container)
+    // Manuscript clip area (fills entire page)
     const clipArea = document.createElement('div');
     clipArea.className = 'print-page-clip';
-    clipArea.style.width = containerW + 'px';
-    clipArea.style.height = containerH + 'px';
 
     // Clone manuscript and position for this page
     const clone = dom.manuscript.cloneNode(true);
     clone.removeAttribute('id');
-    clone.style.width = containerW + 'px';
-    clone.style.height = containerH + 'px';
 
     if (vertical) {
       clone.style.transform = `translateY(-${i * containerH}px)`;
@@ -47,8 +45,7 @@ function buildPrintPages() {
     }
 
     clipArea.appendChild(clone);
-    contentWrap.appendChild(clipArea);
-    bgWrap.appendChild(contentWrap);
+    bgWrap.appendChild(clipArea);
     page.appendChild(bgWrap);
     printContainer.appendChild(page);
   }
@@ -60,6 +57,10 @@ function cleanup() {
   if (printContainer) {
     printContainer.remove();
     printContainer = null;
+  }
+  if (printStyle) {
+    printStyle.remove();
+    printStyle = null;
   }
 }
 

@@ -1221,19 +1221,11 @@ kbd {
   background-color: #1a1a2e;
 }
 
-.print-page-content {
+.print-page-clip {
   width: 100%;
   height: 100%;
-  padding: 60px 80px;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-}
-
-.print-page-clip {
   overflow: hidden;
   position: relative;
-  flex: 1;
   container-type: size;
 }
 
@@ -1293,9 +1285,5 @@ kbd {
     bottom: 0;
   }
 
-  /* Page settings */
-  @page {
-    size: landscape;
-    margin: 0;
-  }
+  /* @page size is set dynamically by print.js */
 }
