@@ -195,85 +195,63 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const roomId = params.get('id');
-    let socket = null;
+  <script type="module">
+    import { joinRoom, sendCommand } from '/js/realtime.js'
+
+    const params = new URLSearchParams(window.location.search)
+    const roomId = params.get('id')
 
     if (!roomId) {
-      document.getElementById('status').textContent = '缺少房間 ID';
-      document.getElementById('status').classList.add('error');
-      document.getElementById('mainControls').style.display = 'none';
-      document.getElementById('errorBox').style.display = 'block';
+      document.getElementById('status').textContent = '缺少房間 ID'
+      document.getElementById('status').classList.add('error')
+      document.getElementById('mainControls').style.display = 'none'
+      document.getElementById('errorBox').style.display = 'block'
     } else {
-      socket = io();
+      document.getElementById('status').textContent = '連線中...'
 
-      socket.on('connect', () => {
-        console.log('已連線到伺服器');
-        socket.emit('join', roomId);
-      });
-
-      socket.on('sync', (data) => {
-        document.getElementById('status').textContent = '已連線';
-        document.getElementById('status').classList.add('connected');
-        document.getElementById('currentPage').textContent = data.currentPage;
-        document.getElementById('totalPages').textContent = data.totalPages;
-
-        // 更新圖片列表
-        updateImages(data.images || []);
-      });
-
-      socket.on('error', (msg) => {
-        document.getElementById('status').textContent = msg;
-        document.getElementById('status').classList.add('error');
-        document.getElementById('errorBox').style.display = 'block';
-      });
-
-      socket.on('disconnect', () => {
-        document.getElementById('status').textContent = '已斷線';
-        document.getElementById('status').classList.remove('connected');
-        document.getElementById('status').classList.add('error');
-      });
-
-      function sendCommand(action) {
-        socket.emit('command', { roomId, action });
+      try {
+        await joinRoom(roomId, {
+          onSync(data) {
+            document.getElementById('status').textContent = '已連線'
+            document.getElementById('status').classList.add('connected')
+            document.getElementById('currentPage').textContent = data.currentPage
+            document.getElementById('totalPages').textContent = data.totalPages
+            updateImages(data.images || [])
+          }
+        })
+        document.getElementById('status').textContent = '等待簡報同步...'
+      } catch (err) {
+        document.getElementById('status').textContent = '連線失敗'
+        document.getElementById('status').classList.add('error')
+        document.getElementById('errorBox').style.display = 'block'
       }
 
-      document.getElementById('prevBtn').onclick = () => sendCommand('prev');
-      document.getElementById('nextBtn').onclick = () => sendCommand('next');
+      document.getElementById('prevBtn').onclick = () => sendCommand('prev')
+      document.getElementById('nextBtn').onclick = () => sendCommand('next')
     }
 
-    // 更新圖片列表
     function updateImages(images) {
-      const grid = document.getElementById('imagesGrid');
+      const grid = document.getElementById('imagesGrid')
 
       if (!images || images.length === 0) {
-        grid.innerHTML = '';
-        grid.classList.add('empty');
-        grid.textContent = '此頁沒有圖片';
-        return;
+        grid.innerHTML = ''
+        grid.classList.add('empty')
+        grid.textContent = '此頁沒有圖片'
+        return
       }
 
-      grid.classList.remove('empty');
+      grid.classList.remove('empty')
       grid.innerHTML = images.map((img, i) => `
         <div class="image-thumb" data-src="${img.src}">
           <img src="${img.src}" alt="圖片 ${i + 1}">
         </div>
-      `).join('');
+      `).join('')
 
-      // 綁定點擊事件 - 發送 toggle 命令
       grid.querySelectorAll('.image-thumb').forEach(thumb => {
         thumb.onclick = () => {
-          if (socket && roomId) {
-            socket.emit('command', {
-              roomId,
-              action: 'toggleLightbox',
-              src: thumb.dataset.src
-            });
-          }
-        };
-      });
+          sendCommand('toggleLightbox', { src: thumb.dataset.src })
+        }
+      })
     }
   </script>
 </body>

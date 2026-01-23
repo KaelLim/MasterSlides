@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+# 安裝開發工具
+RUN apk add --no-cache curl git
+
+# 安裝 nodemon 用於熱重載
+RUN npm install -g nodemon
+
+# 設定工作目錄
+WORKDIR /app
+
+# 先複製 package.json 並安裝依賴
+COPY package*.json ./
+RUN npm install
+
+# 環境變數
+ENV NODE_ENV=development
+
+# 開放 port
+EXPOSE 3000
+
+# 使用 nodemon 啟動（監聽檔案變化自動重載）
+CMD ["nodemon", "--watch", ".", "--ext", "js,json,html,css", "--ignore", "node_modules/", "--ignore", "docs/", "server.js"]

@@ -2,9 +2,116 @@
 
 ## 目標
 
-將 upload 功能擴展為完整的 Dashboard 管理系統，使用 Supabase 作為後端。
+將 upload 功能擴展為完整的 Dashboard 管理系統，使用 Supabase 自建後端。
 
-## 架構總覽
+## 部署架構
+
+### Docker Compose 三組架構
+
+| 組別 | 容器數 | 說明 |
+|------|--------|------|
+| **Nginx** | 1 | 反向代理，統一入口 |
+| **MasterSlides** | 1 | 簡報系統 (Node.js + Socket.io) |
+| **Supabase** | 6-8 | 後端服務群 (自建) |
+
+### 網路架構圖
+
+```
+                            ┌─────────────────┐
+                            │   用戶瀏覽器     │
+                            └────────┬────────┘
+                                     │
+                                     ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         Nginx (:80/:443)                            │
+│                                                                     │
+│    slides.tzuchi.org/      → master-slides:3000                    │
+│    slides.tzuchi.org/api/  → kong:8000                             │
+└────────────────────────────────────────────────────────────────────┘
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        │                            │                            │
+        ▼                            ▼                            ▼
+┌───────────────┐    ┌───────────────────────────────────────────────┐
+│ MasterSlides  │    │              Supabase (自建)                   │
+│   (:3000)     │    │                                               │
+│               │    │  ┌─────────┐  ┌──────────┐  ┌─────────────┐  │
+│ - 靜態檔案    │    │  │  Kong   │  │ GoTrue   │  │  PostgREST  │  │
+│ - Socket.io   │    │  │ (:8000) │  │  (Auth)  │  │  (REST API) │  │
+│ - 遙控功能    │    │  └────┬────┘  └────┬─────┘  └──────┬──────┘  │
+│               │    │       │            │               │          │
+└───────────────┘    │       └────────────┼───────────────┘          │
+                     │                    │                          │
+                     │             ┌──────┴──────┐                   │
+                     │             │ PostgreSQL  │                   │
+                     │             │  (:5432)    │                   │
+                     │             └─────────────┘                   │
+                     │                                               │
+                     │  ┌─────────────┐  ┌─────────────┐            │
+                     │  │   Storage   │  │   Studio    │            │
+                     │  │   (檔案)    │  │  (管理介面)  │ ← 僅內部   │
+                     │  └─────────────┘  └─────────────┘            │
+                     │                                               │
+                     │  ┌─────────────────────────────────────────┐ │
+                     │  │  Edge Runtime (Deno)                     │ │
+                     │  │  - fetch-google-doc function            │ │
+                     │  └─────────────────────────────────────────┘ │
+                     └───────────────────────────────────────────────┘
+```
+
+### Port 規劃
+
+| 服務 | 內部 Port | 對外 | 說明 |
+|------|-----------|------|------|
+| Nginx | 80/443 | ✅ | 統一入口 |
+| MasterSlides | 3000 | ❌ | 透過 Nginx |
+| Kong (API Gateway) | 8000 | ❌ | 透過 Nginx `/api` |
+| Studio | 3001 | ❌ | 僅內部管理 |
+| PostgreSQL | 5432 | ❌ | 僅內部 |
+
+### Nginx 路由設定
+
+```nginx
+server {
+    listen 80;
+    server_name slides.tzuchi.org;
+
+    # Supabase API
+    location /api/ {
+        proxy_pass http://kong:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket for Realtime
+    location /api/realtime/ {
+        proxy_pass http://realtime:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # MasterSlides (含 Socket.io)
+    location / {
+        proxy_pass http://master-slides:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+}
+```
+
+### 前端 Supabase 設定
+
+```javascript
+// 使用相對路徑，避免 CORS 問題
+const supabase = createClient('/api', 'your-anon-key')
+```
+
+## 應用架構
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -14,13 +121,12 @@
         │
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Supabase                                 │
+│                     Supabase (自建)                              │
 │  ┌──────────┐  ┌──────────────┐  ┌─────────────────────────┐   │
 │  │   Auth   │  │   Database   │  │   Storage (Bucket)      │   │
-│  │          │  │  - documents │  │   slides/               │   │
-│  │  Login   │  │  - playlists │  │     <docId>/1.md        │   │
-│  │  Users   │  │  - playlist_ │  │     <docId>/2.md        │   │
-│  │          │  │      items   │  │                         │   │
+│  │          │  │  - profiles  │  │   slides/               │   │
+│  │  Login   │  │  - documents │  │     <docId>/1.md        │   │
+│  │  Users   │  │  - playlists │  │     <docId>/2.md        │   │
 │  └──────────┘  └──────────────┘  └─────────────────────────┘   │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐   │
@@ -336,11 +442,25 @@ slides/                          -- Bucket 名稱
 
 ## 實作項目
 
+### Phase 0: Docker 環境建置
+
+- [ ] 下載 Supabase 官方 docker 配置
+- [ ] 建立專案部署目錄結構
+- [ ] 配置環境變數 (.env)
+  - JWT Secret
+  - API Keys (anon, service_role)
+  - PostgreSQL 密碼
+  - SMTP 設定（可選）
+- [ ] 建立 Nginx 配置檔
+- [ ] 建立整合版 docker-compose.yml
+- [ ] 測試啟動所有服務
+- [ ] 驗證 API 連通性
+
 ### Phase 1: Supabase 設定
 
-- [ ] 建立 Supabase 專案
-- [ ] 建立 Database Schema (profiles, documents, playlists)
+- [ ] 透過 Studio 或 SQL 建立 Database Schema
 - [ ] 建立 user_role ENUM type
+- [ ] 建立資料表 (profiles, documents, playlists)
 - [ ] 設定 RLS Policies（依角色權限）
 - [ ] 建立 RPC Functions (playlist_add_document, playlist_remove_document, playlist_reorder_documents, playlist_get_with_documents)
 - [ ] 建立 Storage Bucket `slides`
@@ -361,6 +481,7 @@ slides/                          -- Bucket 名稱
   // 6. 轉換為 HTML 存入: <doc_id>/current.html
   // 7. 新增/更新 documents 表（含 title, description）
   ```
+- [ ] 部署 Edge Function 到自建環境
 
 ### Phase 3: 前端頁面
 
@@ -410,8 +531,10 @@ slides/                          -- Bucket 名稱
 
 ## 檔案結構（預期）
 
+### 應用程式 (MasterSlides repo)
+
 ```
-/
+/slides
 ├── server.js                    # Express + Socket.io（保留遙控功能）
 ├── slides.html                  # 簡報檢視器（修改讀取來源）
 ├── login.html                   # 新增：登入頁面
@@ -419,12 +542,89 @@ slides/                          -- Bucket 名稱
 ├── remote.html                  # 遙控器（不變）
 ├── js/
 │   └── supabase-client.js       # Supabase 初始化
-├── supabase/
-│   └── functions/
-│       └── fetch-google-doc/
-│           └── index.ts         # Edge Function
 ├── theme/                       # 不變
-└── .env                         # 環境變數
+├── Dockerfile                   # MasterSlides 容器定義
+└── package.json
+```
+
+### 部署目錄
+
+```
+/deployment
+├── docker-compose.yml           # 整合三組服務
+├── .env                         # 環境變數（JWT, API keys, etc.）
+│
+├── nginx/
+│   ├── nginx.conf               # 反向代理設定
+│   └── ssl/                     # SSL 憑證（生產環境）
+│
+├── supabase/
+│   ├── docker-compose.yml       # Supabase 官方配置（參考用）
+│   └── volumes/
+│       ├── db/                  # PostgreSQL 資料
+│       └── storage/             # Storage 檔案
+│
+└── functions/
+    └── fetch-google-doc/
+        └── index.ts             # Edge Function
+```
+
+### Docker Compose 服務定義
+
+```yaml
+# docker-compose.yml (概念)
+services:
+  # ─── 組別 1: Nginx ───
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - master-slides
+      - kong
+
+  # ─── 組別 2: MasterSlides ───
+  master-slides:
+    build:
+      context: .
+      args:
+        - REPO_URL=https://github.com/KaelLim/MasterSlides.git
+    environment:
+      - SUPABASE_URL=/api
+      - SUPABASE_ANON_KEY=${ANON_KEY}
+
+  # ─── 組別 3: Supabase ───
+  postgres:
+    image: supabase/postgres:15.1.0.147
+    # ...
+
+  kong:
+    image: kong:2.8.1
+    # ...
+
+  gotrue:
+    image: supabase/gotrue:v2.132.3
+    # ...
+
+  postgrest:
+    image: postgrest/postgrest:v12.0.1
+    # ...
+
+  storage:
+    image: supabase/storage-api:v0.43.11
+    # ...
+
+  studio:
+    image: supabase/studio:20240101
+    # 僅內部存取
+    # ...
+
+  edge-runtime:
+    image: supabase/edge-runtime:v1.33.5
+    # ...
 ```
 
 ## API 端點
@@ -656,7 +856,64 @@ interface Response {
 
 ## 設計決策記錄
 
-1. **登入方式**：先用 Email/Password，未來接 Keycloak
-2. **公開分享**：Playlist 可設為 public（無需登入）或 internal（需登入）
-3. **Playlist 概念**：用於組合報告用的 documents，非協作功能。由 admin 建立，選取需要的 documents（如 1, 7, 9）組成一個報告清單
-4. **版本控制**：文件更新在 Google Docs 進行，用戶到平台點擊「更新」重新抓取，version +1
+1. **部署方式**：Supabase 完整自建 (Docker)，不使用 Supabase Cloud
+2. **網路架構**：單一 IP + Nginx 反向代理（路徑路由）
+   - `/` → MasterSlides
+   - `/api` → Supabase API (Kong)
+   - 優點：單一網域、單一 SSL、無 CORS 問題
+3. **Studio 存取**：僅限內部，不對外開放
+4. **Edge Functions**：使用 Supabase Edge Runtime (Deno)
+5. **登入方式**：先用 Email/Password，未來接 Keycloak
+6. **公開分享**：Playlist 可設為 public（無需登入）或 internal（需登入）
+7. **Playlist 概念**：用於組合報告用的 documents，非協作功能。由 admin 建立，選取需要的 documents（如 1, 7, 9）組成一個報告清單
+8. **版本控制**：文件更新在 Google Docs 進行，用戶到平台點擊「更新」重新抓取，version +1
+
+## 環境變數
+
+```bash
+# .env 範例
+
+# ─── PostgreSQL ───
+POSTGRES_PASSWORD=your-super-secret-password
+POSTGRES_DB=postgres
+
+# ─── JWT ───
+JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters
+JWT_EXPIRY=3600
+
+# ─── API Keys ───
+ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ─── URLs ───
+SITE_URL=https://slides.tzuchi.org
+API_EXTERNAL_URL=https://slides.tzuchi.org/api
+
+# ─── SMTP (Optional) ───
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_SENDER_NAME=MasterSlides
+```
+
+## 部署指令
+
+```bash
+# 開發環境
+cd /deployment
+docker compose up -d
+
+# 查看狀態
+docker compose ps
+
+# 查看日誌
+docker compose logs -f
+
+# 重啟服務
+docker compose restart
+
+# 更新並重建
+docker compose build --no-cache
+docker compose up -d
+```

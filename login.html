@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterSlides - 登入</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f0f2f5;
+    }
+    .login-card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .login-card h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      text-align: center;
+    }
+    .login-card p {
+      margin: 0 0 24px;
+      color: #666;
+      text-align: center;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d0d0d0;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus {
+      border-color: #4a90d9;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #4a90d9;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .login-btn:hover {
+      background: #357abd;
+    }
+    .login-btn:disabled {
+      background: #a0c4e8;
+      cursor: not-allowed;
+    }
+    .error-msg {
+      color: #e74c3c;
+      font-size: 13px;
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>MasterSlides</h1>
+    <p>請登入以繼續</p>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">密碼</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">登入</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { login, getSession } from '/js/auth.js'
+
+    // 已登入則跳轉
+    const session = await getSession()
+    if (session) {
+      const redirect = new URLSearchParams(location.search).get('redirect')
+      window.location.href = redirect || '/dashboard.html'
+    }
+
+    const form = document.getElementById('loginForm')
+    const btn = document.getElementById('loginBtn')
+    const errorMsg = document.getElementById('errorMsg')
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      errorMsg.style.display = 'none'
+      btn.disabled = true
+      btn.textContent = '登入中...'
+
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+
+      const { error } = await login(email, password)
+
+      if (error) {
+        errorMsg.textContent = error.message === 'Invalid login credentials'
+          ? '帳號或密碼錯誤' : error.message
+        errorMsg.style.display = 'block'
+        btn.disabled = false
+        btn.textContent = '登入'
+        return
+      }
+
+      const redirect = new URLSearchParams(location.search).get('redirect')
+      window.location.href = redirect || '/dashboard.html'
+    })
+  </script>
+</body>
+</html>

@@ -8,7 +8,7 @@
   };
 
   // 取得設定並顯示 Badge
-  fetch('/api/config')
+  fetch('/config.json')
     .then(res => res.json())
     .then(config => {
       if (!config.showBadge || config.stage === 'stable') return;

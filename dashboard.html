@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterSlides - Dashboard</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <h1>MasterSlides</h1>
+      <div class="user-info">
+        <span id="userName"></span>
+        <span class="role-badge" id="userRole"></span>
+        <button class="btn-logout" id="btnLogout">登出</button>
+      </div>
+    </div>
+
+    <!-- Upload Section (uploader+) -->
+    <div class="section" id="sectionUpload" hidden>
+      <div class="section-header">
+        <h2>上傳簡報</h2>
+      </div>
+      <div class="upload-form">
+        <form id="uploadForm">
+          <div class="form-group">
+            <label for="docUrl">Google Docs 網址</label>
+            <input type="url" id="docUrl" placeholder="https://docs.google.com/document/d/..." required>
+          </div>
+          <div class="form-group">
+            <label for="docTitle">標題</label>
+            <input type="text" id="docTitle" placeholder="簡報標題（選填）">
+          </div>
+          <button type="submit" class="btn-primary" id="btnUpload">上傳並轉換</button>
+        </form>
+        <div class="upload-status" id="uploadStatus"></div>
+      </div>
+    </div>
+
+    <!-- Documents Section (all authenticated) -->
+    <div class="section" id="sectionDocuments">
+      <div class="section-header">
+        <h2>所有簡報</h2>
+      </div>
+      <div class="card-grid" id="documentsList"></div>
+    </div>
+
+    <!-- Playlists Section (admin+) -->
+    <div class="section" id="sectionPlaylists" hidden>
+      <div class="section-header">
+        <h2>播放清單</h2>
+        <button class="btn-primary" id="btnNewPlaylist">新增清單</button>
+      </div>
+      <div class="card-grid" id="playlistsList"></div>
+    </div>
+
+    <!-- User Management (super_admin) -->
+    <div class="section" id="sectionUsers" hidden>
+      <div class="section-header">
+        <h2>用戶管理</h2>
+      </div>
+      <table class="user-table" id="usersTable">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>顯示名稱</th>
+            <th>角色</th>
+            <th>建立時間</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Playlist Modal -->
+  <div class="modal-overlay" id="playlistModal">
+    <div class="modal">
+      <h3 id="playlistModalTitle">新增播放清單</h3>
+      <div class="form-group">
+        <label>名稱</label>
+        <input type="text" id="playlistName" required>
+      </div>
+      <div class="form-group">
+        <label>說明</label>
+        <input type="text" id="playlistDesc">
+      </div>
+      <div id="playlistDocsSection" hidden>
+        <label>文件排序（拖拽排序）</label>
+        <ul class="playlist-docs" id="playlistDocsList"></ul>
+        <div class="form-group" style="margin-top: 8px;">
+          <select id="addDocSelect">
+            <option value="">加入文件...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="btnCancelPlaylist">取消</button>
+        <button class="btn-primary" id="btnSavePlaylist">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUserRole, logout } from '/js/auth.js'
+    import { listDocuments, togglePublic as toggleDocPublic, deleteDocument } from '/js/documents.js'
+    import { listPlaylists, createPlaylist, updatePlaylist, deletePlaylist, addDocument, removeDocument, reorderDocuments, togglePublic as togglePlaylistPublic } from '/js/playlists.js'
+    import { fetchGoogleDoc, extractDocIdFromUrl } from '/js/upload.js'
+    import { getSupabase } from '/js/supabase-client.js'
+
+    // Auth guard
+    const session = await requireAuth()
+    if (!session) throw new Error('redirecting')
+
+    const profile = await getUserRole()
+    const role = profile?.role || 'viewer'
+    const ROLES = ['viewer', 'uploader', 'admin', 'super_admin']
+    const roleIndex = ROLES.indexOf(role)
+
+    // Display user info
+    document.getElementById('userName').textContent = profile?.display_name || session.user.email
+    document.getElementById('userRole').textContent = role
+    document.getElementById('btnLogout').onclick = logout
+
+    // Show sections based on role
+    if (roleIndex >= 1) document.getElementById('sectionUpload').hidden = false
+    if (roleIndex >= 2) document.getElementById('sectionPlaylists').hidden = false
+    if (roleIndex >= 3) document.getElementById('sectionUsers').hidden = false
+
+    // --- Documents ---
+    let allDocuments = []
+
+    async function loadDocuments() {
+      allDocuments = await listDocuments()
+      renderDocuments()
+    }
+
+    function renderDocuments() {
+      const container = document.getElementById('documentsList')
+      if (allDocuments.length === 0) {
+        container.innerHTML = '<div class="empty-state">尚無簡報</div>'
+        return
+      }
+      container.innerHTML = allDocuments.map(doc => `
+        <div class="card" data-doc-id="${doc.doc_id}">
+          <div class="card-title">${escHtml(doc.title)}</div>
+          <div class="card-meta">
+            v${doc.current_version} | ${formatDate(doc.updated_at)}
+            ${doc.is_public ? ' | 公開' : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn-view" onclick="viewDoc('${doc.doc_id}')">檢視</button>
+            ${roleIndex >= 1 && doc.owner_id === session.user.id ? `
+              <button class="${doc.is_public ? 'btn-private' : 'btn-public'}"
+                onclick="toggleDoc('${doc.doc_id}', ${!doc.is_public})">
+                ${doc.is_public ? '設為私有' : '設為公開'}
+              </button>
+              <button class="btn-delete" onclick="delDoc('${doc.doc_id}')">刪除</button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('')
+    }
+
+    window.viewDoc = (docId) => {
+      window.open(`/slides.html?src=${docId}`, '_blank')
+    }
+
+    window.toggleDoc = async (docId, isPublic) => {
+      await toggleDocPublic(docId, isPublic)
+      await loadDocuments()
+    }
+
+    window.delDoc = async (docId) => {
+      if (!confirm('確定刪除此簡報？')) return
+      await deleteDocument(docId)
+      await loadDocuments()
+    }
+
+    // --- Upload ---
+    const uploadForm = document.getElementById('uploadForm')
+    if (uploadForm) {
+      uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const status = document.getElementById('uploadStatus')
+        const btn = document.getElementById('btnUpload')
+        const url = document.getElementById('docUrl').value
+        const title = document.getElementById('docTitle').value
+
+        status.className = 'upload-status loading'
+        status.textContent = '處理中，請稍候...'
+        btn.disabled = true
+
+        try {
+          const result = await fetchGoogleDoc({ url, title })
+          status.className = 'upload-status success'
+          status.textContent = `上傳成功！版本 ${result.version}，共 ${result.images} 張圖片`
+          uploadForm.reset()
+          await loadDocuments()
+        } catch (err) {
+          status.className = 'upload-status error'
+          status.textContent = err.message
+        } finally {
+          btn.disabled = false
+        }
+      })
+    }
+
+    // --- Playlists ---
+    let allPlaylists = []
+    let editingPlaylistId = null
+
+    async function loadPlaylists() {
+      if (roleIndex < 2) return
+      allPlaylists = await listPlaylists()
+      renderPlaylists()
+    }
+
+    function renderPlaylists() {
+      const container = document.getElementById('playlistsList')
+      if (allPlaylists.length === 0) {
+        container.innerHTML = '<div class="empty-state">尚無播放清單</div>'
+        return
+      }
+      container.innerHTML = allPlaylists.map(pl => `
+        <div class="card">
+          <div class="card-title">${escHtml(pl.name)}</div>
+          <div class="card-meta">
+            ${(pl.document_ids || []).length} 份文件 | ${formatDate(pl.updated_at)}
+            ${pl.is_public ? ' | 公開' : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn-view" onclick="viewPlaylist('${pl.id}')">播放</button>
+            <button class="btn-edit" onclick="editPlaylist('${pl.id}')">編輯</button>
+            <button class="${pl.is_public ? 'btn-private' : 'btn-public'}"
+              onclick="togglePl('${pl.id}', ${!pl.is_public})">
+              ${pl.is_public ? '私有' : '公開'}
+            </button>
+            <button class="btn-delete" onclick="delPlaylist('${pl.id}')">刪除</button>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    window.viewPlaylist = (id) => {
+      window.open(`/slides.html?playlist=${id}`, '_blank')
+    }
+
+    window.togglePl = async (id, isPublic) => {
+      await togglePlaylistPublic(id, isPublic)
+      await loadPlaylists()
+    }
+
+    window.delPlaylist = async (id) => {
+      if (!confirm('確定刪除此播放清單？')) return
+      await deletePlaylist(id)
+      await loadPlaylists()
+    }
+
+    // Playlist Modal
+    const modal = document.getElementById('playlistModal')
+    document.getElementById('btnNewPlaylist').onclick = () => openPlaylistModal()
+    document.getElementById('btnCancelPlaylist').onclick = () => closePlaylistModal()
+    document.getElementById('btnSavePlaylist').onclick = savePlaylist
+    modal.onclick = (e) => { if (e.target === modal) closePlaylistModal() }
+
+    function openPlaylistModal(playlist = null) {
+      editingPlaylistId = playlist?.id || null
+      document.getElementById('playlistModalTitle').textContent = playlist ? '編輯播放清單' : '新增播放清單'
+      document.getElementById('playlistName').value = playlist?.name || ''
+      document.getElementById('playlistDesc').value = playlist?.description || ''
+
+      const docsSection = document.getElementById('playlistDocsSection')
+      if (playlist) {
+        docsSection.hidden = false
+        renderPlaylistDocs(playlist.document_ids || [])
+        populateDocSelect(playlist.document_ids || [])
+      } else {
+        docsSection.hidden = true
+      }
+
+      modal.classList.add('active')
+    }
+
+    function closePlaylistModal() {
+      modal.classList.remove('active')
+      editingPlaylistId = null
+    }
+
+    function renderPlaylistDocs(docIds) {
+      const list = document.getElementById('playlistDocsList')
+      list.innerHTML = docIds.map((docId, i) => {
+        const doc = allDocuments.find(d => d.doc_id === docId)
+        return `<li draggable="true" data-doc-id="${docId}" data-index="${i}">
+          <span class="drag-handle">\u2630</span>
+          <span class="doc-title">${doc ? escHtml(doc.title) : docId}</span>
+          <button class="btn-remove" onclick="removeFromPlaylist('${docId}')">x</button>
+        </li>`
+      }).join('')
+
+      // Drag & drop
+      list.querySelectorAll('li').forEach(li => {
+        li.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', li.dataset.index)
+          li.style.opacity = '0.5'
+        })
+        li.addEventListener('dragend', () => { li.style.opacity = '1' })
+        li.addEventListener('dragover', (e) => e.preventDefault())
+        li.addEventListener('drop', (e) => {
+          e.preventDefault()
+          const fromIdx = parseInt(e.dataTransfer.getData('text/plain'))
+          const toIdx = parseInt(li.dataset.index)
+          if (fromIdx === toIdx) return
+          const ids = getCurrentDocIds()
+          const [moved] = ids.splice(fromIdx, 1)
+          ids.splice(toIdx, 0, moved)
+          renderPlaylistDocs(ids)
+          populateDocSelect(ids)
+        })
+      })
+    }
+
+    function getCurrentDocIds() {
+      return [...document.querySelectorAll('#playlistDocsList li')].map(li => li.dataset.docId)
+    }
+
+    function populateDocSelect(currentIds) {
+      const select = document.getElementById('addDocSelect')
+      const available = allDocuments.filter(d => !currentIds.includes(d.doc_id))
+      select.innerHTML = '<option value="">加入文件...</option>' +
+        available.map(d => `<option value="${d.doc_id}">${escHtml(d.title)}</option>`).join('')
+      select.onchange = () => {
+        if (!select.value) return
+        const ids = getCurrentDocIds()
+        ids.push(select.value)
+        renderPlaylistDocs(ids)
+        populateDocSelect(ids)
+      }
+    }
+
+    window.removeFromPlaylist = (docId) => {
+      const ids = getCurrentDocIds().filter(id => id !== docId)
+      renderPlaylistDocs(ids)
+      populateDocSelect(ids)
+    }
+
+    window.editPlaylist = (id) => {
+      const playlist = allPlaylists.find(p => p.id === id)
+      if (playlist) openPlaylistModal(playlist)
+    }
+
+    async function savePlaylist() {
+      const name = document.getElementById('playlistName').value.trim()
+      if (!name) return alert('請輸入名稱')
+      const description = document.getElementById('playlistDesc').value.trim()
+
+      if (editingPlaylistId) {
+        const docIds = getCurrentDocIds()
+        await updatePlaylist(editingPlaylistId, { name, description, document_ids: docIds })
+      } else {
+        await createPlaylist(name, description)
+      }
+      closePlaylistModal()
+      await loadPlaylists()
+    }
+
+    // --- Users (super_admin) ---
+    async function loadUsers() {
+      if (roleIndex < 3) return
+      const supabase = await getSupabase()
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: true })
+      renderUsers(data || [])
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersBody')
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${escHtml(u.email || '')}</td>
+          <td>${escHtml(u.display_name || '')}</td>
+          <td>
+            <select onchange="changeRole('${u.id}', this.value)" ${u.id === session.user.id ? 'disabled' : ''}>
+              ${ROLES.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+            </select>
+          </td>
+          <td>${formatDate(u.created_at)}</td>
+        </tr>
+      `).join('')
+    }
+
+    window.changeRole = async (userId, newRole) => {
+      const supabase = await getSupabase()
+      await supabase.from('profiles').update({ role: newRole }).eq('id', userId)
+      await loadUsers()
+    }
+
+    // --- Helpers ---
+    function escHtml(str) {
+      const div = document.createElement('div')
+      div.textContent = str
+      return div.innerHTML
+    }
+
+    function formatDate(iso) {
+      if (!iso) return ''
+      return new Date(iso).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
+    }
+
+    // --- Init ---
+    await Promise.all([loadDocuments(), loadPlaylists(), loadUsers()])
+  </script>
+</body>
+</html>

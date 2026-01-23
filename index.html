@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterSlides</title>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js'
+    const supabase = await getSupabase()
+    const { data: { session } } = await supabase.auth.getSession()
+    window.location.href = session ? '/dashboard.html' : '/login.html'
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>

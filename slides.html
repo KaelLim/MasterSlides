@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script src="/badge.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     /* ===========================
@@ -1152,33 +1151,91 @@
     // ===========================
     // 初始化
     // ===========================
+    // Supabase modules (loaded dynamically)
+    let supabaseClient = null;
+    let realtimeModule = null;
+
+    async function getSupabaseClient() {
+      if (supabaseClient) return supabaseClient;
+      const mod = await import('/js/supabase-client.js');
+      supabaseClient = await mod.getSupabase();
+      return supabaseClient;
+    }
+
+    async function getRealtimeModule() {
+      if (realtimeModule) return realtimeModule;
+      realtimeModule = await import('/js/realtime.js');
+      return realtimeModule;
+    }
+
+    // Playlist state
+    let playlistDocs = [];
+    let playlistIndex = 0;
+
     async function init() {
       // 從 URL 參數取得內容來源
       const params = new URLSearchParams(window.location.search);
       const src = params.get('src');
+      const playlistId = params.get('playlist');
 
-      if (!src) {
-        manuscript.innerHTML = '<p style="color: var(--color-secondary); font-size: 24px;">請提供 src 參數<br><br>例如: slides.html?src=abc123</p>';
+      if (!src && !playlistId) {
+        manuscript.innerHTML = '<p style="color: var(--color-secondary); font-size: 24px;">請提供 src 或 playlist 參數</p>';
         return;
       }
 
-      // 建構完整路徑：src 為 docId，內容在 /docs/{docId}/content.html
-      const contentUrl = `/docs/${src}/content.html`;
-      const baseUrl = `/docs/${src}/`;
+      let docId = src;
 
-      // 載入內容
-      try {
-        const response = await fetch(contentUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+      // Playlist mode: load document list
+      if (playlistId) {
+        try {
+          const supabase = await getSupabaseClient();
+          const { data, error } = await supabase.rpc('playlist_get_with_documents', {
+            p_playlist_id: playlistId,
+          });
+          if (error) throw error;
+          if (!data || data.length === 0) throw new Error('播放清單為空');
+          playlistDocs = data.sort((a, b) => a.sort_order - b.sort_order);
+          docId = playlistDocs[0].doc_id;
+        } catch (error) {
+          manuscript.innerHTML = `<p style="color: #ff6b6b; font-size: 24px;">播放清單載入失敗: ${error.message}</p>`;
+          return;
         }
-        const htmlContent = await response.text();
+      }
+
+      await loadDocument(docId);
+    }
+
+    async function loadDocument(docId) {
+      // 從 Supabase Storage 載入內容
+      try {
+        const supabase = await getSupabaseClient();
+
+        // Get current version from documents table
+        const { data: doc, error: docError } = await supabase
+          .from('documents').select('current_version, title').eq('doc_id', docId).single();
+
+        if (docError) throw new Error(docError.message);
+
+        const version = doc.current_version;
+        const storagePath = `${docId}/${version}.html`;
+
+        // Download from Storage
+        const { data: blob, error: dlError } = await supabase.storage
+          .from('slides').download(storagePath);
+
+        if (dlError) throw new Error(dlError.message);
+
+        const htmlContent = await blob.text();
         manuscript.innerHTML = htmlContent;
 
-        // 修正圖片路徑
-        fixImagePaths(baseUrl);
+        // Update title
+        if (doc.title) {
+          document.title = doc.title;
+        }
+
+        // Images already have full URLs from Edge Function, no fixImagePaths needed
       } catch (error) {
-        manuscript.innerHTML = `<p style="color: #ff6b6b; font-size: 24px;">載入失敗: ${error.message}<br><br>文件 ID: ${src}</p>`;
+        manuscript.innerHTML = `<p style="color: #ff6b6b; font-size: 24px;">載入失敗: ${error.message}<br><br>文件 ID: ${docId}</p>`;
         return;
       }
 
@@ -1195,7 +1252,7 @@
       requestAnimationFrame(() => {
         updatePageCount();
         initEventListeners();
-        initRemote();
+        initRemote().catch(err => console.error('initRemote failed:', err));
         resetNavHideTimer();
       });
     }
@@ -1394,11 +1451,37 @@
     }
 
     function prevPage() {
+      if (currentPage === 0 && playlistDocs.length > 1 && playlistIndex > 0) {
+        // Playlist: go to previous document
+        playlistIndex--;
+        loadPlaylistDoc(playlistIndex);
+        return;
+      }
       goToPage(currentPage - 1);
     }
 
     function nextPage() {
+      if (currentPage === totalPages - 1 && playlistDocs.length > 1 && playlistIndex < playlistDocs.length - 1) {
+        // Playlist: go to next document
+        playlistIndex++;
+        loadPlaylistDoc(playlistIndex);
+        return;
+      }
       goToPage(currentPage + 1);
+    }
+
+    async function loadPlaylistDoc(index) {
+      const doc = playlistDocs[index];
+      if (!doc) return;
+      await loadDocument(doc.doc_id);
+      // Re-init pagination after loading new document
+      loadSettings();
+      await convertTablesToImages();
+      requestAnimationFrame(() => {
+        updatePageCount();
+        goToPage(0);
+        syncRemoteState();
+      });
     }
 
     // ===========================
@@ -1827,84 +1910,51 @@
     }
 
     // ===========================
-    // 遙控功能
+    // 遙控功能 (Supabase Realtime Broadcast)
     // ===========================
-    let socket = null;
     let roomId = null;
 
-    function initRemote() {
+    async function initRemote() {
       // 產生房間 ID
       roomId = Math.random().toString(36).substring(2, 8);
 
-      // 連接 Socket.io
-      socket = io();
+      const rt = await getRealtimeModule();
+      await rt.createRoom(roomId, {
+        onCommand: (payload) => {
+          const action = payload.action;
+          console.log('收到遙控指令:', action);
 
-      socket.on('connect', () => {
-        console.log('已連線到伺服器');
-        socket.emit('host', roomId);
-      });
-
-      // 遙控端連線成功
-      socket.on('remote-joined', () => {
-        document.getElementById('remoteStatus').textContent = '遙控器已連線！';
-        document.getElementById('remoteStatus').classList.add('connected');
-        // 2 秒後關閉 modal
-        setTimeout(() => {
-          closeRemoteModal();
-        }, 2000);
-      });
-
-      socket.on('command', (data) => {
-        // data 可能是字串(舊格式)或物件(新格式)
-        const action = typeof data === 'string' ? data : data.action;
-        console.log('收到遙控指令:', action);
-
-        switch(action) {
-          case 'prev':
-            prevPage();
-            break;
-          case 'next':
-            nextPage();
-            break;
-          case 'first':
-            goToPage(0);
-            break;
-          case 'last':
-            goToPage(totalPages - 1);
-            break;
-          case 'fullscreen':
-            toggleFullscreen();
-            break;
-          case 'toggleMode':
-            if (isVerticalMode()) {
-              setHorizontalMode();
-            } else {
-              setVerticalMode();
-            }
-            break;
-          case 'toggleLightbox':
-            if (data.src) {
-              const lightbox = document.getElementById('lightbox');
-              const lightboxImg = document.getElementById('lightboxImg');
-
-              if (lightbox.classList.contains('active')) {
-                // Lightbox 已開啟
-                if (lightboxImg.src === data.src) {
-                  // 同一張圖 → 關閉
-                  closeLightbox();
+          switch(action) {
+            case 'prev': prevPage(); break;
+            case 'next': nextPage(); break;
+            case 'first': goToPage(0); break;
+            case 'last': goToPage(totalPages - 1); break;
+            case 'fullscreen': toggleFullscreen(); break;
+            case 'toggleMode':
+              if (isVerticalMode()) { setHorizontalMode(); }
+              else { setVerticalMode(); }
+              break;
+            case 'toggleLightbox':
+              if (payload.src) {
+                const lightbox = document.getElementById('lightbox');
+                const lightboxImg = document.getElementById('lightboxImg');
+                if (lightbox.classList.contains('active')) {
+                  if (lightboxImg.src === payload.src) { closeLightbox(); }
+                  else { openLightbox(payload.src, ''); }
                 } else {
-                  // 不同圖 → 切換
-                  openLightbox(data.src, '');
+                  openLightbox(payload.src, '');
                 }
-              } else {
-                // Lightbox 未開啟 → 開啟
-                openLightbox(data.src, '');
               }
-            }
-            break;
+              break;
+          }
+          syncRemoteState();
+        },
+        onRemoteJoined: () => {
+          document.getElementById('remoteStatus').textContent = '遙控器已連線！';
+          document.getElementById('remoteStatus').classList.add('connected');
+          syncRemoteState();
+          setTimeout(() => { closeRemoteModal(); }, 2000);
         }
-        // 同步狀態給遙控端
-        syncRemoteState();
       });
 
       // 遙控按鈕
@@ -1915,18 +1965,15 @@
       };
     }
 
-    function syncRemoteState() {
-      if (socket && roomId) {
-        // 獲取當前頁面的圖片
-        const images = getCurrentPageImages();
-
-        socket.emit('state', {
-          roomId,
-          currentPage: currentPage + 1,
-          totalPages,
-          images
-        });
-      }
+    async function syncRemoteState() {
+      if (!roomId) return;
+      const images = getCurrentPageImages();
+      const rt = await getRealtimeModule();
+      rt.syncState({
+        currentPage: currentPage + 1,
+        totalPages,
+        images
+      });
     }
 
     // 獲取當前頁面可見的圖片
