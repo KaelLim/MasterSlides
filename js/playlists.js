@@ -70,10 +70,11 @@ export async function reorderDocuments(playlistId, docIds) {
   if (error) throw error
 }
 
-export async function getWithDocuments(playlistId) {
+export async function getWithDocuments(playlistId, { publicOnly = false } = {}) {
   const supabase = await getSupabase()
   const { data, error } = await supabase.rpc('playlist_get_with_documents', {
     p_playlist_id: playlistId,
+    p_public_only: publicOnly,
   })
   if (error) throw error
   return data
