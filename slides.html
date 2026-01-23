@@ -148,11 +148,20 @@
   <div class="goto-modal" id="gotoModal">
     <span class="goto-modal-close">&times;</span>
     <div class="goto-content">
-      <div class="goto-input-wrap">
-        <input type="number" id="gotoPageInput" min="1" placeholder="頁碼...">
-        <button id="gotoPageBtn">跳轉</button>
+      <div class="goto-tabs">
+        <button class="goto-tab active" data-tab="toc">目錄</button>
+        <button class="goto-tab" data-tab="grid">瀏覽</button>
       </div>
-      <div class="goto-toc" id="gotoToc"></div>
+      <div class="goto-panel" id="gotoPanelToc">
+        <div class="goto-input-wrap">
+          <input type="number" id="gotoPageInput" min="1" placeholder="頁碼...">
+          <button id="gotoPageBtn">跳轉</button>
+        </div>
+        <div class="goto-toc" id="gotoToc"></div>
+      </div>
+      <div class="goto-panel goto-panel-hidden" id="gotoPanelGrid">
+        <div class="goto-grid" id="gotoGrid"></div>
+      </div>
     </div>
   </div>
 
