@@ -13,6 +13,16 @@
   <link rel="stylesheet" href="/css/slides.css">
 </head>
 <body>
+  <!-- Search Bar -->
+  <div class="search-bar" id="searchBar">
+    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="搜尋文字...">
+    <span class="search-count" id="searchCount"></span>
+    <button class="search-nav-btn" id="searchPrev" title="上一個">&#9650;</button>
+    <button class="search-nav-btn" id="searchNext" title="下一個">&#9660;</button>
+    <button class="search-close-btn" id="searchClose">&times;</button>
+  </div>
+
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
     <span class="lightbox-close">&times;</span>
@@ -90,6 +100,14 @@
             <line x1="12" y1="18" x2="12.01" y2="18"></line>
           </svg>
         </button>
+        <button class="icon-btn" id="exportPdfBtn" data-tooltip="匯出 PDF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <polyline points="9 15 12 18 15 15"></polyline>
+          </svg>
+        </button>
         <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明">
           <span style="font-size: 18px; font-weight: bold;">?</span>
         </button>
@@ -136,6 +154,8 @@
         </div>
         <div class="help-column">
           <h3>其他</h3>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>P</kbd><span>匯出 PDF</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>F</kbd><span>搜尋</span></div>
           <div class="help-item"><kbd>R</kbd><span>遙控器 QR Code</span></div>
           <div class="help-item"><kbd>?</kbd> / <kbd>H</kbd><span>快捷鍵說明</span></div>
           <div class="help-item"><kbd>Escape</kbd><span>關閉彈窗</span></div>

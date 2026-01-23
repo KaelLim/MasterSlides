@@ -5,6 +5,8 @@ import { isVerticalMode } from './navigation.js';
 import { openRemoteModal } from './remote.js';
 import { showGoToPageDialog } from './goto.js';
 import { showHelpModal, closeAllModals } from './modals.js';
+import { openSearch, closeSearch, isSearchOpen } from './search.js';
+import { exportPDF } from './print.js';
 
 const HOTKEYS = {
   'ArrowRight': 'nextPage',
@@ -38,7 +40,9 @@ const COMBO_HOTKEYS = {
   '+': 'fontIncrease',
   '-': 'fontDecrease',
   '0': 'fontReset',
-  ',': 'sidebar'
+  ',': 'sidebar',
+  'f': 'search',
+  'p': 'exportPDF'
 };
 
 const ACTIONS = {
@@ -56,10 +60,15 @@ const ACTIONS = {
   toggleNav: () => toggleNavVisibility(),
   remoteQR: () => openRemoteModal(),
   help: () => showHelpModal(),
-  closeModal: () => closeAllModals(),
+  closeModal: () => {
+    if (isSearchOpen()) { closeSearch(); }
+    else { closeAllModals(); }
+  },
+  search: () => openSearch(),
   fontIncrease: () => increaseFontSize(),
   fontDecrease: () => decreaseFontSize(),
-  fontReset: () => setFontScale(1.0)
+  fontReset: () => setFontScale(1.0),
+  exportPDF: () => exportPDF()
 };
 
 export function handleKeydown(e) {

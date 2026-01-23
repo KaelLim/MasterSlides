@@ -1101,3 +1101,201 @@ kbd {
   padding: 2px 8px;
   border-radius: 4px;
 }
+
+/* ===========================
+   Search Bar
+   =========================== */
+.search-bar {
+  position: fixed;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 20, 40, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 10px 16px;
+  transition: top 0.2s ease;
+  writing-mode: horizontal-tb;
+}
+.search-bar.active {
+  top: 20px;
+}
+.search-icon {
+  color: rgba(255,255,255,0.5);
+  flex-shrink: 0;
+}
+.search-bar input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 16px;
+  font-family: inherit;
+  width: 200px;
+}
+.search-bar input::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+.search-count {
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+}
+.search-nav-btn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.search-nav-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+.search-close-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.search-close-btn:hover {
+  color: white;
+}
+
+/* Search Highlights */
+.search-highlight {
+  background: rgba(255, 215, 0, 0.4);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.search-highlight.current {
+  background: rgba(255, 140, 0, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.4);
+}
+
+/* ===========================
+   Print / Export PDF
+   =========================== */
+
+/* Hidden by default */
+#printContainer {
+  display: none;
+}
+
+.print-page {
+  page-break-after: always;
+}
+
+.print-page:last-child {
+  page-break-after: avoid;
+}
+
+.print-page-bg {
+  width: 100%;
+  height: 100%;
+  background-image: url('../theme/default/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #1a1a2e;
+}
+
+.print-page-content {
+  width: 100%;
+  height: 100%;
+  padding: 60px 80px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.print-page-clip {
+  overflow: hidden;
+  position: relative;
+  flex: 1;
+  container-type: size;
+}
+
+.print-page-clip .manuscript {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+@media print {
+  /* Force background colors and images */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all screen UI */
+  .app-layout,
+  .search-bar,
+  .lightbox,
+  .sidebar,
+  .sidebar-overlay,
+  .remote-modal,
+  .help-modal,
+  .goto-modal {
+    display: none !important;
+  }
+
+  /* Reset body for print */
+  html, body {
+    overflow: visible;
+    height: auto;
+    width: auto;
+  }
+
+  body {
+    background: none;
+  }
+
+  /* Show print container */
+  #printContainer {
+    display: block;
+  }
+
+  .print-page {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .print-page-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Page settings */
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+}
