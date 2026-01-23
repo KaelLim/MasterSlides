@@ -1219,6 +1219,7 @@ kbd {
   background-position: center;
   background-repeat: no-repeat;
   background-color: #1a1a2e;
+  padding: 60px 80px;
 }
 
 .print-page-clip {

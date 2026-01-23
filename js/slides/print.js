@@ -12,10 +12,13 @@ function buildPrintPages() {
   const vertical = isVerticalMode();
   const totalPages = state.totalPages;
 
-  // Set @page size to exactly match the manuscript container dimensions
+  // Set @page size to match content-area dimensions (container + padding)
+  // .content-area has padding: 60px 80px
+  const pageW = containerW + 160; // 80px * 2
+  const pageH = containerH + 120; // 60px * 2
   printStyle = document.createElement('style');
   printStyle.id = 'printPageStyle';
-  printStyle.textContent = `@page { size: ${containerW}px ${containerH}px; margin: 0; }`;
+  printStyle.textContent = `@page { size: ${pageW}px ${pageH}px; margin: 0; }`;
   document.head.appendChild(printStyle);
 
   // Create print container
