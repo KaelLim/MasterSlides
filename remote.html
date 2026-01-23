@@ -165,6 +165,107 @@
       object-fit: cover;
     }
 
+    .zoom-controls {
+      display: none;
+      margin-bottom: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 200, 60, 0.3);
+      border-radius: 16px;
+      padding: 16px 20px;
+    }
+
+    .zoom-controls.active {
+      display: block;
+    }
+
+    .zoom-controls h3 {
+      color: #FFD700;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .zoom-btn-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn {
+      width: 56px;
+      height: 56px;
+      font-size: 24px;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .zoom-btn:active {
+      background: rgba(255, 200, 60, 0.3);
+      border-color: #FFD700;
+      transform: scale(0.92);
+    }
+
+    .zoom-level {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .joystick-wrap {
+      display: none;
+      margin-top: 16px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .joystick-wrap.active {
+      display: flex;
+    }
+
+    .joystick-base {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      touch-action: none;
+    }
+
+    .joystick-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(95, 207, 195, 0.5);
+      border: 2px solid #5FCFC3;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: none;
+      box-shadow: 0 0 12px rgba(95, 207, 195, 0.3);
+    }
+
+    .joystick-thumb.released {
+      transition: transform 0.2s ease-out;
+    }
+
+    .joystick-label {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
     .error-message {
       background: rgba(244, 67, 54, 0.15);
       backdrop-filter: blur(12px);
@@ -203,6 +304,26 @@
         <button id="nextBtn">›</button>
       </div>
 
+      <!-- 縮放控制（Lightbox 開啟時顯示） -->
+      <div class="zoom-controls" id="zoomControls">
+        <h3>圖片縮放</h3>
+        <div class="zoom-btn-row">
+          <button class="zoom-btn" id="zoomOutBtn">−</button>
+          <span class="zoom-level" id="zoomLevel">100%</span>
+          <button class="zoom-btn" id="zoomInBtn">+</button>
+          <button class="zoom-btn" id="zoomResetBtn">⟲</button>
+        </div>
+        <!-- 搖桿（放大時顯示） -->
+        <div class="joystick-wrap" id="joystickWrap">
+          <div>
+            <div class="joystick-base" id="joystickBase">
+              <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+            <div class="joystick-label">拖動平移圖片</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 圖片區域 -->
       <div class="images-section">
         <h2>本頁圖片</h2>
@@ -235,6 +356,7 @@
             document.getElementById('currentPage').textContent = data.currentPage
             document.getElementById('totalPages').textContent = data.totalPages
             updateImages(data.images || [])
+            updateZoomControls(data.lightboxActive, data.lightboxZoom)
           }
         })
         document.getElementById('status').textContent = '等待簡報同步...'
@@ -246,6 +368,9 @@
 
       document.getElementById('prevBtn').onclick = () => sendCommand('prev')
       document.getElementById('nextBtn').onclick = () => sendCommand('next')
+      document.getElementById('zoomInBtn').onclick = () => sendCommand('zoomIn')
+      document.getElementById('zoomOutBtn').onclick = () => sendCommand('zoomOut')
+      document.getElementById('zoomResetBtn').onclick = () => sendCommand('zoomReset')
     }
 
     function updateImages(images) {
@@ -271,6 +396,120 @@
         }
       })
     }
+
+    function updateZoomControls(active, zoom) {
+      const controls = document.getElementById('zoomControls')
+      const joystick = document.getElementById('joystickWrap')
+      if (active) {
+        controls.classList.add('active')
+        document.getElementById('zoomLevel').textContent = Math.round((zoom || 1) * 100) + '%'
+        // Show joystick only when zoomed in
+        if (zoom > 1) {
+          joystick.classList.add('active')
+        } else {
+          joystick.classList.remove('active')
+        }
+      } else {
+        controls.classList.remove('active')
+        joystick.classList.remove('active')
+      }
+    }
+
+    // Virtual Joystick
+    ;(function initJoystick() {
+      const base = document.getElementById('joystickBase')
+      const thumb = document.getElementById('joystickThumb')
+      const baseRadius = 70 // half of 140px
+      const thumbRadius = 25 // half of 50px
+      const maxDist = baseRadius - thumbRadius
+      const PAN_SPEED = 8 // pixels per tick
+
+      let dragging = false
+      let joyX = 0, joyY = 0
+      let panInterval = null
+
+      function getJoyPos(e) {
+        const rect = base.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const touch = e.touches ? e.touches[0] : e
+        return { x: touch.clientX - cx, y: touch.clientY - cy }
+      }
+
+      function clampDist(x, y) {
+        const dist = Math.sqrt(x * x + y * y)
+        if (dist > maxDist) {
+          const scale = maxDist / dist
+          return { x: x * scale, y: y * scale }
+        }
+        return { x, y }
+      }
+
+      function updateThumb(x, y) {
+        thumb.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+      }
+
+      function startPanning() {
+        if (panInterval) return
+        panInterval = setInterval(() => {
+          if (joyX === 0 && joyY === 0) return
+          // Normalize to -1..1 range
+          const nx = joyX / maxDist
+          const ny = joyY / maxDist
+          const dx = nx * PAN_SPEED
+          const dy = ny * PAN_SPEED
+          sendCommand('pan', { dx: -dx, dy: -dy })
+        }, 100)
+      }
+
+      function stopPanning() {
+        if (panInterval) {
+          clearInterval(panInterval)
+          panInterval = null
+        }
+      }
+
+      function onStart(e) {
+        e.preventDefault()
+        dragging = true
+        thumb.classList.remove('released')
+        const pos = getJoyPos(e)
+        const clamped = clampDist(pos.x, pos.y)
+        joyX = clamped.x
+        joyY = clamped.y
+        updateThumb(joyX, joyY)
+        startPanning()
+      }
+
+      function onMove(e) {
+        if (!dragging) return
+        e.preventDefault()
+        const pos = getJoyPos(e)
+        const clamped = clampDist(pos.x, pos.y)
+        joyX = clamped.x
+        joyY = clamped.y
+        updateThumb(joyX, joyY)
+      }
+
+      function onEnd() {
+        if (!dragging) return
+        dragging = false
+        joyX = 0
+        joyY = 0
+        thumb.classList.add('released')
+        updateThumb(0, 0)
+        stopPanning()
+      }
+
+      base.addEventListener('mousedown', onStart)
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onEnd)
+
+      base.addEventListener('touchstart', onStart, { passive: false })
+      base.addEventListener('touchmove', onMove, { passive: false })
+      base.addEventListener('touchend', onEnd)
+      base.addEventListener('touchcancel', onEnd)
+    })()
   </script>
 </body>
 </html>

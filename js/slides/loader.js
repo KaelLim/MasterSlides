@@ -2,7 +2,7 @@ import { state, dom, getSupabaseClient } from './state.js';
 import { updatePageCount, navigation } from './navigation.js';
 import { loadSettings, resetNavHideTimer, updateFullscreenButton, showNav } from './display.js';
 import { updateModKeyDisplay } from './modals.js';
-import { initLightbox } from './lightbox.js';
+import { initLightbox, lightboxCallbacks } from './lightbox.js';
 import { initRemote, syncRemoteState } from './remote.js';
 import { initGotoModal } from './goto.js';
 import { initHelpModal } from './modals.js';
@@ -234,9 +234,10 @@ export async function init() {
     }
   }
 
-  // Wire up navigation callbacks
+  // Wire up callbacks
   navigation.onPageChange = syncRemoteState;
   navigation.onLoadPlaylistDoc = loadPlaylistDoc;
+  lightboxCallbacks.onStateChange = syncRemoteState;
 
   await loadDocument(docId);
 }

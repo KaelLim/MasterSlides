@@ -1,7 +1,7 @@
 import { state, dom, getRealtimeModule } from './state.js';
 import { goToPage, prevPage, nextPage, isVerticalMode } from './navigation.js';
 import { toggleFullscreen, setVerticalMode, setHorizontalMode, closeSidebar } from './display.js';
-import { openLightbox, closeLightbox } from './lightbox.js';
+import { openLightbox, closeLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from './lightbox.js';
 
 export function getCurrentPageImages() {
   const containerWidth = dom.manuscriptContainer.clientWidth;
@@ -42,7 +42,9 @@ export async function syncRemoteState() {
   rt.syncState({
     currentPage: state.currentPage + 1,
     totalPages: state.totalPages,
-    images
+    images,
+    lightboxActive: dom.lightbox.classList.contains('active'),
+    lightboxZoom: state.lbZoom
   });
 }
 
@@ -104,6 +106,10 @@ export async function initRemote() {
             }
           }
           break;
+        case 'zoomIn': setLightboxZoom(state.lbZoom + 0.25); break;
+        case 'zoomOut': setLightboxZoom(state.lbZoom - 0.25); break;
+        case 'zoomReset': resetLightboxZoom(); break;
+        case 'pan': panLightbox(payload.dx || 0, payload.dy || 0); break;
       }
       syncRemoteState();
     },

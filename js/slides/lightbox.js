@@ -1,5 +1,8 @@
 import { state, dom } from './state.js';
 
+// Callback to notify remote of lightbox state changes
+export const lightboxCallbacks = { onStateChange: null };
+
 function getPinchDistance(touches) {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
@@ -24,6 +27,7 @@ export function setLightboxZoom(zoom) {
   }
   updateLightboxTransform();
   showZoomInfo();
+  lightboxCallbacks.onStateChange?.();
 }
 
 export function resetLightboxZoom() {
@@ -34,16 +38,25 @@ export function resetLightboxZoom() {
   showZoomInfo();
 }
 
+export function panLightbox(dx, dy) {
+  if (state.lbZoom <= 1) return;
+  state.lbPosX += dx;
+  state.lbPosY += dy;
+  updateLightboxTransform();
+}
+
 export function openLightbox(src, caption) {
   resetLightboxZoom();
   dom.lightboxImg.src = src;
   dom.lightboxCaption.textContent = caption || '';
   dom.lightbox.classList.add('active');
+  lightboxCallbacks.onStateChange?.();
 }
 
 export function closeLightbox() {
   dom.lightbox.classList.remove('active');
   resetLightboxZoom();
+  lightboxCallbacks.onStateChange?.();
 }
 
 export function initLightbox() {
