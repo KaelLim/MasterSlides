@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterSlides - 播放清單</title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+  <master-sidebar></master-sidebar>
+  <main id="content">
+    <div class="loading-screen">載入中...</div>
+  </main>
+  <master-toast></master-toast>
+
+  <script type="module">
+    import { initDashboard } from '/js/dashboard-init.js'
+    import '/js/components/master-playlist-list.js'
+
+    await initDashboard('playlists')
+    const content = document.getElementById('content')
+    content.innerHTML = ''
+    content.appendChild(document.createElement('master-playlist-list'))
+  </script>
+</body>
+</html>

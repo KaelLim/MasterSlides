@@ -4,73 +4,98 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MasterSlides - 登入</title>
-  <link rel="stylesheet" href="/css/common.css">
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #f0f2f5;
+      background: #1a1a2e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
     .login-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
       padding: 40px;
       width: 100%;
       max-width: 380px;
     }
+
     .login-card h1 {
       margin: 0 0 8px;
       font-size: 24px;
       text-align: center;
+      color: #FFD700;
+      font-weight: 700;
     }
+
     .login-card p {
-      margin: 0 0 24px;
-      color: #666;
+      margin: 0 0 28px;
+      color: rgba(255, 255, 255, 0.5);
       text-align: center;
       font-size: 14px;
     }
+
     .form-group {
       margin-bottom: 16px;
     }
+
     .form-group label {
       display: block;
-      margin-bottom: 4px;
-      font-size: 14px;
-      font-weight: 500;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
     }
+
     .form-group input {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
       font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
     }
+
     .form-group input:focus {
-      border-color: #4a90d9;
+      border-color: #5FCFC3;
     }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
     .login-btn {
       width: 100%;
       padding: 12px;
-      background: #4a90d9;
-      color: white;
+      background: #5FCFC3;
+      color: #1a1a2e;
       border: none;
-      border-radius: 4px;
-      font-size: 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       margin-top: 8px;
+      transition: background 0.2s;
     }
+
     .login-btn:hover {
-      background: #357abd;
+      background: #7EDDD3;
     }
+
     .login-btn:disabled {
-      background: #a0c4e8;
+      opacity: 0.4;
       cursor: not-allowed;
     }
+
     .error-msg {
       color: #e74c3c;
       font-size: 13px;
@@ -101,11 +126,10 @@
   <script type="module">
     import { login, getSession } from '/js/auth.js'
 
-    // 已登入則跳轉
     const session = await getSession()
     if (session) {
       const redirect = new URLSearchParams(location.search).get('redirect')
-      window.location.href = redirect || '/dashboard.html'
+      window.location.href = redirect || '/dashboard/documents.html'
     }
 
     const form = document.getElementById('loginForm')
@@ -133,7 +157,7 @@
       }
 
       const redirect = new URLSearchParams(location.search).get('redirect')
-      window.location.href = redirect || '/dashboard.html'
+      window.location.href = redirect || '/dashboard/documents.html'
     })
   </script>
 </body>

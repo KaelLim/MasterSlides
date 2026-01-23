@@ -54,11 +54,11 @@ slides.html?src=<docId>
 
 **remote.html** — Mobile remote control (Supabase Realtime Broadcast client)
 
-**dashboard.html** — Role-based admin panel:
-- Upload: Google Docs → Edge Function conversion (uploader+)
-- Documents: List, view, toggle public/private, delete (owner)
-- Playlists: Create, edit, drag-sort, toggle public (admin+)
-- Users: Role management table (super_admin)
+**dashboard/*.html** — Multi-page admin panel (Lit Web Components):
+- `upload.html`: Google Docs → Edge Function conversion (uploader+)
+- `documents.html`: List, view, toggle public/private, delete (owner)
+- `playlists.html`: Create, edit, drag-sort, toggle public (admin+)
+- `users.html`: Role management table (super_admin)
 
 **login.html** — Supabase Auth email/password login
 
@@ -76,6 +76,8 @@ slides.html?src=<docId>
 | `js/playlists.js` | Playlist CRUD + RPC calls |
 | `js/upload.js` | Edge Function caller for doc conversion |
 | `js/realtime.js` | Realtime Broadcast: createRoom, joinRoom, sendCommand, syncState |
+| `js/store.js` | Reactive EventTarget store for dashboard state |
+| `js/dashboard-init.js` | Shared auth guard + store init for multi-page dashboard |
 
 ### Configuration
 
@@ -144,7 +146,10 @@ RLS enforced. `is_super_admin()` SECURITY DEFINER helper prevents recursive poli
 | `/slides.html?playlist=<id>` | Playlist mode |
 | `/remote.html?id=<roomId>` | Remote control |
 | `/login.html` | Login page |
-| `/dashboard.html` | Admin dashboard |
+| `/dashboard/upload.html` | Upload page (uploader+) |
+| `/dashboard/documents.html` | Document list |
+| `/dashboard/playlists.html` | Playlist management (admin+) |
+| `/dashboard/users.html` | User management (super_admin) |
 | `/config.json` | App config (badge, anonKey) |
 | `/storage/v1/object/public/slides/...` | Public image/file access |
 | `/functions/v1/fetch-google-doc` | Edge Function (POST, auth required) |

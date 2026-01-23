@@ -1,341 +1,38 @@
-/* Dashboard Layout */
-.dashboard {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 20px;
+:root {
+  --color-primary: #5FCFC3;
+  --color-primary-light: #7EDDD3;
+  --color-secondary: #FFD700;
+  --color-accent: #FF8C00;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-danger: #e74c3c;
+  --sidebar-width: 220px;
 }
 
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.dashboard-header h1 {
+* {
   margin: 0;
-  font-size: 22px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #666;
-}
-
-.user-info .role-badge {
-  background: #e8f0fe;
-  color: #1a73e8;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.btn-logout {
-  background: none;
-  border: 1px solid #d0d0d0;
-  color: #666;
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.btn-logout:hover {
-  border-color: #999;
-  color: #333;
-}
-
-/* Sections */
-.section {
-  margin-bottom: 32px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.section[hidden] {
-  display: none;
-}
-
-/* Cards Grid */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 16px;
-  transition: box-shadow 0.2s;
-}
-
-.card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 6px;
-}
-
-.card-meta {
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 12px;
-}
-
-.card-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.card-actions button {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
-
-.btn-view {
-  background: #4a90d9;
-  color: white;
-}
-
-.btn-edit {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.btn-delete {
-  background: none;
-  border: 1px solid #e74c3c;
-  color: #e74c3c;
-}
-
-.btn-public {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.btn-private {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-/* Upload Section */
-.upload-form {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 600px;
-}
-
-.upload-form .form-group {
-  margin-bottom: 12px;
-}
-
-.upload-form label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.upload-form input[type="text"],
-.upload-form input[type="url"] {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.upload-form input:focus {
-  outline: none;
-  border-color: #4a90d9;
-}
-
-.upload-status {
-  margin-top: 12px;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  display: none;
-}
-
-.upload-status.success {
-  background: #e8f5e9;
-  color: #2e7d32;
-  display: block;
-}
-
-.upload-status.error {
-  background: #fbe9e7;
-  color: #c62828;
-  display: block;
-}
-
-.upload-status.loading {
-  background: #e3f2fd;
-  color: #1565c0;
-  display: block;
-}
-
-/* Playlist Detail */
-.playlist-docs {
-  list-style: none;
   padding: 0;
-  margin: 0;
+  box-sizing: border-box;
 }
 
-.playlist-docs li {
+body {
+  background: #1a1a2e;
+  color: var(--color-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+#content {
+  margin-left: var(--sidebar-width);
+  padding: 32px;
+  min-height: 100vh;
+}
+
+.loading-screen {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  margin-bottom: 4px;
-  cursor: grab;
-}
-
-.playlist-docs li:active {
-  cursor: grabbing;
-  background: #f5f5f5;
-}
-
-.playlist-docs li .drag-handle {
-  color: #999;
-  user-select: none;
-}
-
-.playlist-docs li .doc-title {
-  flex: 1;
-}
-
-.playlist-docs li .btn-remove {
-  font-size: 11px;
-  padding: 2px 6px;
-  background: none;
-  border: 1px solid #ccc;
-  color: #999;
-}
-
-/* User Management */
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-}
-
-.user-table th,
-.user-table td {
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 14px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.user-table th {
-  background: #fafafa;
-  font-weight: 600;
-  font-size: 13px;
-  color: #666;
-}
-
-.user-table select {
-  padding: 4px 8px;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-/* Modal */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 1000;
   align-items: center;
   justify-content: center;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.modal h3 {
-  margin: 0 0 16px;
-}
-
-.modal .form-group {
-  margin-bottom: 12px;
-}
-
-.modal .form-group label {
-  display: block;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.modal .form-group input,
-.modal .form-group select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.btn-cancel {
-  background: #f0f0f0;
-  color: #333;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #999;
+  height: 80vh;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
