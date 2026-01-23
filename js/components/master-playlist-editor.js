@@ -236,6 +236,7 @@ class MasterPlaylistEditor extends LitElement {
     this._name = ''
     this._desc = ''
     this._selectedIds = []
+    this._allDocs = []
     this._docs = []
     this._search = ''
     this._sort = 'newest'
@@ -246,7 +247,8 @@ class MasterPlaylistEditor extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback()
-    this._docs = [...store.documents]
+    this._allDocs = [...store.documents]
+    this._docs = this._allDocs.filter(d => d.is_public)
     if (this.playlistId) {
       try {
         const data = await playlistsApi.getWithDocuments(this.playlistId, { publicOnly: false })
@@ -350,7 +352,7 @@ class MasterPlaylistEditor extends LitElement {
   }
 
   _getDocTitle(docId) {
-    const d = this._docs.find(x => x.doc_id === docId)
+    const d = this._allDocs.find(x => x.doc_id === docId)
     return d?.title || docId
   }
 
