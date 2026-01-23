@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterSlides - 轉換中</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #1a1a2e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: white;
+    }
+    .card {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+    h1 { color: #FFD700; font-size: 20px; margin-bottom: 16px; }
+    .status { color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-bottom: 8px; }
+    .error { color: #e74c3c; font-size: 14px; margin-top: 12px; display: none; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #5FCFC3;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h1>MasterSlides</h1>
+    <div class="status" id="status">檢查登入狀態...</div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js'
+    import { fetchGoogleDoc } from '/js/upload.js'
+
+    const status = document.getElementById('status')
+    const error = document.getElementById('error')
+    const spinner = document.getElementById('spinner')
+
+    // Extract docId from URL path: /document/d/:docId/...
+    const match = location.pathname.match(/\/document\/d\/([a-zA-Z0-9_-]+)/)
+    if (!match) {
+      showError('無效的文件網址')
+      throw new Error('invalid path')
+    }
+    const docId = match[1]
+
+    // Check auth
+    const supabase = await getSupabase()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      // Redirect to login, then come back
+      location.href = `/login.html?redirect=${encodeURIComponent(location.pathname)}`
+      throw new Error('redirecting')
+    }
+
+    // Authenticated — convert the document
+    status.textContent = '正在轉換簡報...'
+
+    try {
+      await fetchGoogleDoc({ docId })
+      status.textContent = '轉換完成，跳轉中...'
+      location.href = `/slides.html?src=${docId}`
+    } catch (err) {
+      showError(err.message || '轉換失敗')
+    }
+
+    function showError(msg) {
+      spinner.style.display = 'none'
+      status.textContent = '發生錯誤'
+      error.textContent = msg
+      error.style.display = 'block'
+    }
+  </script>
+</body>
+</html>
