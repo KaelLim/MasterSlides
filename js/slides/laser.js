@@ -2,15 +2,15 @@ import { dom } from './state.js';
 
 let canvas = null;
 let ctx = null;
-let active = false;       // laser mode on/off
-let drawing = false;      // pointer is down
-let trail = [];           // array of {x, y, time}
-let fadeAnimId = null;
+let active = false;
+let mouseX = -1;
+let mouseY = -1;
 
-const TRAIL_DURATION = 1500; // ms before trail points expire
-const DOT_RADIUS = 8;
-const TRAIL_WIDTH = 4;
-const FADE_DURATION = 1000;  // ms for fade out after pointer up
+const OVERLAY_ALPHA = 0.5;
+
+function getSpotlightRadius() {
+  return window.innerWidth * 0.1; // 20vw diameter = 10vw radius
+}
 
 function createCanvas() {
   canvas = document.createElement('canvas');
@@ -34,11 +34,12 @@ function resizeCanvas() {
   if (!canvas) return;
   canvas.width = dom.contentArea.clientWidth;
   canvas.height = dom.contentArea.clientHeight;
+  if (active && mouseX >= 0) drawSpotlight();
 }
 
 function getPos(e) {
   const rect = dom.contentArea.getBoundingClientRect();
-  if (e.touches) {
+  if (e.touches && e.touches.length > 0) {
     return {
       x: e.touches[0].clientX - rect.left,
       y: e.touches[0].clientY - rect.top
@@ -50,86 +51,65 @@ function getPos(e) {
   };
 }
 
-function onPointerDown(e) {
+function drawSpotlight() {
+  const w = canvas.width;
+  const h = canvas.height;
+  const radius = getSpotlightRadius();
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Draw dark overlay
+  ctx.fillStyle = `rgba(0, 0, 0, ${OVERLAY_ALPHA})`;
+  ctx.fillRect(0, 0, w, h);
+
+  // Cut out spotlight circle with soft edge
+  ctx.globalCompositeOperation = 'destination-out';
+  const gradient = ctx.createRadialGradient(
+    mouseX, mouseY, radius * 0.7,
+    mouseX, mouseY, radius
+  );
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+  gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.9)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  ctx.beginPath();
+  ctx.arc(mouseX, mouseY, radius, 0, Math.PI * 2);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Draw glowing border ring
+  const glowGradient = ctx.createRadialGradient(
+    mouseX, mouseY, radius * 0.75,
+    mouseX, mouseY, radius * 1.05
+  );
+  glowGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+  glowGradient.addColorStop(0.4, 'rgba(200, 230, 255, 0.25)');
+  glowGradient.addColorStop(0.7, 'rgba(150, 200, 255, 0.15)');
+  glowGradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
+
+  ctx.beginPath();
+  ctx.arc(mouseX, mouseY, radius * 1.05, 0, Math.PI * 2);
+  ctx.fillStyle = glowGradient;
+  ctx.fill();
+}
+
+function onMouseMove(e) {
   if (!active) return;
-  drawing = true;
-  trail = [];
-  if (fadeAnimId) {
-    cancelAnimationFrame(fadeAnimId);
-    fadeAnimId = null;
-  }
   const pos = getPos(e);
-  trail.push({ ...pos, time: Date.now() });
-  drawTrail(1);
+  mouseX = pos.x;
+  mouseY = pos.y;
+  drawSpotlight();
 }
 
-function onPointerMove(e) {
-  if (!active || !drawing) return;
+function onTouchMove(e) {
+  if (!active) return;
+  e.preventDefault();
   const pos = getPos(e);
-  trail.push({ ...pos, time: Date.now() });
-  // Remove expired points
-  const now = Date.now();
-  trail = trail.filter(p => now - p.time < TRAIL_DURATION);
-  drawTrail(1);
-}
-
-function onPointerUp() {
-  if (!active || !drawing) return;
-  drawing = false;
-  startFadeOut();
-}
-
-function drawTrail(alpha) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (trail.length === 0) return;
-
-  ctx.globalAlpha = alpha;
-
-  // Draw trail line
-  if (trail.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(trail[0].x, trail[0].y);
-    for (let i = 1; i < trail.length; i++) {
-      ctx.lineTo(trail[i].x, trail[i].y);
-    }
-    ctx.strokeStyle = 'rgba(255, 60, 60, 0.6)';
-    ctx.lineWidth = TRAIL_WIDTH;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-  }
-
-  // Draw current dot (last point)
-  const last = trail[trail.length - 1];
-  ctx.beginPath();
-  ctx.arc(last.x, last.y, DOT_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = '#ff3c3c';
-  ctx.fill();
-
-  // Outer glow
-  ctx.beginPath();
-  ctx.arc(last.x, last.y, DOT_RADIUS + 4, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 60, 60, 0.3)';
-  ctx.fill();
-
-  ctx.globalAlpha = 1;
-}
-
-function startFadeOut() {
-  const startTime = Date.now();
-  function fade() {
-    const elapsed = Date.now() - startTime;
-    const alpha = 1 - elapsed / FADE_DURATION;
-    if (alpha <= 0) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      trail = [];
-      fadeAnimId = null;
-      return;
-    }
-    drawTrail(alpha);
-    fadeAnimId = requestAnimationFrame(fade);
-  }
-  fadeAnimId = requestAnimationFrame(fade);
+  mouseX = pos.x;
+  mouseY = pos.y;
+  drawSpotlight();
 }
 
 export function toggleLaser() {
@@ -137,18 +117,19 @@ export function toggleLaser() {
   if (active) {
     canvas.style.display = 'block';
     canvas.style.pointerEvents = 'auto';
-    dom.contentArea.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%278%27 fill=%27rgba(255,60,60,0.3)%27/%3E%3C/svg%3E") 12 12, auto';
+    canvas.style.cursor = 'none';
     document.getElementById('laserBtn')?.classList.add('active');
+    // Draw initial state (full dark until mouse moves)
+    if (mouseX < 0) {
+      mouseX = canvas.width / 2;
+      mouseY = canvas.height / 2;
+    }
+    drawSpotlight();
   } else {
     canvas.style.display = 'none';
     canvas.style.pointerEvents = 'none';
-    dom.contentArea.style.cursor = '';
-    drawing = false;
-    trail = [];
-    if (fadeAnimId) {
-      cancelAnimationFrame(fadeAnimId);
-      fadeAnimId = null;
-    }
+    canvas.style.cursor = '';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     document.getElementById('laserBtn')?.classList.remove('active');
   }
 }
@@ -160,24 +141,16 @@ export function isLaserActive() {
 export function initLaser() {
   createCanvas();
 
-  // Mouse events
-  canvas.addEventListener('mousedown', onPointerDown);
-  canvas.addEventListener('mousemove', onPointerMove);
-  canvas.addEventListener('mouseup', onPointerUp);
-  canvas.addEventListener('mouseleave', onPointerUp);
-
-  // Touch events
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
   canvas.addEventListener('touchstart', (e) => {
+    if (!active) return;
     e.preventDefault();
-    onPointerDown(e);
-  });
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    onPointerMove(e);
-  });
-  canvas.addEventListener('touchend', onPointerUp);
-  canvas.addEventListener('touchcancel', onPointerUp);
+    const pos = getPos(e);
+    mouseX = pos.x;
+    mouseY = pos.y;
+    drawSpotlight();
+  }, { passive: false });
 
-  // Resize
   window.addEventListener('resize', resizeCanvas);
 }
