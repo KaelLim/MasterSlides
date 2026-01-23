@@ -8,6 +8,7 @@ import { initGotoModal } from './goto.js';
 import { initHelpModal } from './modals.js';
 import { initSearch } from './search.js';
 import { exportPDF } from './print.js';
+import { initLaser, toggleLaser } from './laser.js';
 import { handleKeydown } from './keyboard.js';
 import { goToPage, prevPage, nextPage } from './navigation.js';
 import { toggleSidebar, closeSidebar, decreaseFontSize, increaseFontSize, setVerticalMode, setHorizontalMode, applyFont, toggleFullscreen, toggleNavVisibility } from './display.js';
@@ -161,6 +162,10 @@ function initEventListeners() {
 
   // Nav visibility toggle
   document.getElementById('toggleNavBtn').onclick = toggleNavVisibility;
+
+  // Laser pointer
+  document.getElementById('laserBtn').onclick = toggleLaser;
+  initLaser();
 
   // Export PDF
   document.getElementById('exportPdfBtn').onclick = exportPDF;

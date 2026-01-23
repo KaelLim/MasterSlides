@@ -7,6 +7,7 @@ import { showGoToPageDialog } from './goto.js';
 import { showHelpModal, closeAllModals } from './modals.js';
 import { openSearch, closeSearch, isSearchOpen } from './search.js';
 import { exportPDF } from './print.js';
+import { toggleLaser } from './laser.js';
 
 const HOTKEYS = {
   'ArrowRight': 'nextPage',
@@ -28,6 +29,8 @@ const HOTKEYS = {
   'N': 'toggleNav',
   'r': 'remoteQR',
   'R': 'remoteQR',
+  'l': 'laser',
+  'L': 'laser',
   '?': 'help',
   'h': 'help',
   'H': 'help',
@@ -65,6 +68,7 @@ const ACTIONS = {
     else { closeAllModals(); }
   },
   search: () => openSearch(),
+  laser: () => toggleLaser(),
   fontIncrease: () => increaseFontSize(),
   fontDecrease: () => decreaseFontSize(),
   fontReset: () => setFontScale(1.0),
