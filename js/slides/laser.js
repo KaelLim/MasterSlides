@@ -79,18 +79,20 @@ function drawSpotlight() {
 
   ctx.globalCompositeOperation = 'source-over';
 
-  // Draw glowing border ring
+  // Draw warm glow ring (like a real spotlight)
   const glowGradient = ctx.createRadialGradient(
-    mouseX, mouseY, radius * 0.75,
-    mouseX, mouseY, radius * 1.05
+    mouseX, mouseY, radius * 0.65,
+    mouseX, mouseY, radius * 1.2
   );
   glowGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-  glowGradient.addColorStop(0.4, 'rgba(200, 230, 255, 0.25)');
-  glowGradient.addColorStop(0.7, 'rgba(150, 200, 255, 0.15)');
-  glowGradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
+  glowGradient.addColorStop(0.3, 'rgba(255, 250, 240, 0.12)');
+  glowGradient.addColorStop(0.5, 'rgba(255, 230, 180, 0.18)');
+  glowGradient.addColorStop(0.7, 'rgba(255, 200, 120, 0.1)');
+  glowGradient.addColorStop(0.9, 'rgba(255, 180, 80, 0.04)');
+  glowGradient.addColorStop(1, 'rgba(255, 160, 60, 0)');
 
   ctx.beginPath();
-  ctx.arc(mouseX, mouseY, radius * 1.05, 0, Math.PI * 2);
+  ctx.arc(mouseX, mouseY, radius * 1.2, 0, Math.PI * 2);
   ctx.fillStyle = glowGradient;
   ctx.fill();
 }
