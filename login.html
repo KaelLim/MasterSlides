@@ -3,125 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MasterSlides - 登入</title>
+  <title>MasterSlides - Login</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
+      font-family: 'Inter', sans-serif;
+      background: #f6f6f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: #fff;
+      border-bottom: 1px solid #f0f2f4;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #111318;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .header-brand .icon {
+      font-family: 'Material Symbols Outlined';
+      font-size: 24px;
+      color: #135bec;
+    }
+    main {
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      background: #1a1a2e;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 24px;
     }
-
     .login-card {
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 40px;
       width: 100%;
-      max-width: 380px;
+      max-width: 440px;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #f0f2f4;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      padding: 48px;
     }
-
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .logo-icon {
+      width: 64px; height: 64px;
+      background: rgba(19,91,236,0.1);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-icon .icon {
+      font-family: 'Material Symbols Outlined';
+      font-size: 36px;
+      color: #135bec;
+    }
     .login-card h1 {
-      margin: 0 0 8px;
-      font-size: 24px;
-      text-align: center;
-      color: #FFD700;
+      font-size: 28px;
       font-weight: 700;
-    }
-
-    .login-card p {
-      margin: 0 0 28px;
-      color: rgba(255, 255, 255, 0.5);
       text-align: center;
+      color: #111318;
+      letter-spacing: -0.02em;
+    }
+    .login-card .subtitle {
+      text-align: center;
+      color: #616f89;
       font-size: 14px;
+      margin-top: 8px;
+      margin-bottom: 32px;
     }
-
+    .error-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    .error-banner.visible { display: flex; }
+    .error-banner .icon {
+      font-family: 'Material Symbols Outlined';
+      font-size: 20px;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+    .error-banner p {
+      font-size: 13px;
+      color: #b91c1c;
+      font-weight: 500;
+    }
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
-
     .form-group label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: 500;
+      color: #111318;
+      margin-bottom: 8px;
     }
-
     .form-group input {
       width: 100%;
-      padding: 12px 15px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      color: white;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus {
-      border-color: #5FCFC3;
-    }
-
-    .form-group input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 12px;
-      background: #5FCFC3;
-      color: #1a1a2e;
-      border: none;
+      height: 52px;
+      padding: 0 16px;
+      border: 1px solid #dbdfe6;
       border-radius: 8px;
       font-size: 15px;
-      font-weight: 600;
+      color: #111318;
+      outline: none;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .form-group input:focus {
+      border-color: #135bec;
+      box-shadow: 0 0 0 3px rgba(19,91,236,0.1);
+    }
+    .form-group input::placeholder { color: #616f89; }
+    .login-btn {
+      width: 100%;
+      height: 52px;
+      background: #135bec;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 8px;
-      transition: background 0.2s;
+      transition: all 0.15s;
+      box-shadow: 0 4px 12px rgba(19,91,236,0.2);
+      font-family: inherit;
     }
-
-    .login-btn:hover {
-      background: #7EDDD3;
-    }
-
-    .login-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .error-msg {
-      color: #e74c3c;
-      font-size: 13px;
-      margin-top: 12px;
-      text-align: center;
-      display: none;
-    }
+    .login-btn:hover { background: #0f4fd4; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <div class="login-card">
-    <h1>MasterSlides</h1>
-    <p>請登入以繼續</p>
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" required autocomplete="email">
+  <header>
+    <div class="header-brand">
+      <span class="icon">folder_managed</span>
+      MasterSlides
+    </div>
+  </header>
+
+  <main>
+    <div class="login-card">
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <span class="icon">library_books</span>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="password">密碼</label>
-        <input type="password" id="password" required autocomplete="current-password">
+      <h1>Welcome Back</h1>
+      <p class="subtitle">Manage your playlists and documents in one place</p>
+
+      <div class="error-banner" id="errorBanner">
+        <span class="icon">error</span>
+        <p id="errorMsg"></p>
       </div>
-      <button type="submit" class="login-btn" id="loginBtn">登入</button>
-      <div class="error-msg" id="errorMsg"></div>
-    </form>
-  </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required autocomplete="email" placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password" placeholder="Enter your password">
+        </div>
+        <button type="submit" class="login-btn" id="loginBtn">Login</button>
+      </form>
+    </div>
+  </main>
 
   <script type="module">
     import { login, getSession } from '/js/auth.js'
@@ -134,13 +201,14 @@
 
     const form = document.getElementById('loginForm')
     const btn = document.getElementById('loginBtn')
+    const errorBanner = document.getElementById('errorBanner')
     const errorMsg = document.getElementById('errorMsg')
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault()
-      errorMsg.style.display = 'none'
+      errorBanner.classList.remove('visible')
       btn.disabled = true
-      btn.textContent = '登入中...'
+      btn.textContent = 'Logging in...'
 
       const email = document.getElementById('email').value
       const password = document.getElementById('password').value
@@ -149,10 +217,10 @@
 
       if (error) {
         errorMsg.textContent = error.message === 'Invalid login credentials'
-          ? '帳號或密碼錯誤' : error.message
-        errorMsg.style.display = 'block'
+          ? 'Invalid email or password. Please try again.' : error.message
+        errorBanner.classList.add('visible')
         btn.disabled = false
-        btn.textContent = '登入'
+        btn.textContent = 'Login'
         return
       }
 

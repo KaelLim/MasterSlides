@@ -10,12 +10,12 @@ export async function listPlaylists() {
   return data
 }
 
-export async function createPlaylist(name, description = '') {
+export async function createPlaylist({ name, description = '', document_ids = [] } = {}) {
   const supabase = await getSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   const { data, error } = await supabase
     .from('playlists')
-    .insert({ name, description, owner_id: user.id })
+    .insert({ name, description, document_ids, owner_id: user.id })
     .select()
     .single()
   if (error) throw error

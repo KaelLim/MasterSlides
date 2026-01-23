@@ -1,38 +1,63 @@
+/* Dashboard Foundation — Light Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
 :root {
-  --color-primary: #5FCFC3;
-  --color-primary-light: #7EDDD3;
-  --color-secondary: #FFD700;
-  --color-accent: #FF8C00;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: rgba(255, 255, 255, 0.6);
-  --color-danger: #e74c3c;
-  --sidebar-width: 220px;
+  --color-primary: #135bec;
+  --color-primary-hover: #0f4fd4;
+  --color-primary-light: rgba(19, 91, 236, 0.1);
+  --color-background: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-border: #dbdfe6;
+  --color-border-light: #f0f2f4;
+  --color-text: #111318;
+  --color-text-secondary: #616f89;
+  --color-danger: #ef4444;
+  --color-danger-light: #fef2f2;
+  --sidebar-width: 288px;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: #1a1a2e;
-  color: var(--color-text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 #content {
   margin-left: var(--sidebar-width);
   padding: 32px;
-  min-height: 100vh;
+}
+
+#content > * {
+  max-width: 1100px;
 }
 
 .loading-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 80vh;
+  height: 50vh;
   color: var(--color-text-secondary);
   font-size: 14px;
 }
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }

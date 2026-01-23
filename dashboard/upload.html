@@ -3,24 +3,271 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MasterSlides - 上傳簡報</title>
-  <link rel="stylesheet" href="/css/dashboard.css">
+  <title>MasterSlides - Upload</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f6f6f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: #fff;
+      border-bottom: 1px solid #f0f2f4;
+    }
+    .header-brand {
+      display: flex; align-items: center; gap: 8px;
+      color: #111318; font-size: 16px; font-weight: 700;
+    }
+    .header-brand .icon {
+      font-family: 'Material Symbols Outlined'; font-size: 24px; color: #135bec;
+    }
+    main {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .upload-card {
+      width: 100%; max-width: 520px;
+      background: #fff; border-radius: 16px;
+      border: 1px solid #f0f2f4;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      padding: 48px;
+    }
+    .status-icon {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .status-icon .icon { font-family: 'Material Symbols Outlined'; font-size: 36px; }
+    .status-icon.uploading { background: rgba(19,91,236,0.1); }
+    .status-icon.uploading .icon { color: #135bec; }
+    .status-icon.success { background: rgba(74,222,128,0.1); }
+    .status-icon.success .icon { color: #16a34a; }
+    .status-icon.error { background: #fef2f2; }
+    .status-icon.error .icon { color: #ef4444; }
+
+    h1 { font-size: 24px; font-weight: 700; text-align: center; color: #111318; letter-spacing: -0.02em; }
+    .subtitle { text-align: center; color: #616f89; font-size: 14px; margin-top: 8px; margin-bottom: 32px; }
+    .doc-id { font-family: monospace; font-size: 12px; color: #616f89; background: #f0f2f4; padding: 2px 8px; border-radius: 4px; }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #f0f2f4; border-top-color: #135bec;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 24px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block; font-size: 14px; font-weight: 500;
+      color: #111318; margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%; height: 48px; padding: 0 16px;
+      border: 1px solid #dbdfe6; border-radius: 8px;
+      font-size: 15px; color: #111318; outline: none;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .form-group input:focus { border-color: #135bec; box-shadow: 0 0 0 3px rgba(19,91,236,0.1); }
+
+    .overwrite-notice {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; margin-bottom: 20px;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 8px;
+    }
+    .overwrite-notice .icon { font-family: 'Material Symbols Outlined'; font-size: 20px; color: #d97706; flex-shrink: 0; }
+    .overwrite-notice p { font-size: 13px; color: #92400e; }
+
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-primary {
+      flex: 1; height: 48px;
+      background: #135bec; color: #fff; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+      box-shadow: 0 4px 12px rgba(19,91,236,0.2);
+    }
+    .btn-primary:hover { background: #0f4fd4; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      height: 48px; padding: 0 24px;
+      background: #fff; color: #111318;
+      border: 1px solid #dbdfe6; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .btn-secondary:hover { background: #f6f6f8; }
+
+    .error-msg {
+      text-align: center; color: #ef4444;
+      font-size: 14px; margin-top: 16px;
+    }
+
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <master-sidebar></master-sidebar>
-  <main id="content">
-    <div class="loading-screen">載入中...</div>
+  <header>
+    <div class="header-brand">
+      <span class="icon">folder_managed</span>
+      MasterSlides
+    </div>
+  </header>
+
+  <main>
+    <div class="upload-card">
+      <!-- State: Uploading -->
+      <div id="stateUploading">
+        <div class="status-icon uploading"><span class="icon">cloud_upload</span></div>
+        <h1>Uploading Document</h1>
+        <p class="subtitle">Fetching from Google Docs...</p>
+        <div class="spinner"></div>
+        <p style="text-align:center"><span class="doc-id" id="showDocId"></span></p>
+      </div>
+
+      <!-- State: Success -->
+      <div id="stateSuccess" class="hidden">
+        <div class="status-icon success"><span class="icon">check_circle</span></div>
+        <h1>Upload Complete</h1>
+        <p class="subtitle">Document has been fetched successfully. You can update the title below.</p>
+
+        <div id="overwriteNotice" class="overwrite-notice hidden">
+          <span class="icon">sync</span>
+          <p>This document already existed and has been updated to the latest version.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="docTitle">Document Title</label>
+          <input type="text" id="docTitle" placeholder="Enter document title...">
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-secondary" id="btnSkip">Skip</button>
+          <button class="btn-primary" id="btnSave">Save Title</button>
+        </div>
+      </div>
+
+      <!-- State: Error -->
+      <div id="stateError" class="hidden">
+        <div class="status-icon error"><span class="icon">error</span></div>
+        <h1>Upload Failed</h1>
+        <p class="subtitle" id="errorDetail"></p>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="location.href='/dashboard/documents.html'">Go to Documents</button>
+          <button class="btn-primary" id="btnRetry">Retry</button>
+        </div>
+      </div>
+
+      <!-- State: No Doc ID -->
+      <div id="stateNoDoc" class="hidden">
+        <div class="status-icon error"><span class="icon">link_off</span></div>
+        <h1>No Document ID</h1>
+        <p class="subtitle">No document ID was provided in the URL.</p>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="location.href='/dashboard/documents.html'" style="flex:1">Go to Documents</button>
+        </div>
+      </div>
+    </div>
   </main>
-  <master-toast></master-toast>
 
   <script type="module">
-    import { initDashboard } from '/js/dashboard-init.js'
-    import '/js/components/master-upload.js'
+    import { requireAuth } from '/js/auth.js'
+    import { fetchGoogleDoc } from '/js/upload.js'
+    import { getDocument, updateDocument } from '/js/documents.js'
 
-    await initDashboard('upload')
-    const content = document.getElementById('content')
-    content.innerHTML = ''
-    content.appendChild(document.createElement('master-upload'))
+    // Auth check
+    const session = await requireAuth()
+    if (!session) throw new Error('redirect')
+
+    const params = new URLSearchParams(location.search)
+    const docId = params.get('doc')
+
+    const stateUploading = document.getElementById('stateUploading')
+    const stateSuccess = document.getElementById('stateSuccess')
+    const stateError = document.getElementById('stateError')
+    const stateNoDoc = document.getElementById('stateNoDoc')
+
+    function showState(state) {
+      stateUploading.classList.add('hidden')
+      stateSuccess.classList.add('hidden')
+      stateError.classList.add('hidden')
+      stateNoDoc.classList.add('hidden')
+      state.classList.remove('hidden')
+    }
+
+    if (!docId) {
+      showState(stateNoDoc)
+    } else {
+      document.getElementById('showDocId').textContent = docId
+      startUpload()
+    }
+
+    async function startUpload() {
+      showState(stateUploading)
+
+      // Check if document already exists
+      let existingDoc = null
+      try {
+        existingDoc = await getDocument(docId)
+      } catch (e) { /* doesn't exist yet */ }
+
+      try {
+        await fetchGoogleDoc({ docId })
+
+        // Show success state
+        showState(stateSuccess)
+
+        // Pre-fill title from DB (preserved by edge function on re-upload)
+        const doc = await getDocument(docId)
+        const titleInput = document.getElementById('docTitle')
+        titleInput.value = doc.title || ''
+        titleInput.focus()
+        titleInput.select()
+
+        if (existingDoc) {
+          document.getElementById('overwriteNotice').classList.remove('hidden')
+        }
+      } catch (e) {
+        showState(stateError)
+        document.getElementById('errorDetail').textContent = e.message || 'Unknown error'
+      }
+    }
+
+    // Save title
+    document.getElementById('btnSave').addEventListener('click', async () => {
+      const title = document.getElementById('docTitle').value.trim()
+      if (!title) return
+      const btn = document.getElementById('btnSave')
+      btn.disabled = true
+      btn.textContent = 'Saving...'
+      try {
+        await updateDocument(docId, { title })
+        location.href = '/dashboard/documents.html'
+      } catch (e) {
+        btn.disabled = false
+        btn.textContent = 'Save Title'
+        alert(e.message)
+      }
+    })
+
+    // Skip → go to documents
+    document.getElementById('btnSkip').addEventListener('click', () => {
+      location.href = '/dashboard/documents.html'
+    })
+
+    // Retry
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      startUpload()
+    })
   </script>
 </body>
 </html>
