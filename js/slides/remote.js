@@ -24,8 +24,7 @@ export function getCurrentPageImages() {
     const visibleHeight = Math.min(imgBottom, containerHeight) - Math.max(imgTop, 0);
 
     if (visibleWidth > rect.width * 0.5 && visibleHeight > rect.height * 0.5) {
-      // Skip data URLs (table-converted images) — too large for broadcast
-      if (img.src && !img.src.startsWith('data:')) {
+      if (img.src) {
         visibleImages.push({
           src: img.src,
           alt: img.alt || ''
@@ -136,6 +135,12 @@ export async function initRemote() {
         case 'searchPrev': prevMatch(); break;
         case 'searchNext': nextMatch(); break;
         case 'searchClose': closeSearch(); break;
+        case 'goto':
+          if (payload.page && payload.page >= 1 && payload.page <= state.totalPages) {
+            if (lightboxActive) { closeLightbox(); }
+            goToPage(payload.page - 1);
+          }
+          break;
       }
       syncRemoteState();
     },
