@@ -1288,3 +1288,77 @@ kbd {
 
   /* @page size is set dynamically by print.js */
 }
+
+/* ===========================
+   Context Menu (Right-click)
+   =========================== */
+.context-menu {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  min-width: 300px;
+  background: rgba(20, 20, 40, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 10px 0;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+.context-menu.active {
+  display: block;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 22px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.context-menu-item:hover {
+  background: rgba(95, 207, 195, 0.15);
+}
+
+.context-menu-item:active {
+  background: rgba(95, 207, 195, 0.25);
+}
+
+.context-menu-icon {
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.context-menu-icon svg {
+  stroke: var(--color-primary);
+  fill: none;
+}
+
+.context-menu-icon svg[fill="currentColor"] {
+  fill: var(--color-primary);
+  stroke: none;
+}
+
+.context-menu-label {
+  flex: 1;
+}
+
+.context-menu-divider {
+  height: 1px;
+  margin: 6px 20px;
+  background: rgba(255, 255, 255, 0.1);
+}

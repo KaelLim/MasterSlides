@@ -9,6 +9,7 @@ import { initHelpModal } from './modals.js';
 import { initSearch } from './search.js';
 import { exportPDF } from './print.js';
 import { initLaser, toggleLaser } from './laser.js';
+import { initContextMenu } from './context-menu.js';
 import { handleKeydown } from './keyboard.js';
 import { goToPage, prevPage, nextPage } from './navigation.js';
 import { toggleSidebar, closeSidebar, decreaseFontSize, increaseFontSize, setVerticalMode, setHorizontalMode, applyFont, toggleFullscreen, toggleNavVisibility } from './display.js';
@@ -204,6 +205,9 @@ function initEventListeners() {
 
   // Lightbox
   initLightbox();
+
+  // Context menu (right-click / long-press)
+  initContextMenu();
 }
 
 export async function init() {
