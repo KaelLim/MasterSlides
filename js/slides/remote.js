@@ -2,6 +2,8 @@ import { state, dom, getRealtimeModule } from './state.js';
 import { goToPage, prevPage, nextPage, isVerticalMode } from './navigation.js';
 import { toggleFullscreen, setVerticalMode, setHorizontalMode, closeSidebar } from './display.js';
 import { openLightbox, closeLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from './lightbox.js';
+import { toggleLaser, isLaserActive } from './laser.js';
+import { searchFor, nextMatch, prevMatch, closeSearch, getSearchState } from './search.js';
 
 export function getCurrentPageImages() {
   const containerWidth = dom.manuscriptContainer.clientWidth;
@@ -39,12 +41,15 @@ export async function syncRemoteState() {
   if (!state.roomId) return;
   const images = getCurrentPageImages();
   const rt = await getRealtimeModule();
+  const searchState = getSearchState();
   rt.syncState({
     currentPage: state.currentPage + 1,
     totalPages: state.totalPages,
     images,
     lightboxActive: dom.lightbox.classList.contains('active'),
-    lightboxZoom: state.lbZoom
+    lightboxZoom: state.lbZoom,
+    spotlightActive: isLaserActive(),
+    ...searchState
   });
 }
 
@@ -83,11 +88,25 @@ export async function initRemote() {
       const action = payload.action;
       console.log('收到遙控指令:', action);
 
+      const lightboxActive = dom.lightbox.classList.contains('active');
+
       switch (action) {
-        case 'prev': prevPage(); break;
-        case 'next': nextPage(); break;
-        case 'first': goToPage(0); break;
-        case 'last': goToPage(state.totalPages - 1); break;
+        case 'prev':
+          if (lightboxActive) { closeLightbox(); }
+          else { prevPage(); }
+          break;
+        case 'next':
+          if (lightboxActive) { closeLightbox(); }
+          else { nextPage(); }
+          break;
+        case 'first':
+          if (lightboxActive) { closeLightbox(); }
+          else { goToPage(0); }
+          break;
+        case 'last':
+          if (lightboxActive) { closeLightbox(); }
+          else { goToPage(state.totalPages - 1); }
+          break;
         case 'fullscreen': toggleFullscreen(); break;
         case 'toggleMode':
           if (isVerticalMode()) { setHorizontalMode(); }
@@ -110,6 +129,13 @@ export async function initRemote() {
         case 'zoomOut': setLightboxZoom(state.lbZoom - 0.25); break;
         case 'zoomReset': resetLightboxZoom(); break;
         case 'pan': panLightbox(payload.dx || 0, payload.dy || 0); break;
+        case 'toggleSpotlight': toggleLaser(); break;
+        case 'search':
+          if (payload.keyword) { searchFor(payload.keyword); }
+          break;
+        case 'searchPrev': prevMatch(); break;
+        case 'searchNext': nextMatch(); break;
+        case 'searchClose': closeSearch(); break;
       }
       syncRemoteState();
     },

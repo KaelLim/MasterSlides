@@ -142,6 +142,21 @@ export function isSearchOpen() {
   return searchBar && searchBar.classList.contains('active');
 }
 
+export function searchFor(keyword) {
+  if (!searchBar) return;
+  searchBar.classList.add('active');
+  searchInput.value = keyword;
+  performSearch(keyword);
+}
+
+export function getSearchState() {
+  return {
+    searchQuery: searchInput ? searchInput.value : '',
+    searchCount: matches.length,
+    searchIndex: currentIndex
+  };
+}
+
 export function initSearch() {
   searchBar = document.getElementById('searchBar');
   searchInput = document.getElementById('searchInput');

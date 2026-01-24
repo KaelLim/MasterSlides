@@ -1,4 +1,5 @@
-import { state, isMac } from './state.js';
+import { state, dom, isMac } from './state.js';
+import { closeLightbox } from './lightbox.js';
 import { goToPage, prevPage, nextPage } from './navigation.js';
 import { toggleFullscreen, toggleSidebar, toggleNavVisibility, setVerticalMode, setHorizontalMode, increaseFontSize, decreaseFontSize, setFontScale, showNav } from './display.js';
 import { isVerticalMode } from './navigation.js';
@@ -48,11 +49,19 @@ const COMBO_HOTKEYS = {
   'p': 'exportPDF'
 };
 
+function closeLightboxIfActive() {
+  if (dom.lightbox.classList.contains('active')) {
+    closeLightbox();
+    return true;
+  }
+  return false;
+}
+
 const ACTIONS = {
-  nextPage: () => nextPage(),
-  prevPage: () => prevPage(),
-  firstPage: () => goToPage(0),
-  lastPage: () => goToPage(state.totalPages - 1),
+  nextPage: () => { if (!closeLightboxIfActive()) nextPage(); },
+  prevPage: () => { if (!closeLightboxIfActive()) prevPage(); },
+  firstPage: () => { if (!closeLightboxIfActive()) goToPage(0); },
+  lastPage: () => { if (!closeLightboxIfActive()) goToPage(state.totalPages - 1); },
   goToPage: () => showGoToPageDialog(),
   fullscreen: () => toggleFullscreen(),
   sidebar: () => toggleSidebar(),
