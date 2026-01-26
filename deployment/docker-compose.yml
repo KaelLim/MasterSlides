@@ -282,15 +282,17 @@ services:
 
   # --- Studio (Dashboard) ---
   studio:
-    image: supabase/studio:2025.12.17-sha-43f4f7f
+    image: ghcr.io/kaellim/supabase-root:latest
     container_name: supabase-studio
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/studio/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
       timeout: 10s
       interval: 5s
       retries: 3
     restart: unless-stopped
     environment:
+      HOSTNAME: "::"
+      NEXT_PUBLIC_BASE_PATH: /studio
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION:-MasterSlides}
