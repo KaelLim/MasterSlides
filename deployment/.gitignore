@@ -1,4 +1,5 @@
 .env
+docker-compose.override.yml
 volumes/db/data
 volumes/storage
 *.tar.gz

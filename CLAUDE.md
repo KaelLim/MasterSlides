@@ -10,15 +10,22 @@ MasterSlides: A Google Docs to paginated HTML presentation converter for the Tzu
 
 ```bash
 # Production (Supabase + MasterSlides)
-cd deployment/supabase-official/docker
+cd deployment
 docker compose --profile app up -d
 
 # Development (Studio at root, no app)
-cd deployment/supabase-official/docker
+cd deployment
 docker compose up -d
 
-# Re-process a document (after Edge Function changes)
-# Get token → call fetch-google-doc Edge Function
+# Restart Edge Functions (after code changes)
+docker compose restart functions
+
+# View logs
+docker compose logs -f functions
+docker compose logs -f storage
+
+# Reset everything (WARNING: deletes all data)
+docker compose --profile app down -v
 ```
 
 No test framework is configured. No linter configured. No build step required (vanilla JS with ES Modules).
@@ -91,13 +98,34 @@ slides.html?src=<docId>
 }
 ```
 
-### Supabase Self-Hosting (deployment/)
+**Important**: `config.json` anonKey must match `deployment/.env` ANON_KEY.
 
-The `deployment/supabase-official/docker/` directory contains a full Supabase self-hosted setup integrated with MasterSlides via Kong API Gateway:
+## Deployment Structure
+
+```
+deployment/
+├── docker-compose.yml           # Main compose file (Kong architecture)
+├── docker-compose.override.yml  # macOS fix (named volume for Storage) - NOT in git
+├── .env                         # Secrets (from .env.example) - NOT in git
+├── .env.example                 # Template for .env
+├── nginx/
+│   └── app.conf                 # MasterSlides static file config
+└── volumes/
+    ├── api/kong.yml             # Kong routing config
+    ├── db/
+    │   ├── init/data.sql        # MasterSlides schema (auto-run on first boot)
+    │   └── *.sql                # Supabase system schemas
+    ├── functions/
+    │   ├── main/index.ts        # Edge Function router
+    │   └── fetch-google-doc/    # Google Docs processor
+    └── logs/vector.yml          # Log collection config
+```
+
+### Kong Routes (:8000)
 
 ```
 Kong (:8000) — Single entry point
-├── /studio/*        → Supabase Studio (basePath=/studio)
+├── /studio/*        → Supabase Studio (basePath=/studio, basic-auth)
 ├── /rest/v1/*       → PostgREST
 ├── /auth/v1/*       → GoTrue
 ├── /storage/v1/*    → Storage
@@ -110,7 +138,35 @@ Kong (:8000) — Single entry point
 - `docker compose up` — Development (root → Studio, basic-auth)
 - `docker compose --profile app up` — Production (root → MasterSlides)
 
-### Database Schema
+## Edge Functions (Deno)
+
+Located in `deployment/volumes/functions/`:
+
+```
+functions/
+├── main/index.ts              # Router - static imports all functions
+└── fetch-google-doc/index.ts  # Google Docs → Storage processor
+```
+
+**main/index.ts** routes requests:
+- `/health` → health check
+- `/fetch-google-doc` → document processor
+
+**fetch-google-doc/index.ts** workflow:
+1. Verify JWT token
+2. Check user role (uploader+)
+3. Extract doc_id from Google Docs URL
+4. Download markdown via `export?format=md`
+5. Process base64 images → Storage
+6. Convert markdown → HTML (marked)
+7. Upload HTML → Storage
+8. Insert/update documents table
+
+After editing functions, restart: `docker compose restart functions`
+
+## Database Schema
+
+Tables in `deployment/volumes/db/init/data.sql`:
 
 - **profiles** — User roles (viewer, uploader, admin, super_admin), auto-created on signup
 - **documents** — doc_id, title, owner_id, current_version, is_public
@@ -118,10 +174,44 @@ Kong (:8000) — Single entry point
 
 RLS enforced. `is_super_admin()` SECURITY DEFINER helper prevents recursive policy checks.
 
-### Storage
+**RPC Functions:**
+- `playlist_add_document(p_playlist_id, p_doc_id)`
+- `playlist_remove_document(p_playlist_id, p_doc_id)`
+- `playlist_reorder_documents(p_playlist_id, p_doc_ids)`
+- `playlist_get_with_documents(p_playlist_id)`
 
-- Bucket: `slides` (public=true for image access via `/object/public/` URLs)
+## Storage
+
+- Bucket: `slides` (public=true for image access)
 - Structure: `<doc_id>/<version>.html`, `<doc_id>/images/img_N.ext`
+- macOS requires `docker-compose.override.yml` for xattr support
+
+## First-Time Setup
+
+```bash
+cd deployment
+cp .env.example .env
+# Edit .env: change passwords, secrets
+
+# macOS only: create override file
+cat > docker-compose.override.yml << 'EOF'
+services:
+  storage:
+    volumes:
+      - storage-data:/var/lib/storage
+volumes:
+  storage-data:
+EOF
+
+# Start
+docker compose --profile app up -d
+
+# Create first super_admin (via psql)
+docker exec -it supabase-db psql -U postgres -d postgres -c \
+  "UPDATE profiles SET role = 'super_admin' WHERE email = 'your@email.com';"
+
+# Sync config.json anonKey with .env ANON_KEY
+```
 
 ## Key Architectural Decisions
 
@@ -129,12 +219,12 @@ RLS enforced. `is_super_admin()` SECURITY DEFINER helper prevents recursive poli
 - **Supabase Storage**: Versioned HTML files + extracted images (replaces file-based /docs/)
 - **Edge Functions (Deno)**: Google Docs processing (replaces Express server.js)
 - **Supabase Realtime Broadcast**: Room-based remote control (replaces Socket.io)
-- **Relative image URLs**: Edge Function writes `/storage/v1/object/public/...` paths (not absolute)
-- **Public bucket**: Images accessible without auth; HTML access controlled by documents table RLS
-- **esm.sh CDN fixed version**: `@supabase/supabase-js@2.49.1` (no build step)
+- **Relative image URLs**: Edge Function writes `/storage/v1/object/public/...` paths
+- **Public bucket**: Images accessible without auth; HTML access controlled by RLS
+- **esm.sh CDN**: `@supabase/supabase-js@2` for frontend, `marked@9.1.6` for Edge Functions
 - **Kong single entry point**: All services behind one port (:8000)
 - **Nginx Alpine**: Static file server for HTML/CSS/JS (replaces Express)
-- **Custom Studio image**: `NEXT_PUBLIC_BASE_PATH=/studio` for sub-path deployment
+- **Custom Studio image**: `ghcr.io/kaellim/supabase-root:latest` with `/studio` basePath
 - **macOS Docker fix**: `docker-compose.override.yml` for Storage volume xattr support
 
 ## Routes (through Kong :8000)
@@ -163,3 +253,13 @@ Other: `R` (remote QR), `?`/`H` (help), `Cmd/Ctrl + =/- /0` (font size)
 ## Google Docs Requirements
 
 Documents must be shared as "Anyone with the link can view". Upload via dashboard (uploader+ role required).
+
+## Troubleshooting
+
+**Storage upload fails on macOS**: Create `docker-compose.override.yml` with named volume (see First-Time Setup)
+
+**Edge Function changes not applied**: Run `docker compose restart functions`
+
+**401 on API calls**: Check `config.json` anonKey matches `.env` ANON_KEY
+
+**Studio login**: Use credentials from `.env` DASHBOARD_USERNAME/DASHBOARD_PASSWORD

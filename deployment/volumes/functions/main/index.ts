@@ -1,10 +1,11 @@
 // Edge Functions Main Entry Point
-// 此檔案作為 Edge Runtime 的入口點
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const FUNCTION_ROUTES: Record<string, string> = {
-  '/fetch-google-doc': './fetch-google-doc',
+// Static imports for all functions
+import fetchGoogleDoc from "../fetch-google-doc/index.ts"
+
+const FUNCTION_HANDLERS: Record<string, (req: Request) => Promise<Response>> = {
+  '/fetch-google-doc': fetchGoogleDoc,
 }
 
 serve(async (req: Request) => {
@@ -19,15 +20,14 @@ serve(async (req: Request) => {
   }
 
   // Route to specific function
-  const functionPath = FUNCTION_ROUTES[pathname]
-  if (functionPath) {
+  const handler = FUNCTION_HANDLERS[pathname]
+  if (handler) {
     try {
-      const module = await import(functionPath)
-      return await module.default(req)
+      return await handler(req)
     } catch (error) {
-      console.error(`Error loading function ${pathname}:`, error)
-      return new Response(JSON.stringify({ error: 'Function not found' }), {
-        status: 404,
+      console.error(`Error in function ${pathname}:`, error)
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
         headers: { 'Content-Type': 'application/json' },
       })
     }
