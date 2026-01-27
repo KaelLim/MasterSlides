@@ -105,7 +105,7 @@ slides.html?src=<docId>
 ```
 deployment/
 ├── docker-compose.yml           # Main compose file (Kong architecture)
-├── docker-compose.override.yml  # macOS fix (named volume for Storage) - NOT in git
+├── docker-compose.override.yml  # Storage named volume (xattr support)
 ├── .env                         # Secrets (from .env.example) - NOT in git
 ├── .env.example                 # Template for .env
 ├── nginx/
@@ -193,16 +193,6 @@ cd deployment
 cp .env.example .env
 # Edit .env: change passwords, secrets
 
-# macOS only: create override file
-cat > docker-compose.override.yml << 'EOF'
-services:
-  storage:
-    volumes:
-      - storage-data:/var/lib/storage
-volumes:
-  storage-data:
-EOF
-
 # Start
 docker compose --profile app up -d
 
@@ -255,8 +245,6 @@ Other: `R` (remote QR), `?`/`H` (help), `Cmd/Ctrl + =/- /0` (font size)
 Documents must be shared as "Anyone with the link can view". Upload via dashboard (uploader+ role required).
 
 ## Troubleshooting
-
-**Storage upload fails on macOS**: Create `docker-compose.override.yml` with named volume (see First-Time Setup)
 
 **Edge Function changes not applied**: Run `docker compose restart functions`
 
