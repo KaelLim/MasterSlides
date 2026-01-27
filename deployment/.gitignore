@@ -1,14 +1,4 @@
-# 環境變數 (包含機密)
 .env
-
-# Supabase 資料卷
-supabase/volumes/db/data/
-supabase/volumes/storage/
-
-# SSL 憑證
-nginx/ssl/*.pem
-nginx/ssl/*.key
-nginx/ssl/*.crt
-
-# Logs
-*.log
+volumes/db/data
+volumes/storage
+*.tar.gz
