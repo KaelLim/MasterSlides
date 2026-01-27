@@ -1,0 +1,9 @@
+# macOS Storage 修正
+# macOS Docker 的 bind mount 不支援 xattr，改用 named volume
+services:
+  storage:
+    volumes:
+      - storage-data:/var/lib/storage
+
+volumes:
+  storage-data:
