@@ -67,14 +67,6 @@ async function convertTablesToImages() {
       const img = document.createElement('img');
       img.src = canvas.toDataURL('image/png');
       img.className = 'table-image';
-      img.style.cssText = `
-        width: 95%;
-        max-width: 95%;
-        height: auto;
-        display: block;
-        margin: 20px auto;
-        border-radius: 8px;
-      `;
 
       table.parentNode.replaceChild(img, table);
       console.log('表格轉換完成');

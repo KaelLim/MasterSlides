@@ -90,9 +90,16 @@ async function processImages(
   return { markdown: processedLines.join('\n'), imageCount };
 }
 
+// 清理 img 的 inline styles（讓 CSS 控制樣式）
+function cleanImageStyles(html: string): string {
+  // 移除 img 標籤上的 style 屬性
+  return html.replace(/<img([^>]*)\s+style="[^"]*"([^>]*)>/gi, '<img$1$2>');
+}
+
 // 生成純內容 HTML（不含完整 HTML 結構）
 function generateContentHtml(htmlContent: string): string {
-  return `<article class="slide-content">\n${htmlContent}\n</article>`;
+  const cleanedHtml = cleanImageStyles(htmlContent);
+  return `<article class="slide-content">\n${cleanedHtml}\n</article>`;
 }
 
 export default async function handler(req: Request): Promise<Response> {
