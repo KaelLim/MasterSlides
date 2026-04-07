@@ -1,5 +1,5 @@
-// Simplified slides app - no Supabase, no auth, no playlist, no remote
-// Loads content directly via fetch(src)
+// Aliswa slides app — standalone Bun backend, no Supabase
+// Loads via /api/docs/:id or direct URL, WebSocket remote control
 
 import { initDOM, state, dom, isMac, modKey } from '/js/slides/state.js';
 import { updatePageCount, goToPage, prevPage, nextPage, isVerticalMode } from '/js/slides/navigation.js';
@@ -9,11 +9,129 @@ import {
   setVerticalMode, setHorizontalMode,
   increaseFontSize, decreaseFontSize, setFontScale, applyFont
 } from '/js/slides/display.js';
-import { initLightbox, closeLightbox } from '/js/slides/lightbox.js';
-import { initSearch, openSearch, closeSearch, isSearchOpen } from '/js/slides/search.js';
+import { initLightbox, closeLightbox, openLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from '/js/slides/lightbox.js';
+import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch, prevMatch, getSearchState } from '/js/slides/search.js';
 import { showGoToPageDialog, initGotoModal, closeGotoModal } from '/js/slides/goto.js';
 import { exportPDF } from '/js/slides/print.js';
-import { initLaser, toggleLaser } from '/js/slides/laser.js';
+import { initLaser, toggleLaser, isLaserActive } from '/js/slides/laser.js';
+
+// ── WebSocket Remote Control ────────────────────────────────────
+
+let ws = null;
+
+function getCurrentPageImages() {
+  const containerWidth = dom.manuscriptContainer.clientWidth;
+  const containerHeight = dom.manuscriptContainer.clientHeight;
+  const images = dom.manuscript.querySelectorAll('img');
+  const visible = [];
+  images.forEach(img => {
+    const rect = img.getBoundingClientRect();
+    const cRect = dom.manuscriptContainer.getBoundingClientRect();
+    const iL = rect.left - cRect.left, iT = rect.top - cRect.top;
+    const vW = Math.min(iL + rect.width, containerWidth) - Math.max(iL, 0);
+    const vH = Math.min(iT + rect.height, containerHeight) - Math.max(iT, 0);
+    if (vW > rect.width * 0.5 && vH > rect.height * 0.5 && img.src) {
+      visible.push({ src: img.src, alt: img.alt || '' });
+    }
+  });
+  return visible;
+}
+
+function syncRemoteState() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const searchState = getSearchState();
+  ws.send(JSON.stringify({
+    type: 'sync',
+    currentPage: state.currentPage + 1,
+    totalPages: state.totalPages,
+    images: getCurrentPageImages(),
+    lightboxActive: dom.lightbox.classList.contains('active'),
+    lightboxZoom: state.lbZoom,
+    spotlightActive: isLaserActive(),
+    ...searchState
+  }));
+}
+
+function handleRemoteCommand(payload) {
+  const { action } = payload;
+  const lightboxActive = dom.lightbox.classList.contains('active');
+
+  switch (action) {
+    case 'prev': lightboxActive ? closeLightbox() : prevPage(); break;
+    case 'next': lightboxActive ? closeLightbox() : nextPage(); break;
+    case 'first': lightboxActive ? closeLightbox() : goToPage(0); break;
+    case 'last': lightboxActive ? closeLightbox() : goToPage(state.totalPages - 1); break;
+    case 'fullscreen': toggleFullscreen(); break;
+    case 'toggleMode': isVerticalMode() ? setHorizontalMode() : setVerticalMode(); break;
+    case 'toggleLightbox':
+      if (payload.src) {
+        if (lightboxActive) {
+          const cur = dom.lightboxImg.src;
+          const same = cur && new URL(cur, location.href).pathname === new URL(payload.src, location.href).pathname;
+          same ? closeLightbox() : openLightbox(payload.src, payload.alt || '');
+        } else {
+          openLightbox(payload.src, payload.alt || '');
+        }
+      }
+      break;
+    case 'zoomIn': setLightboxZoom(state.lbZoom + 0.25); break;
+    case 'zoomOut': setLightboxZoom(state.lbZoom - 0.25); break;
+    case 'zoomReset': resetLightboxZoom(); break;
+    case 'pan': panLightbox(payload.dx || 0, payload.dy || 0); break;
+    case 'toggleSpotlight': toggleLaser(); break;
+    case 'search': if (payload.keyword) searchFor(payload.keyword); break;
+    case 'searchPrev': prevMatch(); break;
+    case 'searchNext': nextMatch(); break;
+    case 'searchClose': closeSearch(); break;
+    case 'goto':
+      if (payload.page >= 1 && payload.page <= state.totalPages) {
+        if (lightboxActive) closeLightbox();
+        goToPage(payload.page - 1);
+      }
+      break;
+  }
+  syncRemoteState();
+}
+
+function initRemote() {
+  state.roomId = Math.random().toString(36).substring(2, 8);
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws/${state.roomId}`);
+
+  ws.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'command') handleRemoteCommand(data);
+      if (data.type === 'remote-joined') {
+        document.getElementById('remoteStatus').textContent = '遙控器已連線！';
+        document.getElementById('remoteStatus').classList.add('connected');
+        syncRemoteState();
+        setTimeout(closeRemoteModal, 2000);
+      }
+    } catch {}
+  };
+
+  document.getElementById('remoteBtn').onclick = openRemoteModal;
+  document.getElementById('remoteModalClose').onclick = closeRemoteModal;
+  dom.remoteModal.onclick = (e) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
+}
+
+function openRemoteModal() {
+  const qrcodeEl = document.getElementById('qrcode');
+  const urlEl = document.getElementById('remoteUrl');
+  qrcodeEl.innerHTML = '';
+  const host = window.location.hostname;
+  const port = window.location.port;
+  const remoteUrl = `${location.protocol}//${host}${port ? ':' + port : ''}/remote.html?id=${state.roomId}`;
+  new QRCode(qrcodeEl, { text: remoteUrl, width: 200, height: 200 });
+  urlEl.textContent = remoteUrl;
+  dom.remoteModal.classList.add('active');
+  closeSidebar();
+}
+
+function closeRemoteModal() {
+  dom.remoteModal.classList.remove('active');
+}
 
 // ── Table conversion (html2canvas) ──────────────────────────────
 
@@ -41,11 +159,14 @@ async function convertTablesToImages() {
   }
 }
 
-// ── Document loader (simple fetch) ──────────────────────────────
+// ── Document loader ─────────────────────────────────────────────
 
 async function loadDocument(src) {
   try {
-    const res = await fetch(src);
+    // If src looks like a doc_id (alphanumeric/hyphens/underscores), use API
+    const isDocId = /^[a-zA-Z0-9_-]+$/.test(src);
+    const url = isDocId ? `/api/docs/${src}` : src;
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     dom.manuscript.innerHTML = await res.text();
   } catch (err) {
@@ -60,11 +181,12 @@ async function loadDocument(src) {
   requestAnimationFrame(() => {
     updatePageCount();
     initEventListeners();
+    initRemote();
     resetNavHideTimer();
   });
 }
 
-// ── Modals (no remote modal) ────────────────────────────────────
+// ── Modals ──────────────────────────────────────────────────────
 
 function updateModKeyDisplay() {
   document.querySelectorAll('.mod-key').forEach(el => { el.textContent = modKey; });
@@ -80,6 +202,7 @@ function closeHelpModal() {
 
 function closeAllModals() {
   if (dom.lightbox.classList.contains('active')) closeLightbox();
+  else if (dom.remoteModal?.classList.contains('active')) closeRemoteModal();
   else if (dom.gotoModal?.classList.contains('active')) closeGotoModal();
   else if (dom.helpModal?.classList.contains('active')) closeHelpModal();
   else if (dom.sidebar.classList.contains('open')) closeSidebar();
@@ -95,7 +218,7 @@ function initHelpModal() {
   if (helpBtn) helpBtn.onclick = showHelpModal;
 }
 
-// ── Keyboard (no remote hotkey) ─────────────────────────────────
+// ── Keyboard ────────────────────────────────────────────────────
 
 const HOTKEYS = {
   'ArrowRight': 'next', ' ': 'next', 'PageDown': 'next',
@@ -106,6 +229,7 @@ const HOTKEYS = {
   's': 'sidebar', 'S': 'sidebar',
   'o': 'orientation', 'O': 'orientation',
   'n': 'toggleNav', 'N': 'toggleNav',
+  'r': 'remoteQR', 'R': 'remoteQR',
   'l': 'laser', 'L': 'laser',
   '?': 'help', 'h': 'help', 'H': 'help',
   'Escape': 'escape'
@@ -123,15 +247,16 @@ function closeLightboxIfActive() {
 }
 
 const ACTIONS = {
-  next: () => { if (!closeLightboxIfActive()) nextPage(); },
-  prev: () => { if (!closeLightboxIfActive()) prevPage(); },
-  first: () => { if (!closeLightboxIfActive()) goToPage(0); },
-  last: () => { if (!closeLightboxIfActive()) goToPage(state.totalPages - 1); },
+  next: () => { if (!closeLightboxIfActive()) nextPage(); syncRemoteState(); },
+  prev: () => { if (!closeLightboxIfActive()) prevPage(); syncRemoteState(); },
+  first: () => { if (!closeLightboxIfActive()) goToPage(0); syncRemoteState(); },
+  last: () => { if (!closeLightboxIfActive()) goToPage(state.totalPages - 1); syncRemoteState(); },
   goto: showGoToPageDialog,
   fullscreen: toggleFullscreen,
   sidebar: toggleSidebar,
   orientation: () => { isVerticalMode() ? setHorizontalMode() : setVerticalMode(); },
   toggleNav: toggleNavVisibility,
+  remoteQR: openRemoteModal,
   laser: toggleLaser,
   help: showHelpModal,
   escape: () => { if (isSearchOpen()) closeSearch(); else closeAllModals(); },
@@ -159,12 +284,13 @@ function handleKeydown(e) {
   }
 }
 
-// ── Context Menu (no remote item) ───────────────────────────────
+// ── Context Menu ────────────────────────────────────────────────
 
 const CTX_ICONS = {
   spotlight: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>',
   search: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   pdf: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>',
+  remote: '<svg width="28" height="28" viewBox="0 -960 960 960" fill="currentColor"><path d="M320-40q-33 0-56.5-23.5T240-120v-720q0-33 23.5-56.5T320-920h320q33 0 56.5 23.5T720-840v720q0 33-23.5 56.5T640-40H320Zm0-80h320v-720H320v720Zm160-440q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Z"/></svg>',
   orientation: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/></svg>',
   fullscreen: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
   help: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
@@ -174,6 +300,7 @@ const CTX_ITEMS = [
   { id: 'ctx-spotlight', icon: CTX_ICONS.spotlight, label: '聚光燈', action: toggleLaser },
   { id: 'ctx-search', icon: CTX_ICONS.search, label: '文字搜尋', action: openSearch },
   { id: 'ctx-pdf', icon: CTX_ICONS.pdf, label: '匯出 PDF', action: exportPDF },
+  { id: 'ctx-remote', icon: CTX_ICONS.remote, label: '遙控器', action: openRemoteModal },
   { divider: true },
   { id: 'ctx-orientation', icon: CTX_ICONS.orientation, label: '', action: () => { isVerticalMode() ? setHorizontalMode() : setVerticalMode(); } },
   { id: 'ctx-fullscreen', icon: CTX_ICONS.fullscreen, label: '全螢幕', action: toggleFullscreen },
@@ -230,7 +357,7 @@ function hideMenu() {
 function initContextMenu() {
   buildMenu();
   document.addEventListener('contextmenu', (e) => {
-    if (e.target.closest('.sidebar,.help-modal,.goto-modal,.search-bar')) return;
+    if (e.target.closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar')) return;
     e.preventDefault();
     showMenu(e.clientX, e.clientY);
   });
@@ -241,7 +368,7 @@ function initContextMenu() {
     if (e.key === 'Escape' && ctxMenu?.classList.contains('active')) { hideMenu(); e.stopPropagation(); }
   }, true);
   document.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.sidebar,.help-modal,.goto-modal,.search-bar,.context-menu,.slide-nav,.left-panel')) return;
+    if (e.target.closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar,.context-menu,.slide-nav,.left-panel')) return;
     const t = e.touches[0];
     longPressTimer = setTimeout(() => showMenu(t.clientX, t.clientY), 600);
   }, { passive: true });
@@ -257,8 +384,8 @@ function initEventListeners() {
   if (eventsInit) return;
   eventsInit = true;
 
-  document.getElementById('prevBtn').onclick = prevPage;
-  document.getElementById('nextBtn').onclick = nextPage;
+  document.getElementById('prevBtn').onclick = () => { prevPage(); syncRemoteState(); };
+  document.getElementById('nextBtn').onclick = () => { nextPage(); syncRemoteState(); };
   dom.hamburgerBtn.onclick = toggleSidebar;
   dom.sidebarOverlay.onclick = closeSidebar;
   document.getElementById('fontDecrease').onclick = decreaseFontSize;
@@ -292,7 +419,10 @@ function initEventListeners() {
   }, { passive: true });
   document.addEventListener('touchend', (e) => {
     const diff = touchStartX - e.changedTouches[0].screenX;
-    if (Math.abs(diff) > 50) { diff > 0 ? prevPage() : nextPage(); }
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? prevPage() : nextPage();
+      syncRemoteState();
+    }
   }, { passive: true });
 
   initLightbox();
