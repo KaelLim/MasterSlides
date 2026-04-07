@@ -177,8 +177,7 @@ function isTextElement(el) {
 // ── Pagination ──────────────────────────────────────────────────
 
 export function paginate(manuscript, containerWidth, containerHeight, writingMode) {
-  // 98% safety margin to prevent edge-case overflow from rounding/rendering differences
-  const maxBlockSize = (writingMode === 'vertical-rl' ? containerWidth : containerHeight) * 0.98;
+  const maxBlockSize = writingMode === 'vertical-rl' ? containerWidth : containerHeight;
   const pages = [[]];
   let currentBlockUsed = 0;
 
