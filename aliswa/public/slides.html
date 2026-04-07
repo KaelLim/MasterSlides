@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="/css/slides.css">
 </head>
 <body>
@@ -92,6 +93,9 @@
             <circle cx="12" cy="12" r="3"></circle>
           </svg>
         </button>
+        <button class="icon-btn" id="remoteBtn" data-tooltip="遙控器">
+          <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor"><path d="M320-40q-33 0-56.5-23.5T240-120v-720q0-33 23.5-56.5T320-920h320q33 0 56.5 23.5T720-840v720q0 33-23.5 56.5T640-40H320Zm0-80h320v-720H320v720Zm160-440q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Zm0-80q-17 0-28.5-11.5T440-680q0-17 11.5-28.5T480-720q17 0 28.5 11.5T520-680q0 17-11.5 28.5T480-640Zm-80 240q17 0 28.5-11.5T440-440q0-17-11.5-28.5T400-480q-17 0-28.5 11.5T360-440q0 17 11.5 28.5T400-400Zm160 0q17 0 28.5-11.5T600-440q0-17-11.5-28.5T560-480q-17 0-28.5 11.5T520-440q0 17 11.5 28.5T560-400ZM400-280q17 0 28.5-11.5T440-320q0-17-11.5-28.5T400-360q-17 0-28.5 11.5T360-320q0 17 11.5 28.5T400-280Zm160 0q17 0 28.5-11.5T600-320q0-17-11.5-28.5T560-360q-17 0-28.5 11.5T520-320q0 17 11.5 28.5T560-280ZM400-160q17 0 28.5-11.5T440-200q0-17-11.5-28.5T400-240q-17 0-28.5 11.5T360-200q0 17 11.5 28.5T400-160Zm160 0q17 0 28.5-11.5T600-200q0-17-11.5-28.5T560-240q-17 0-28.5 11.5T520-200q0 17 11.5 28.5T560-160Zm-240 40v-720 720Z"/></svg>
+        </button>
         <button class="icon-btn" id="laserBtn" data-tooltip="聚光燈">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
@@ -114,6 +118,16 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- 遙控 Modal -->
+  <div class="remote-modal" id="remoteModal">
+    <span class="remote-modal-close" id="remoteModalClose">&times;</span>
+    <h2>掃描 QR Code 開啟遙控器</h2>
+    <p>使用手機掃描下方 QR Code</p>
+    <div id="qrcode"></div>
+    <div class="remote-url" id="remoteUrl"></div>
+    <div class="remote-status" id="remoteStatus">等待連線...</div>
   </div>
 
   <!-- 快捷鍵說明 Modal -->
@@ -148,6 +162,7 @@
           <div class="help-item"><kbd>L</kbd><span>聚光燈</span></div>
           <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>P</kbd><span>匯出 PDF</span></div>
           <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>F</kbd><span>搜尋</span></div>
+          <div class="help-item"><kbd>R</kbd><span>遙控器 QR Code</span></div>
           <div class="help-item"><kbd>?</kbd> / <kbd>H</kbd><span>快捷鍵說明</span></div>
           <div class="help-item"><kbd>Escape</kbd><span>關閉彈窗</span></div>
         </div>
