@@ -2,11 +2,10 @@
 // Loads via /api/docs/:id or direct URL, WebSocket remote control
 
 import { initDOM, state, dom, isMac, modKey } from '/js/slides/state.js';
-import { updatePageCount, goToPage, prevPage, nextPage, isVerticalMode } from '/js/slides/navigation.js';
+import { paginate, renderPages, showPage } from './paginator.js';
 import {
   loadSettings, resetNavHideTimer, updateFullscreenButton, showNav,
   toggleFullscreen, toggleSidebar, closeSidebar, toggleNavVisibility,
-  setVerticalMode, setHorizontalMode,
   increaseFontSize, decreaseFontSize, setFontScale, applyFont
 } from '/js/slides/display.js';
 import { initLightbox, closeLightbox, openLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from '/js/slides/lightbox.js';
@@ -14,6 +13,68 @@ import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch
 import { showGoToPageDialog, initGotoModal, closeGotoModal } from '/js/slides/goto.js';
 import { exportPDF } from '/js/slides/print.js';
 import { initLaser, toggleLaser, isLaserActive } from '/js/slides/laser.js';
+
+// ── Pagination + Navigation (pretext-based) ────────────────────
+
+let currentWritingMode = 'vertical-rl';
+let allPageElements = [];
+
+function isVerticalMode() {
+  return currentWritingMode === 'vertical-rl';
+}
+
+function updatePageCount() {
+  const pageCount = document.querySelectorAll('.slide-page').length;
+  state.totalPages = Math.max(1, pageCount);
+  dom.totalPagesEl.textContent = state.totalPages;
+  if (state.currentPage >= state.totalPages) {
+    state.currentPage = state.totalPages - 1;
+  }
+  dom.currentPageEl.textContent = state.currentPage + 1;
+}
+
+function goToPage(page) {
+  if (page < 0 || page >= state.totalPages) return;
+  state.currentPage = page;
+  showPage(page);
+  dom.currentPageEl.textContent = state.currentPage + 1;
+}
+
+function prevPage() {
+  goToPage(state.currentPage - 1);
+}
+
+function nextPage() {
+  goToPage(state.currentPage + 1);
+}
+
+function repaginate() {
+  const containerWidth = dom.manuscriptContainer.clientWidth;
+  const containerHeight = dom.manuscriptContainer.clientHeight;
+
+  // Restore all elements back to manuscript for re-measurement
+  dom.manuscript.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'absolute';
+  wrapper.style.visibility = 'hidden';
+  wrapper.style.writingMode = currentWritingMode;
+  wrapper.style.textOrientation = 'mixed';
+  wrapper.style.width = containerWidth + 'px';
+  wrapper.style.height = containerHeight + 'px';
+  allPageElements.forEach(el => wrapper.appendChild(el));
+  dom.manuscript.appendChild(wrapper);
+
+  // Measure and paginate
+  const pages = paginate(wrapper, containerWidth, containerHeight, currentWritingMode);
+
+  // Render pages
+  dom.manuscript.removeChild(wrapper);
+  renderPages(dom.manuscript, pages, currentWritingMode);
+
+  // Update state
+  updatePageCount();
+  goToPage(Math.min(state.currentPage, state.totalPages - 1));
+}
 
 // ── WebSocket Remote Control ────────────────────────────────────
 
@@ -62,7 +123,17 @@ function handleRemoteCommand(payload) {
     case 'first': lightboxActive ? closeLightbox() : goToPage(0); break;
     case 'last': lightboxActive ? closeLightbox() : goToPage(state.totalPages - 1); break;
     case 'fullscreen': toggleFullscreen(); break;
-    case 'toggleMode': isVerticalMode() ? setHorizontalMode() : setVerticalMode(); break;
+    case 'toggleMode':
+      if (isVerticalMode()) {
+        currentWritingMode = 'horizontal-tb';
+        document.body.classList.add('horizontal-mode');
+      } else {
+        currentWritingMode = 'vertical-rl';
+        document.body.classList.remove('horizontal-mode');
+      }
+      state.currentPage = 0;
+      repaginate();
+      break;
     case 'toggleLightbox':
       if (payload.src) {
         if (lightboxActive) {
@@ -197,8 +268,16 @@ async function loadDocument(src) {
   updateModKeyDisplay();
   await convertTablesToImages();
 
+  // Store all content elements for repagination
+  const content = dom.manuscript.firstElementChild;
+  if (content && content.tagName === 'ARTICLE') {
+    allPageElements = Array.from(content.children);
+  } else {
+    allPageElements = Array.from(dom.manuscript.children);
+  }
+
   requestAnimationFrame(() => {
-    updatePageCount();
+    repaginate();
     initEventListeners();
     initRemote();
     resetNavHideTimer();
@@ -273,7 +352,21 @@ const ACTIONS = {
   goto: showGoToPageDialog,
   fullscreen: toggleFullscreen,
   sidebar: toggleSidebar,
-  orientation: () => { isVerticalMode() ? setHorizontalMode() : setVerticalMode(); },
+  orientation: () => {
+    if (isVerticalMode()) {
+      currentWritingMode = 'horizontal-tb';
+      document.body.classList.add('horizontal-mode');
+      document.getElementById('horizontalBtn').classList.add('active');
+      document.getElementById('verticalBtn').classList.remove('active');
+    } else {
+      currentWritingMode = 'vertical-rl';
+      document.body.classList.remove('horizontal-mode');
+      document.getElementById('verticalBtn').classList.add('active');
+      document.getElementById('horizontalBtn').classList.remove('active');
+    }
+    state.currentPage = 0;
+    repaginate();
+  },
   toggleNav: toggleNavVisibility,
   remoteQR: openRemoteModal,
   laser: toggleLaser,
@@ -321,7 +414,7 @@ const CTX_ITEMS = [
   { id: 'ctx-pdf', icon: CTX_ICONS.pdf, label: '匯出 PDF', action: exportPDF },
   { id: 'ctx-remote', icon: CTX_ICONS.remote, label: '遙控器', action: openRemoteModal },
   { divider: true },
-  { id: 'ctx-orientation', icon: CTX_ICONS.orientation, label: '', action: () => { isVerticalMode() ? setHorizontalMode() : setVerticalMode(); } },
+  { id: 'ctx-orientation', icon: CTX_ICONS.orientation, label: '', action: () => ACTIONS.orientation() },
   { id: 'ctx-fullscreen', icon: CTX_ICONS.fullscreen, label: '全螢幕', action: toggleFullscreen },
   { divider: true },
   { id: 'ctx-help', icon: CTX_ICONS.help, label: '快捷鍵說明', action: showHelpModal }
@@ -409,8 +502,22 @@ function initEventListeners() {
   dom.sidebarOverlay.onclick = closeSidebar;
   document.getElementById('fontDecrease').onclick = decreaseFontSize;
   document.getElementById('fontIncrease').onclick = increaseFontSize;
-  document.getElementById('verticalBtn').onclick = setVerticalMode;
-  document.getElementById('horizontalBtn').onclick = setHorizontalMode;
+  document.getElementById('verticalBtn').onclick = () => {
+    currentWritingMode = 'vertical-rl';
+    document.body.classList.remove('horizontal-mode');
+    document.getElementById('verticalBtn').classList.add('active');
+    document.getElementById('horizontalBtn').classList.remove('active');
+    state.currentPage = 0;
+    repaginate();
+  };
+  document.getElementById('horizontalBtn').onclick = () => {
+    currentWritingMode = 'horizontal-tb';
+    document.body.classList.add('horizontal-mode');
+    document.getElementById('horizontalBtn').classList.add('active');
+    document.getElementById('verticalBtn').classList.remove('active');
+    state.currentPage = 0;
+    repaginate();
+  };
   document.getElementById('fontSelect').onchange = function () { applyFont(this.value); };
   document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
   document.addEventListener('fullscreenchange', updateFullscreenButton);
@@ -426,9 +533,12 @@ function initEventListeners() {
   document.addEventListener('keydown', handleKeydown);
   document.addEventListener('mousemove', showNav);
 
+  let resizeTimer;
   window.addEventListener('resize', () => {
-    updatePageCount();
-    goToPage(state.currentPage);
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      repaginate();
+    }, 200);
   });
 
   // Touch swipe
