@@ -1,12 +1,11 @@
 // Aliswa slides app — standalone Bun backend, no Supabase
 // Loads via /api/docs/:id or direct URL, WebSocket remote control
 
-import { initDOM, state, dom, isMac, modKey } from '/js/slides/state.js';
+import { initDOM, state, dom, isMac, modKey, FONT_SCALES, STORAGE_KEYS } from '/js/slides/state.js';
 import { paginate, renderPages, showPage } from './paginator.js';
 import {
   loadSettings, resetNavHideTimer, updateFullscreenButton, showNav,
-  toggleFullscreen, toggleSidebar, closeSidebar, toggleNavVisibility,
-  increaseFontSize, decreaseFontSize, setFontScale, applyFont
+  toggleFullscreen, toggleSidebar, closeSidebar, toggleNavVisibility
 } from '/js/slides/display.js';
 import { initLightbox, closeLightbox, openLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from '/js/slides/lightbox.js';
 import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch, prevMatch, getSearchState } from '/js/slides/search.js';
@@ -74,6 +73,46 @@ function repaginate() {
   // Update state
   updatePageCount();
   goToPage(Math.min(state.currentPage, state.totalPages - 1));
+}
+
+// ── Font Scale (local, triggers repaginate) ─────────────────────
+
+function localSetFontScale(scale, save = true) {
+  state.fontScale = scale;
+  document.documentElement.style.setProperty('--font-scale', scale);
+  dom.fontSizeDisplayEl.textContent = Math.round(scale * 100) + '%';
+  if (save) localStorage.setItem(STORAGE_KEYS.fontSize, scale.toString());
+  setTimeout(() => repaginate(), 50);
+}
+
+function localIncreaseFontSize() {
+  const idx = FONT_SCALES.indexOf(state.fontScale);
+  if (idx < FONT_SCALES.length - 1) localSetFontScale(FONT_SCALES[idx + 1]);
+  else if (idx === -1) {
+    const larger = FONT_SCALES.filter(s => s > state.fontScale);
+    if (larger.length > 0) localSetFontScale(larger[0]);
+  }
+}
+
+function localDecreaseFontSize() {
+  const idx = FONT_SCALES.indexOf(state.fontScale);
+  if (idx > 0) localSetFontScale(FONT_SCALES[idx - 1]);
+  else if (idx === -1) {
+    const smaller = FONT_SCALES.filter(s => s < state.fontScale);
+    if (smaller.length > 0) localSetFontScale(smaller[smaller.length - 1]);
+  }
+}
+
+function localApplyFont(fontFamily, save = true) {
+  let fontValue;
+  if (fontFamily === 'DFKai-SB') {
+    fontValue = '"DFKai-SB", "BiauKai", "標楷體", serif';
+  } else {
+    fontValue = `"${fontFamily}", sans-serif`;
+  }
+  document.documentElement.style.setProperty('--font-family-body', fontValue);
+  if (save) localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
+  setTimeout(() => repaginate(), 50);
 }
 
 // ── WebSocket Remote Control ────────────────────────────────────
@@ -372,9 +411,9 @@ const ACTIONS = {
   laser: toggleLaser,
   help: showHelpModal,
   escape: () => { if (isSearchOpen()) closeSearch(); else closeAllModals(); },
-  fontUp: increaseFontSize,
-  fontDown: decreaseFontSize,
-  fontReset: () => setFontScale(1.0),
+  fontUp: localIncreaseFontSize,
+  fontDown: localDecreaseFontSize,
+  fontReset: () => localSetFontScale(1.0),
   search: openSearch,
   exportPDF: exportPDF
 };
@@ -500,8 +539,8 @@ function initEventListeners() {
   document.getElementById('nextBtn').onclick = () => { nextPage(); syncRemoteState(); };
   dom.hamburgerBtn.onclick = toggleSidebar;
   dom.sidebarOverlay.onclick = closeSidebar;
-  document.getElementById('fontDecrease').onclick = decreaseFontSize;
-  document.getElementById('fontIncrease').onclick = increaseFontSize;
+  document.getElementById('fontDecrease').onclick = localDecreaseFontSize;
+  document.getElementById('fontIncrease').onclick = localIncreaseFontSize;
   document.getElementById('verticalBtn').onclick = () => {
     currentWritingMode = 'vertical-rl';
     document.body.classList.remove('horizontal-mode');
@@ -518,7 +557,7 @@ function initEventListeners() {
     state.currentPage = 0;
     repaginate();
   };
-  document.getElementById('fontSelect').onchange = function () { applyFont(this.value); };
+  document.getElementById('fontSelect').onchange = function () { localApplyFont(this.value); };
   document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
   document.addEventListener('fullscreenchange', updateFullscreenButton);
   document.getElementById('toggleNavBtn').onclick = toggleNavVisibility;
