@@ -10,7 +10,6 @@ import {
 import { initLightbox, closeLightbox, openLightbox, setLightboxZoom, resetLightboxZoom, panLightbox } from '/js/slides/lightbox.js';
 import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch, prevMatch, getSearchState } from '/js/slides/search.js';
 import { showGoToPageDialog, initGotoModal, closeGotoModal } from '/js/slides/goto.js';
-import { exportPDF } from '/js/slides/print.js';
 import { initLaser, toggleLaser, isLaserActive } from '/js/slides/laser.js';
 
 // ── Pagination + Navigation (pretext-based) ────────────────────
@@ -113,6 +112,64 @@ function localApplyFont(fontFamily, save = true) {
   document.documentElement.style.setProperty('--font-family-body', fontValue);
   if (save) localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
   setTimeout(() => repaginate(), 50);
+}
+
+// ── PDF Export (slide-page based) ───────────────────────────────
+
+let printContainer = null;
+let printStyle = null;
+
+function exportPDF() {
+  // Cleanup previous
+  if (printContainer) { printContainer.remove(); printContainer = null; }
+  if (printStyle) { printStyle.remove(); printStyle = null; }
+
+  const containerW = dom.manuscriptContainer.clientWidth;
+  const containerH = dom.manuscriptContainer.clientHeight;
+  const pageW = containerW + 160; // content-area padding: 80px * 2
+  const pageH = containerH + 120; // content-area padding: 60px * 2
+
+  // Set @page size
+  printStyle = document.createElement('style');
+  printStyle.id = 'printPageStyle';
+  printStyle.textContent = `@page { size: ${pageW}px ${pageH}px; margin: 0; }`;
+  document.head.appendChild(printStyle);
+
+  // Build print pages from existing .slide-page divs
+  printContainer = document.createElement('div');
+  printContainer.id = 'printContainer';
+
+  const slidePages = document.querySelectorAll('.slide-page');
+  slidePages.forEach(sp => {
+    const page = document.createElement('div');
+    page.className = 'print-page';
+
+    const bgWrap = document.createElement('div');
+    bgWrap.className = 'print-page-bg';
+
+    const clipArea = document.createElement('div');
+    clipArea.className = 'print-page-clip';
+
+    const clone = sp.cloneNode(true);
+    clone.style.display = '';
+    clone.style.width = containerW + 'px';
+    clone.style.height = containerH + 'px';
+
+    clipArea.appendChild(clone);
+    bgWrap.appendChild(clipArea);
+    page.appendChild(bgWrap);
+    printContainer.appendChild(page);
+  });
+
+  document.body.appendChild(printContainer);
+
+  const cleanup = () => {
+    if (printContainer) { printContainer.remove(); printContainer = null; }
+    if (printStyle) { printStyle.remove(); printStyle = null; }
+  };
+
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.print();
 }
 
 // ── WebSocket Remote Control ────────────────────────────────────
