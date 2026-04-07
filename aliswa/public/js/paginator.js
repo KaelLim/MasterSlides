@@ -33,13 +33,30 @@ function getPretextOpts(writingMode) {
 
 // ── Text measurement ────────────────────────────────────────────
 
+function getLetterSpacingFactor(el) {
+  const style = getComputedStyle(el);
+  const ls = parseFloat(style.letterSpacing || '0');
+  const fs = parseFloat(style.fontSize);
+  // letter-spacing widens each character, reducing effective inline space
+  // Approximate: each char is ~1em wide, so ls/fs is the fractional overhead
+  return ls > 0 && fs > 0 ? ls / fs : 0;
+}
+
 function measureTextBlock(el, containerWidth, containerHeight, writingMode) {
   const text = el.textContent || '';
   if (!text.trim()) return 0;
 
   const font = getFont(el);
   const lineHeight = getLineHeight(el);
-  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+
+  // Reduce effective inline size to account for CSS letter-spacing
+  // (pretext doesn't know about letter-spacing, so text wraps earlier in CSS)
+  const lsFactor = getLetterSpacingFactor(el);
+  if (lsFactor > 0) {
+    maxInline = maxInline / (1 + lsFactor);
+  }
+
   const prepared = prepare(text, font, getPretextOpts(writingMode));
   return layout(prepared, maxInline, lineHeight).height;
 }
@@ -53,7 +70,9 @@ function splitTextElement(el, linesForCurrentPage, containerWidth, containerHeig
   const text = el.textContent || '';
   const font = getFont(el);
   const lineHeight = getLineHeight(el);
-  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  const lsFactor = getLetterSpacingFactor(el);
+  if (lsFactor > 0) maxInline = maxInline / (1 + lsFactor);
 
   const prepared = prepareWithSegments(text, font, getPretextOpts(writingMode));
   const { lines } = layoutWithLines(prepared, maxInline, lineHeight);
@@ -82,7 +101,9 @@ function getLineCount(el, containerWidth, containerHeight, writingMode) {
 
   const font = getFont(el);
   const lineHeight = getLineHeight(el);
-  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  const lsFactor = getLetterSpacingFactor(el);
+  if (lsFactor > 0) maxInline = maxInline / (1 + lsFactor);
   const prepared = prepare(text, font, getPretextOpts(writingMode));
   return layout(prepared, maxInline, lineHeight).lineCount;
 }
@@ -156,7 +177,8 @@ function isTextElement(el) {
 // ── Pagination ──────────────────────────────────────────────────
 
 export function paginate(manuscript, containerWidth, containerHeight, writingMode) {
-  const maxBlockSize = writingMode === 'vertical-rl' ? containerWidth : containerHeight;
+  // 98% safety margin to prevent edge-case overflow from rounding/rendering differences
+  const maxBlockSize = (writingMode === 'vertical-rl' ? containerWidth : containerHeight) * 0.98;
   const pages = [[]];
   let currentBlockUsed = 0;
 
