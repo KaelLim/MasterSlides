@@ -1,0 +1,33 @@
+/* Aliswa overrides — pretext pagination replaces CSS columns */
+
+/* Remove CSS multi-column layout from manuscript */
+.manuscript {
+  column-width: unset !important;
+  column-gap: unset !important;
+  column-fill: unset !important;
+  /* Keep writing-mode and other base styles from slides.css */
+  overflow: hidden;
+}
+
+/* Each page is a full-size container */
+.slide-page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Ensure elements inside pages maintain their original styles */
+.slide-page h1,
+.slide-page h2,
+.slide-page h3,
+.slide-page h4,
+.slide-page p,
+.slide-page ul,
+.slide-page ol,
+.slide-page li {
+  /* Break properties no longer needed — paginator handles breaks */
+  break-before: auto !important;
+  break-after: auto !important;
+  break-inside: auto !important;
+}

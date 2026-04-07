@@ -43,8 +43,19 @@ async function serveStatic(pathname: string): Promise<Response> {
     return serveFile(join(DATA_DIR, pathname.replace(/^\/data\//, "")));
   }
 
-  // /css/* and /theme/* → project root (shared assets)
-  if (pathname.startsWith("/css/") || pathname.startsWith("/theme/")) {
+  // /css/* → check public first (aliswa overrides), then project root
+  if (pathname.startsWith("/css/")) {
+    const publicFile = Bun.file(join(PUBLIC_DIR, pathname));
+    if (await publicFile.exists()) {
+      return new Response(publicFile, {
+        headers: { "Content-Type": getMime(pathname) },
+      });
+    }
+    return serveFile(join(PROJECT_ROOT, pathname));
+  }
+
+  // /theme/* → project root (shared assets)
+  if (pathname.startsWith("/theme/")) {
     return serveFile(join(PROJECT_ROOT, pathname));
   }
 
