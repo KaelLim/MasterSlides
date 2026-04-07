@@ -51,27 +51,41 @@ slides.html?src=<docId>
 
 ### Key Components
 
-**slides.html** — Presentation viewer (~60KB, self-contained):
+**slides.html** — Presentation viewer (modularized into `js/slides/`):
 - Loads content from Supabase Storage via documents table lookup
 - Font scaling: `--font-scale` × `--mode-scale` (vertical=1.6, horizontal=0.8)
 - Primary fonts: DFKai-SB/BiauKai/標楷體 (Traditional Chinese serif)
 - Lightbox: Click-to-zoom images with touch gestures
 - Remote: Supabase Realtime Broadcast (generates QR code → remote.html)
 - Playlist mode: `?playlist=<id>` loads ordered document list via RPC
+- Entry point: `js/slides/main.js` → `state.js` (shared mutable state) + `loader.js` (init)
+- Modules: navigation, display, keyboard, search, goto, print, laser, lightbox, context-menu, modals, remote
 
 **remote.html** — Mobile remote control (Supabase Realtime Broadcast client)
 
-**dashboard/*.html** — Multi-page admin panel (Lit Web Components):
+**dashboard/*.html** — Multi-page admin panel (Lit Web Components in `js/components/`):
 - `upload.html`: Google Docs → Edge Function conversion (uploader+)
-- `documents.html`: List, view, toggle public/private, delete (owner)
-- `playlists.html`: Create, edit, drag-sort, toggle public (admin+)
-- `users.html`: Role management table (super_admin)
+- `documents.html`: List, view, toggle public/private, delete (owner) — `master-doc-list`
+- `playlists.html`: Create, edit, drag-sort, toggle public (admin+) — `master-playlist-list`, `master-playlist-editor`
+- `users.html`: Role management table (super_admin) — `master-user-manager`
+- Shared components: `master-sidebar`, `master-toast`, `master-confirm`
 
 **login.html** — Supabase Auth email/password login
 
 **index.html** — Session-based router (→ dashboard if logged in, → login if not)
 
 **badge.js** — IIFE that fetches `/config.json` and shows version badge
+
+**redirect.html** — Post-upload redirect page (shows conversion status)
+
+**dashboard.html** — Redirects to `/dashboard/documents.html`
+
+### CSS & Theming
+
+- `css/common.css` — Shared styles across pages
+- `css/dashboard.css` — Dashboard-specific styles
+- `css/slides.css` — Presentation viewer styles
+- `theme/default/` — Default theme (background.jpg + index.css)
 
 ### JS Modules (ES Modules, no bundler)
 
@@ -203,6 +217,10 @@ docker exec -it supabase-db psql -U postgres -d postgres -c \
 # Sync config.json anonKey with .env ANON_KEY
 ```
 
+## Archive
+
+`archive/` contains deprecated implementations: `express-server/` (old Express.js backend, replaced by Supabase Edge Functions) and `pagedjs/` (old paged.js-based viewer, replaced by custom pagination). Do not modify — reference only.
+
 ## Key Architectural Decisions
 
 - **No frontend framework**: Vanilla HTML/CSS/JS, ES Modules, no bundler
@@ -216,23 +234,6 @@ docker exec -it supabase-db psql -U postgres -d postgres -c \
 - **Nginx Alpine**: Static file server for HTML/CSS/JS (replaces Express)
 - **Custom Studio image**: `ghcr.io/kaellim/supabase-root:latest` with `/studio` basePath
 - **macOS Docker fix**: `docker-compose.override.yml` for Storage volume xattr support
-
-## Routes (through Kong :8000)
-
-| Route | Description |
-|-------|-------------|
-| `/` | Session check → dashboard or login |
-| `/slides.html?src=<docId>` | Presentation viewer |
-| `/slides.html?playlist=<id>` | Playlist mode |
-| `/remote.html?id=<roomId>` | Remote control |
-| `/login.html` | Login page |
-| `/dashboard/upload.html` | Upload page (uploader+) |
-| `/dashboard/documents.html` | Document list |
-| `/dashboard/playlists.html` | Playlist management (admin+) |
-| `/dashboard/users.html` | User management (super_admin) |
-| `/config.json` | App config (badge, anonKey) |
-| `/storage/v1/object/public/slides/...` | Public image/file access |
-| `/functions/v1/fetch-google-doc` | Edge Function (POST, auth required) |
 
 ## Hotkeys (slides.html)
 
