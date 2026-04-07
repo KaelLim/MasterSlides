@@ -65,7 +65,7 @@ export async function convertDocument(
   const { markdown: processed, imageCount } = await processImages(markdown, docId);
 
   marked.setOptions({ breaks: true, gfm: true });
-  const rawHtml = await marked.parse(processed);
+  const rawHtml = marked.parse(processed) as string;
   const cleanHtml = cleanImageStyles(rawHtml);
   const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
 
