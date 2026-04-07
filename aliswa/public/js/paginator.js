@@ -1,6 +1,24 @@
 import { prepare, layout, prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
-// ── Measurement helpers ─────────────────────────────────────────
+// ── DOM-based measurement (100% accurate) ───────────────────────
+
+function getBlockSize(el, writingMode) {
+  return writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight;
+}
+
+function getBlockMargin(el, writingMode) {
+  const style = getComputedStyle(el);
+  if (writingMode === 'vertical-rl') {
+    return parseFloat(style.marginLeft || '0') + parseFloat(style.marginRight || '0');
+  }
+  return parseFloat(style.marginTop || '0') + parseFloat(style.marginBottom || '0');
+}
+
+function measureBlock(el, writingMode) {
+  return getBlockSize(el, writingMode) + getBlockMargin(el, writingMode);
+}
+
+// ── Pretext-based text splitting (for cross-page paragraph breaks) ──
 
 function getFont(el) {
   const style = getComputedStyle(el);
@@ -15,64 +33,31 @@ function getLineHeight(el) {
   return val < 10 ? val * parseFloat(style.fontSize) : val;
 }
 
-function getBlockMargin(el, writingMode) {
+function getEffectiveInlineSize(el, containerWidth, containerHeight, writingMode) {
   const style = getComputedStyle(el);
-  if (writingMode === 'vertical-rl') {
-    return parseFloat(style.marginLeft || '0') + parseFloat(style.marginRight || '0');
-  }
-  return parseFloat(style.marginTop || '0') + parseFloat(style.marginBottom || '0');
-}
-
-function getInlineSize(containerWidth, containerHeight, writingMode) {
-  return writingMode === 'vertical-rl' ? containerHeight : containerWidth;
+  const ls = parseFloat(style.letterSpacing || '0');
+  const fs = parseFloat(style.fontSize);
+  let maxInline = writingMode === 'vertical-rl' ? containerHeight : containerWidth;
+  // Compensate for letter-spacing (pretext doesn't account for it)
+  if (ls > 0 && fs > 0) maxInline = maxInline / (1 + ls / fs);
+  return maxInline;
 }
 
 function getPretextOpts(writingMode) {
   return writingMode === 'vertical-rl' ? { writingMode: 'vertical-rl' } : undefined;
 }
 
-// ── Text measurement ────────────────────────────────────────────
-
-function getLetterSpacingFactor(el) {
-  const style = getComputedStyle(el);
-  const ls = parseFloat(style.letterSpacing || '0');
-  const fs = parseFloat(style.fontSize);
-  // letter-spacing widens each character, reducing effective inline space
-  // Approximate: each char is ~1em wide, so ls/fs is the fractional overhead
-  return ls > 0 && fs > 0 ? ls / fs : 0;
-}
-
-function measureTextBlock(el, containerWidth, containerHeight, writingMode) {
-  const text = el.textContent || '';
-  if (!text.trim()) return 0;
-
-  const font = getFont(el);
-  const lineHeight = getLineHeight(el);
-  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
-
-  // Reduce effective inline size to account for CSS letter-spacing
-  // (pretext doesn't know about letter-spacing, so text wraps earlier in CSS)
-  const lsFactor = getLetterSpacingFactor(el);
-  if (lsFactor > 0) {
-    maxInline = maxInline / (1 + lsFactor);
-  }
-
-  const prepared = prepare(text, font, getPretextOpts(writingMode));
-  return layout(prepared, maxInline, lineHeight).height;
-}
-
 /**
- * Split a text element into two parts at a given line count.
- * Returns [firstHalf, secondHalf] as new DOM elements.
- * Uses pretext layoutWithLines for precise line-level splitting.
+ * Split a text element into two parts at a line boundary.
+ * Returns [firstHalf, secondHalf] or null if can't split.
  */
 function splitTextElement(el, linesForCurrentPage, containerWidth, containerHeight, writingMode) {
   const text = el.textContent || '';
+  if (!text.trim()) return null;
+
   const font = getFont(el);
   const lineHeight = getLineHeight(el);
-  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
-  const lsFactor = getLetterSpacingFactor(el);
-  if (lsFactor > 0) maxInline = maxInline / (1 + lsFactor);
+  const maxInline = getEffectiveInlineSize(el, containerWidth, containerHeight, writingMode);
 
   const prepared = prepareWithSegments(text, font, getPretextOpts(writingMode));
   const { lines } = layoutWithLines(prepared, maxInline, lineHeight);
@@ -93,78 +78,37 @@ function splitTextElement(el, linesForCurrentPage, containerWidth, containerHeig
 }
 
 /**
- * Get line count for a text element.
+ * Estimate how many lines fit in remaining space using pretext.
  */
-function getLineCount(el, containerWidth, containerHeight, writingMode) {
+function estimateLinesFitting(el, remainingSpace, containerWidth, containerHeight, writingMode) {
+  const lineHeight = getLineHeight(el);
+  const linesAvailable = Math.floor(remainingSpace / lineHeight);
+  if (linesAvailable < 2) return 0;
+
   const text = el.textContent || '';
   if (!text.trim()) return 0;
 
   const font = getFont(el);
-  const lineHeight = getLineHeight(el);
-  let maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
-  const lsFactor = getLetterSpacingFactor(el);
-  if (lsFactor > 0) maxInline = maxInline / (1 + lsFactor);
+  const maxInline = getEffectiveInlineSize(el, containerWidth, containerHeight, writingMode);
   const prepared = prepare(text, font, getPretextOpts(writingMode));
-  return layout(prepared, maxInline, lineHeight).lineCount;
+  const totalLines = layout(prepared, maxInline, lineHeight).lineCount;
+
+  return totalLines > linesAvailable ? linesAvailable : 0;
 }
 
-// ── Image measurement + scaling ─────────────────────────────────
+// ── Image scaling ───────────────────────────────────────────────
 
-function measureImage(el, writingMode) {
-  return writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight;
-}
-
-/**
- * Scale an image down if it exceeds the page's block-axis size.
- */
 function scaleImageToFit(el, maxBlockSize, writingMode) {
-  const blockSize = measureImage(el, writingMode);
+  const blockSize = getBlockSize(el, writingMode);
   if (blockSize > maxBlockSize && blockSize > 0) {
     const ratio = maxBlockSize / blockSize;
-    el.style.maxWidth = writingMode === 'vertical-rl'
-      ? `${el.offsetWidth * ratio}px`
-      : `${el.offsetWidth * ratio}px`;
-    el.style.maxHeight = writingMode === 'vertical-rl'
-      ? `${el.offsetHeight * ratio}px`
-      : `${Math.floor(maxBlockSize)}px`;
+    el.style.maxWidth = `${el.offsetWidth * ratio}px`;
+    el.style.maxHeight = `${el.offsetHeight * ratio}px`;
     el.style.objectFit = 'contain';
   }
 }
 
-// ── Block measurement ───────────────────────────────────────────
-
-function measureBlock(el, containerWidth, containerHeight, writingMode) {
-  const tag = el.tagName;
-  const margin = getBlockMargin(el, writingMode);
-
-  if (['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(tag)) {
-    return measureTextBlock(el, containerWidth, containerHeight, writingMode) + margin;
-  }
-
-  if (tag === 'IMG') {
-    return measureImage(el, writingMode) + margin;
-  }
-
-  if (tag === 'UL' || tag === 'OL') {
-    let total = getBlockMargin(el, writingMode);
-    for (const li of el.children) {
-      total += measureBlock(li, containerWidth, containerHeight, writingMode);
-    }
-    return total;
-  }
-
-  if (tag === 'ARTICLE' || tag === 'DIV' || tag === 'SECTION') {
-    let total = getBlockMargin(el, writingMode);
-    for (const child of el.children) {
-      total += measureBlock(child, containerWidth, containerHeight, writingMode);
-    }
-    return total;
-  }
-
-  if (tag === 'HR') return 0;
-
-  return (writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight) + margin;
-}
+// ── Pagination ──────────────────────────────────────────────────
 
 function forcesBreakBefore(el) {
   return el.tagName === 'H1' || el.tagName === 'H2';
@@ -174,8 +118,11 @@ function isTextElement(el) {
   return ['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(el.tagName);
 }
 
-// ── Pagination ──────────────────────────────────────────────────
-
+/**
+ * Paginate manuscript children into page groups.
+ * Uses DOM measurement for block sizes (100% accurate).
+ * Uses pretext only for splitting text blocks across pages.
+ */
 export function paginate(manuscript, containerWidth, containerHeight, writingMode) {
   const maxBlockSize = writingMode === 'vertical-rl' ? containerWidth : containerHeight;
   const pages = [[]];
@@ -205,13 +152,12 @@ export function paginate(manuscript, containerWidth, containerHeight, writingMod
       currentBlockUsed = 0;
     }
 
-    // Scale oversized images to fit page
+    // Scale oversized images
     if (el.tagName === 'IMG') {
       scaleImageToFit(el, maxBlockSize, writingMode);
     }
 
-    const margin = getBlockMargin(el, writingMode);
-    const blockSize = measureBlock(el, containerWidth, containerHeight, writingMode);
+    const blockSize = measureBlock(el, writingMode);
 
     // Fits on current page
     if (currentBlockUsed + blockSize <= maxBlockSize) {
@@ -222,29 +168,26 @@ export function paginate(manuscript, containerWidth, containerHeight, writingMod
 
     // Doesn't fit — try to split text elements across pages
     if (isTextElement(el) && currentBlockUsed > 0) {
-      const lineHeight = getLineHeight(el);
-      const remainingSpace = maxBlockSize - currentBlockUsed - margin;
-      const linesAvailable = Math.floor(remainingSpace / lineHeight);
+      const remainingSpace = maxBlockSize - currentBlockUsed - getBlockMargin(el, writingMode);
+      const linesAvailable = estimateLinesFitting(el, remainingSpace, containerWidth, containerHeight, writingMode);
 
       if (linesAvailable >= 2) {
-        const totalLines = getLineCount(el, containerWidth, containerHeight, writingMode);
-        if (totalLines > linesAvailable) {
-          const parts = splitTextElement(el, linesAvailable, containerWidth, containerHeight, writingMode);
-          if (parts) {
-            const [firstHalf, secondHalf] = parts;
-            // Put first half on current page
-            pages[pages.length - 1].push(firstHalf);
-            // Start new page with second half
-            pages.push([secondHalf]);
-            const secondSize = measureBlock(secondHalf, containerWidth, containerHeight, writingMode);
-            currentBlockUsed = secondSize;
-            continue;
-          }
+        const parts = splitTextElement(el, linesAvailable, containerWidth, containerHeight, writingMode);
+        if (parts) {
+          const [firstHalf, secondHalf] = parts;
+          pages[pages.length - 1].push(firstHalf);
+          // Insert secondHalf into children array so it gets processed next
+          children.splice(i + 1, 0, secondHalf);
+          // Need to re-measure secondHalf — temporarily add to DOM
+          manuscript.appendChild(secondHalf);
+          pages.push([]);
+          currentBlockUsed = 0;
+          continue;
         }
       }
     }
 
-    // Can't split or not text — start new page with this element
+    // Can't split — start new page
     if (currentBlockUsed > 0) {
       pages.push([]);
       currentBlockUsed = 0;

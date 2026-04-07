@@ -1,11 +1,5 @@
 /* Aliswa overrides — pretext pagination replaces CSS columns */
 
-/* Remove container-type: size — no longer needed without CSS columns.
-   Size containment (implied by container-type: size) clips content strictly. */
-.manuscript-container {
-  container-type: normal !important;
-}
-
 /* Remove CSS multi-column layout from manuscript */
 .manuscript {
   column-width: unset !important;
