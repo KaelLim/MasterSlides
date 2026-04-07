@@ -53,6 +53,11 @@ async function serveStatic(pathname: string): Promise<Response> {
     return serveFile(join(PROJECT_ROOT, pathname));
   }
 
+  // /dist/* → public/dist/ (bundled JS)
+  if (pathname.startsWith("/dist/")) {
+    return serveFile(join(PUBLIC_DIR, pathname));
+  }
+
   // Everything else → public/ directory
   let filePath = join(PUBLIC_DIR, pathname);
 
