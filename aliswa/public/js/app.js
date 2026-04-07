@@ -161,8 +161,27 @@ async function convertTablesToImages() {
 
 // ── Document loader ─────────────────────────────────────────────
 
+function extractDocId(url) {
+  const match = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
 async function loadDocument(src) {
   try {
+    // Detect Google Docs URL → convert first, then load
+    const googleDocId = extractDocId(src);
+    if (googleDocId) {
+      dom.manuscript.innerHTML = '<p class="loading-message">轉換中，請稍候...</p>';
+      const convertRes = await fetch('/api/fetch-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: src })
+      });
+      const result = await convertRes.json();
+      if (!result.success) throw new Error(result.error);
+      src = result.doc_id;
+    }
+
     // If src looks like a doc_id (alphanumeric/hyphens/underscores), use API
     const isDocId = /^[a-zA-Z0-9_-]+$/.test(src);
     const url = isDocId ? `/api/docs/${src}` : src;
