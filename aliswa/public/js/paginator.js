@@ -1,48 +1,20 @@
-import { prepare, layout } from '@chenglou/pretext';
+import { prepare, layout, prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
-/**
- * Measure the block-axis size of a text element using pretext.
- */
-function measureTextBlock(el, containerWidth, containerHeight, writingMode) {
+// ── Measurement helpers ─────────────────────────────────────────
+
+function getFont(el) {
   const style = getComputedStyle(el);
-  const fontSize = style.fontSize;
-  const fontWeight = style.fontWeight;
-  const fontFamily = style.fontFamily;
-  const font = `${fontWeight} ${fontSize} ${fontFamily}`;
-
-  const lineHeightRaw = style.lineHeight;
-  let lineHeight;
-  if (lineHeightRaw === 'normal') {
-    lineHeight = parseFloat(fontSize) * 1.2;
-  } else {
-    lineHeight = parseFloat(lineHeightRaw);
-    if (lineHeight < 10) {
-      lineHeight = lineHeight * parseFloat(fontSize);
-    }
-  }
-
-  const text = el.textContent || '';
-  if (!text.trim()) return 0;
-
-  const pretextMode = writingMode === 'vertical-rl' ? 'vertical-rl' : undefined;
-  const prepared = prepare(text, font, pretextMode ? { writingMode: pretextMode } : undefined);
-
-  const maxInline = writingMode === 'vertical-rl' ? containerHeight : containerWidth;
-  const result = layout(prepared, maxInline, lineHeight);
-
-  return result.height;
+  return `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
 }
 
-/**
- * Measure the block-axis size of an image element.
- */
-function measureImage(el, writingMode) {
-  return writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight;
+function getLineHeight(el) {
+  const style = getComputedStyle(el);
+  const raw = style.lineHeight;
+  if (raw === 'normal') return parseFloat(style.fontSize) * 1.2;
+  const val = parseFloat(raw);
+  return val < 10 ? val * parseFloat(style.fontSize) : val;
 }
 
-/**
- * Get the block-axis margin of an element.
- */
 function getBlockMargin(el, writingMode) {
   const style = getComputedStyle(el);
   if (writingMode === 'vertical-rl') {
@@ -51,9 +23,95 @@ function getBlockMargin(el, writingMode) {
   return parseFloat(style.marginTop || '0') + parseFloat(style.marginBottom || '0');
 }
 
+function getInlineSize(containerWidth, containerHeight, writingMode) {
+  return writingMode === 'vertical-rl' ? containerHeight : containerWidth;
+}
+
+function getPretextOpts(writingMode) {
+  return writingMode === 'vertical-rl' ? { writingMode: 'vertical-rl' } : undefined;
+}
+
+// ── Text measurement ────────────────────────────────────────────
+
+function measureTextBlock(el, containerWidth, containerHeight, writingMode) {
+  const text = el.textContent || '';
+  if (!text.trim()) return 0;
+
+  const font = getFont(el);
+  const lineHeight = getLineHeight(el);
+  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  const prepared = prepare(text, font, getPretextOpts(writingMode));
+  return layout(prepared, maxInline, lineHeight).height;
+}
+
 /**
- * Measure one block element's total block-axis size (content + margin).
+ * Split a text element into two parts at a given line count.
+ * Returns [firstHalf, secondHalf] as new DOM elements.
+ * Uses pretext layoutWithLines for precise line-level splitting.
  */
+function splitTextElement(el, linesForCurrentPage, containerWidth, containerHeight, writingMode) {
+  const text = el.textContent || '';
+  const font = getFont(el);
+  const lineHeight = getLineHeight(el);
+  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+
+  const prepared = prepareWithSegments(text, font, getPretextOpts(writingMode));
+  const { lines } = layoutWithLines(prepared, maxInline, lineHeight);
+
+  if (linesForCurrentPage <= 0 || linesForCurrentPage >= lines.length) return null;
+
+  const firstText = lines.slice(0, linesForCurrentPage).map(l => l.text).join('');
+  const secondText = lines.slice(linesForCurrentPage).map(l => l.text).join('');
+
+  if (!firstText.trim() || !secondText.trim()) return null;
+
+  const first = el.cloneNode(false);
+  first.textContent = firstText;
+  const second = el.cloneNode(false);
+  second.textContent = secondText;
+
+  return [first, second];
+}
+
+/**
+ * Get line count for a text element.
+ */
+function getLineCount(el, containerWidth, containerHeight, writingMode) {
+  const text = el.textContent || '';
+  if (!text.trim()) return 0;
+
+  const font = getFont(el);
+  const lineHeight = getLineHeight(el);
+  const maxInline = getInlineSize(containerWidth, containerHeight, writingMode);
+  const prepared = prepare(text, font, getPretextOpts(writingMode));
+  return layout(prepared, maxInline, lineHeight).lineCount;
+}
+
+// ── Image measurement + scaling ─────────────────────────────────
+
+function measureImage(el, writingMode) {
+  return writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight;
+}
+
+/**
+ * Scale an image down if it exceeds the page's block-axis size.
+ */
+function scaleImageToFit(el, maxBlockSize, writingMode) {
+  const blockSize = measureImage(el, writingMode);
+  if (blockSize > maxBlockSize && blockSize > 0) {
+    const ratio = maxBlockSize / blockSize;
+    el.style.maxWidth = writingMode === 'vertical-rl'
+      ? `${el.offsetWidth * ratio}px`
+      : `${el.offsetWidth * ratio}px`;
+    el.style.maxHeight = writingMode === 'vertical-rl'
+      ? `${el.offsetHeight * ratio}px`
+      : `${Math.floor(maxBlockSize)}px`;
+    el.style.objectFit = 'contain';
+  }
+}
+
+// ── Block measurement ───────────────────────────────────────────
+
 function measureBlock(el, containerWidth, containerHeight, writingMode) {
   const tag = el.tagName;
   const margin = getBlockMargin(el, writingMode);
@@ -82,24 +140,21 @@ function measureBlock(el, containerWidth, containerHeight, writingMode) {
     return total;
   }
 
-  if (tag === 'HR') {
-    return 0;
-  }
+  if (tag === 'HR') return 0;
 
   return (writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight) + margin;
 }
 
-/**
- * Check if an element forces a page break before it.
- */
 function forcesBreakBefore(el) {
-  const tag = el.tagName;
-  return tag === 'H1' || tag === 'H2';
+  return el.tagName === 'H1' || el.tagName === 'H2';
 }
 
-/**
- * Paginate manuscript children into page groups.
- */
+function isTextElement(el) {
+  return ['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(el.tagName);
+}
+
+// ── Pagination ──────────────────────────────────────────────────
+
 export function paginate(manuscript, containerWidth, containerHeight, writingMode) {
   const maxBlockSize = writingMode === 'vertical-rl' ? containerWidth : containerHeight;
   const pages = [[]];
@@ -113,25 +168,66 @@ export function paginate(manuscript, containerWidth, containerHeight, writingMod
     children = Array.from(manuscript.children);
   }
 
-  for (const el of children) {
+  for (let i = 0; i < children.length; i++) {
+    const el = children[i];
+
+    // <hr> = forced page break
     if (el.tagName === 'HR') {
       pages.push([]);
       currentBlockUsed = 0;
       continue;
     }
 
+    // h1, h2 → force new page (unless current page is empty)
     if (forcesBreakBefore(el) && currentBlockUsed > 0) {
       pages.push([]);
       currentBlockUsed = 0;
     }
 
+    // Scale oversized images to fit page
+    if (el.tagName === 'IMG') {
+      scaleImageToFit(el, maxBlockSize, writingMode);
+    }
+
+    const margin = getBlockMargin(el, writingMode);
     const blockSize = measureBlock(el, containerWidth, containerHeight, writingMode);
 
-    if (currentBlockUsed + blockSize > maxBlockSize && currentBlockUsed > 0) {
+    // Fits on current page
+    if (currentBlockUsed + blockSize <= maxBlockSize) {
+      pages[pages.length - 1].push(el);
+      currentBlockUsed += blockSize;
+      continue;
+    }
+
+    // Doesn't fit — try to split text elements across pages
+    if (isTextElement(el) && currentBlockUsed > 0) {
+      const lineHeight = getLineHeight(el);
+      const remainingSpace = maxBlockSize - currentBlockUsed - margin;
+      const linesAvailable = Math.floor(remainingSpace / lineHeight);
+
+      if (linesAvailable >= 2) {
+        const totalLines = getLineCount(el, containerWidth, containerHeight, writingMode);
+        if (totalLines > linesAvailable) {
+          const parts = splitTextElement(el, linesAvailable, containerWidth, containerHeight, writingMode);
+          if (parts) {
+            const [firstHalf, secondHalf] = parts;
+            // Put first half on current page
+            pages[pages.length - 1].push(firstHalf);
+            // Start new page with second half
+            pages.push([secondHalf]);
+            const secondSize = measureBlock(secondHalf, containerWidth, containerHeight, writingMode);
+            currentBlockUsed = secondSize;
+            continue;
+          }
+        }
+      }
+    }
+
+    // Can't split or not text — start new page with this element
+    if (currentBlockUsed > 0) {
       pages.push([]);
       currentBlockUsed = 0;
     }
-
     pages[pages.length - 1].push(el);
     currentBlockUsed += blockSize;
   }
@@ -139,9 +235,8 @@ export function paginate(manuscript, containerWidth, containerHeight, writingMod
   return pages.filter(p => p.length > 0);
 }
 
-/**
- * Render paginated content into .manuscript as .slide-page divs.
- */
+// ── Rendering ───────────────────────────────────────────────────
+
 export function renderPages(manuscript, pages, writingMode) {
   manuscript.innerHTML = '';
   manuscript.style.columnWidth = 'unset';
@@ -165,9 +260,6 @@ export function renderPages(manuscript, pages, writingMode) {
   });
 }
 
-/**
- * Show a specific page and hide all others.
- */
 export function showPage(index) {
   const pages = document.querySelectorAll('.slide-page');
   pages.forEach((p, i) => {

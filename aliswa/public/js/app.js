@@ -307,6 +307,17 @@ async function loadDocument(src) {
   updateModKeyDisplay();
   await convertTablesToImages();
 
+  // Wait for fonts to load (critical for accurate pretext measurement)
+  await document.fonts.ready;
+
+  // Wait for all images to load (critical for accurate dimension measurement)
+  const images = dom.manuscript.querySelectorAll('img');
+  if (images.length > 0) {
+    await Promise.all(Array.from(images).map(img =>
+      img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+    ));
+  }
+
   // Store all content elements for repagination
   const content = dom.manuscript.firstElementChild;
   if (content && content.tagName === 'ARTICLE') {
