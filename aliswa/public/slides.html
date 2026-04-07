@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>慈濟慈善事業基金會 志業分享</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="/css/slides.css">
+</head>
+<body>
+  <!-- Search Bar -->
+  <div class="search-bar" id="searchBar">
+    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="搜尋文字...">
+    <span class="search-count" id="searchCount"></span>
+    <button class="search-nav-btn" id="searchPrev" title="上一個">&#9650;</button>
+    <button class="search-nav-btn" id="searchNext" title="下一個">&#9660;</button>
+    <button class="search-close-btn" id="searchClose">&times;</button>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <span class="lightbox-close">&times;</span>
+    <div class="lightbox-zoom-info" id="lightboxZoomInfo">100%</div>
+    <div class="lightbox-content">
+      <div class="lightbox-image-wrap">
+        <img id="lightboxImg" src="" alt="">
+      </div>
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+    <div class="lightbox-controls">
+      <button id="zoomOutBtn">−</button>
+      <button id="zoomResetBtn">⟲</button>
+      <button id="zoomInBtn">+</button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar 設定面板 -->
+  <div class="sidebar" id="sidebar">
+    <div class="settings-section">
+      <h3>字體大小</h3>
+      <div class="font-size-control">
+        <button id="fontDecrease">A-</button>
+        <span class="size-display" id="fontSizeDisplay">100%</span>
+        <button id="fontIncrease">A+</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>文字方向</h3>
+      <div class="toggle-group">
+        <button id="verticalBtn" class="active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+            <polyline points="8 7 12 3 16 7"></polyline>
+            <polyline points="8 17 12 21 16 17"></polyline>
+          </svg>
+          直書
+        </button>
+        <button id="horizontalBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <polyline points="7 8 3 12 7 16"></polyline>
+            <polyline points="17 8 21 12 17 16"></polyline>
+          </svg>
+          橫書
+        </button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>字體選擇</h3>
+      <select class="font-select" id="fontSelect">
+        <option value="DFKai-SB" selected>標楷體</option>
+        <option value="Noto Sans TC">Noto Sans TC</option>
+        <option value="Noto Serif TC">Noto Serif TC</option>
+        <option value="LXGW WenKai TC">LXGW WenKai TC</option>
+      </select>
+    </div>
+    <div class="settings-section">
+      <div class="icon-btn-row">
+        <button class="icon-btn" id="fullscreenBtn" data-tooltip="全螢幕">
+          <span id="fullscreenIcon">⛶</span>
+        </button>
+        <button class="icon-btn" id="toggleNavBtn" data-tooltip="隱藏導航列">
+          <svg id="toggleNavIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button class="icon-btn" id="laserBtn" data-tooltip="聚光燈">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <line x1="12" y1="2" x2="12" y2="5"></line>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="2" y1="12" x2="5" y2="12"></line>
+            <line x1="19" y1="12" x2="22" y2="12"></line>
+          </svg>
+        </button>
+        <button class="icon-btn" id="exportPdfBtn" data-tooltip="匯出 PDF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <polyline points="9 15 12 18 15 15"></polyline>
+          </svg>
+        </button>
+        <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明">
+          <span style="font-size: 18px; font-weight: bold;">?</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷鍵說明 Modal -->
+  <div class="help-modal" id="helpModal">
+    <span class="help-modal-close">&times;</span>
+    <div class="help-content">
+      <h2>快捷鍵說明</h2>
+      <div class="help-columns">
+        <div class="help-column">
+          <h3>導航</h3>
+          <div class="help-item"><kbd>→</kbd> / <kbd>Space</kbd> / <kbd>PageDown</kbd><span>下一頁</span></div>
+          <div class="help-item"><kbd>←</kbd> / <kbd>PageUp</kbd><span>上一頁</span></div>
+          <div class="help-item"><kbd>Home</kbd><span>第一頁</span></div>
+          <div class="help-item"><kbd>End</kbd><span>最後一頁</span></div>
+          <div class="help-item"><kbd>G</kbd><span>跳至指定頁</span></div>
+        </div>
+        <div class="help-column">
+          <h3>顯示控制</h3>
+          <div class="help-item"><kbd>F</kbd> / <kbd class="mod-key">Cmd</kbd>+<kbd>Enter</kbd><span>全螢幕</span></div>
+          <div class="help-item"><kbd>S</kbd> / <kbd class="mod-key">Cmd</kbd>+<kbd>,</kbd><span>側邊欄</span></div>
+          <div class="help-item"><kbd>O</kbd><span>切換直書/橫書</span></div>
+          <div class="help-item"><kbd>N</kbd><span>隱藏/顯示導航列</span></div>
+        </div>
+        <div class="help-column">
+          <h3>字體控制</h3>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>=</kbd><span>字體放大</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>-</kbd><span>字體縮小</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>0</kbd><span>重設字體</span></div>
+        </div>
+        <div class="help-column">
+          <h3>其他</h3>
+          <div class="help-item"><kbd>L</kbd><span>聚光燈</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>P</kbd><span>匯出 PDF</span></div>
+          <div class="help-item"><kbd class="mod-key">Cmd</kbd>+<kbd>F</kbd><span>搜尋</span></div>
+          <div class="help-item"><kbd>?</kbd> / <kbd>H</kbd><span>快捷鍵說明</span></div>
+          <div class="help-item"><kbd>Escape</kbd><span>關閉彈窗</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Go-to-page Modal -->
+  <div class="goto-modal" id="gotoModal">
+    <span class="goto-modal-close">&times;</span>
+    <div class="goto-content">
+      <div class="goto-tabs">
+        <button class="goto-tab active" data-tab="toc">目錄</button>
+        <button class="goto-tab" data-tab="grid">瀏覽</button>
+      </div>
+      <div class="goto-panel" id="gotoPanelToc">
+        <div class="goto-input-wrap">
+          <input type="number" id="gotoPageInput" min="1" placeholder="頁碼...">
+          <button id="gotoPageBtn">跳轉</button>
+        </div>
+        <div class="goto-toc" id="gotoToc"></div>
+      </div>
+      <div class="goto-panel goto-panel-hidden" id="gotoPanelGrid">
+        <div class="goto-grid" id="gotoGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主要 Flex 布局 -->
+  <div class="app-layout">
+    <!-- 左側面板 -->
+    <aside class="left-panel">
+      <button class="hamburger-btn" id="hamburgerBtn">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="page-indicator">
+        <span class="current" id="currentPage">1</span>
+        <span class="separator">───</span>
+        <span class="total" id="totalPages">?</span>
+      </div>
+    </aside>
+
+    <!-- 內容區 -->
+    <main class="content-area" id="contentArea">
+      <div class="manuscript-container" id="manuscriptContainer">
+        <article class="manuscript" id="manuscript">
+          <!-- 內容將由 JavaScript 動態載入 -->
+          <p class="loading-message">載入中...</p>
+        </article>
+      </div>
+
+      <!-- 導航列（在 content-area 內，用 absolute） -->
+      <div class="slide-nav" id="slideNav">
+        <button id="prevBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button id="nextBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
