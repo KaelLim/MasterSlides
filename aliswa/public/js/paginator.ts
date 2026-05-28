@@ -141,3 +141,127 @@ function scaleImageToFit(
     el.style.objectFit = 'contain';
   }
 }
+
+// ── Page lifecycle ─────────────────────────────────────────────
+
+function createSlidePage(manuscript: HTMLElement, writingMode: WritingMode): HTMLElement {
+  const page = document.createElement('div');
+  page.className = 'slide-page';
+  page.dataset.page = String(manuscript.querySelectorAll(':scope > .slide-page').length);
+  if (writingMode === 'vertical-rl') {
+    page.style.writingMode = 'vertical-rl';
+    page.style.textOrientation = 'mixed';
+  } else {
+    page.style.writingMode = 'horizontal-tb';
+  }
+  manuscript.appendChild(page);
+  return page;
+}
+
+// ── Main pagination ───────────────────────────────────────────
+
+/**
+ * Lay out `article`'s children into one or more `.slide-page` divs inside
+ * `manuscript`. Pages are appended live; the returned array is in
+ * page-index order.
+ */
+export function paginate(
+  article: HTMLElement,
+  manuscript: HTMLElement,
+  writingMode: WritingMode
+): HTMLElement[] {
+  // Snapshot the children up front so we can mutate the queue (push leftovers).
+  // Detach them from `article` so the original parent isn't accidentally
+  // measured. After paginate, `article` is empty; `manuscript` holds the pages.
+  const queue: HTMLElement[] = Array.from(article.children) as HTMLElement[];
+  for (const el of queue) article.removeChild(el);
+
+  manuscript.innerHTML = '';
+  let current = createSlidePage(manuscript, writingMode);
+
+  while (queue.length > 0) {
+    const el = queue.shift()!;
+
+    if (el.tagName === 'HR') {
+      current = createSlidePage(manuscript, writingMode);
+      continue;
+    }
+
+    if (forcesBreakBefore(el) && current.children.length > 0) {
+      current = createSlidePage(manuscript, writingMode);
+    }
+
+    if (el.tagName === 'IMG') {
+      // Temporarily attach so we can read natural offset dimensions for cap math.
+      current.appendChild(el);
+      scaleImageToFit(el, current, writingMode);
+      // Leave it in place; the overflow check below decides whether to keep it.
+    } else {
+      current.appendChild(el);
+    }
+
+    if (!overflows(current)) continue;
+
+    // Overflow. Retract.
+    current.removeChild(el);
+
+    if (current.children.length > 0) {
+      // Carry trailing headings (size-aware): only those that would still fit
+      // alongside `el` on the new page travel; the rest stay on `current`.
+      const fresh = createSlidePage(manuscript, writingMode);
+
+      // Move el onto fresh first so size-checks include it.
+      fresh.appendChild(el);
+
+      // Walk backwards through `current`'s trailing headings.
+      while (current.lastElementChild && isHeading(current.lastElementChild as HTMLElement)) {
+        const heading = current.lastElementChild as HTMLElement;
+        current.removeChild(heading);
+        fresh.insertBefore(heading, fresh.firstChild);
+        if (overflows(fresh)) {
+          // Heading + el together overflows the fresh page → revert this one heading.
+          fresh.removeChild(heading);
+          current.appendChild(heading);
+          break;
+        }
+      }
+
+      current = fresh;
+
+      if (!overflows(current)) continue;
+      // Even on a fresh page (possibly with carried headings) `el` overflows → must split.
+    } else {
+      // current was empty; el alone overflows.
+      current.appendChild(el);
+    }
+
+    // Split `el` in place.
+    let leftover: HTMLElement | null = null;
+    if (isListElement(el)) {
+      leftover = splitListInPlace(el, current);
+    } else if (isTextElement(el)) {
+      leftover = splitTextInPlace(el, current);
+    }
+
+    if (leftover) {
+      // Process leftover next (pushes back to the front of the queue).
+      queue.unshift(leftover);
+    }
+    // If split returned null (unsplittable, e.g. image alone too big after scale),
+    // leave `el` in place and accept the overflow.
+  }
+
+  // showPage default: show first, hide rest.
+  const pages = Array.from(manuscript.querySelectorAll<HTMLElement>(':scope > .slide-page'));
+  pages.forEach((p, i) => { p.style.display = i === 0 ? '' : 'none'; });
+  return pages;
+}
+
+// ── Page navigation ───────────────────────────────────────────
+
+export function showPage(index: number): void {
+  const pages = document.querySelectorAll<HTMLElement>('#manuscript > .slide-page');
+  pages.forEach((p, i) => {
+    p.style.display = i === index ? '' : 'none';
+  });
+}

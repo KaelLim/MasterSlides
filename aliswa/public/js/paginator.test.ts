@@ -87,3 +87,9 @@ test('paginator.ts exports the public surface', async () => {
   expect(typeof mod.overflows).toBe('function');
   expect(typeof mod.splitTextInPlace).toBe('function');
 });
+
+test('paginate is exported', async () => {
+  const mod = await import('./paginator');
+  expect(typeof mod.paginate).toBe('function');
+  expect(typeof mod.showPage).toBe('function');
+});
