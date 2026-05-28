@@ -170,3 +170,135 @@ function splitListDOM(
   for (let j = 1; j < items.length; j++) second.appendChild(items[j]);
   return [first, second];
 }
+
+// ── Main pagination ───────────────────────────────────────────
+
+export function paginate(
+  manuscript: HTMLElement,
+  containerWidth: number,
+  containerHeight: number,
+  writingMode: WritingMode
+): HTMLElement[][] {
+  const maxBlockSize = writingMode === 'vertical-rl' ? containerWidth : containerHeight;
+  const pages: HTMLElement[][] = [[]];
+  let currentBlockUsed = 0;
+
+  let children: HTMLElement[];
+  const firstChild = manuscript.firstElementChild as HTMLElement | null;
+  if (firstChild && firstChild.tagName === 'ARTICLE') {
+    children = Array.from(firstChild.children) as HTMLElement[];
+  } else {
+    children = Array.from(manuscript.children) as HTMLElement[];
+  }
+
+  for (let i = 0; i < children.length; i++) {
+    const el = children[i];
+
+    // <hr> = forced page break
+    if (el.tagName === 'HR') {
+      pages.push([]);
+      currentBlockUsed = 0;
+      continue;
+    }
+
+    // h1, h2 → force new page (unless current page is empty)
+    if (forcesBreakBefore(el) && currentBlockUsed > 0) {
+      pages.push([]);
+      currentBlockUsed = 0;
+    }
+
+    // Scale oversized images
+    if (el.tagName === 'IMG') {
+      scaleImageToFit(el, maxBlockSize, writingMode);
+    }
+
+    const blockSize = measureBlock(el, writingMode);
+
+    // Fits on current page
+    if (currentBlockUsed + blockSize <= maxBlockSize) {
+      pages[pages.length - 1].push(el);
+      currentBlockUsed += blockSize;
+      continue;
+    }
+
+    // Doesn't fit — try splitting
+    const maxAllowed = maxBlockSize - currentBlockUsed;
+    let parts: [HTMLElement, HTMLElement] | null = null;
+    if (isListElement(el)) {
+      parts = splitListDOM(el, maxAllowed, writingMode, manuscript);
+    } else if (isTextElement(el)) {
+      parts = splitTextDOM(el, maxAllowed, writingMode, manuscript);
+    }
+
+    if (parts) {
+      const [first, second] = parts;
+      pages[pages.length - 1].push(first);
+      children.splice(i + 1, 0, second);
+      manuscript.appendChild(second);   // keep in DOM so further measurements work
+      pages.push([]);
+      currentBlockUsed = 0;
+      continue;
+    }
+
+    // Can't split — start a new page, carrying any orphaned headings
+    // that still fit alongside `el` on the new page.
+    if (currentBlockUsed > 0) {
+      const currentPage = pages[pages.length - 1];
+      const carried: HTMLElement[] = [];
+      let carriedSize = 0;
+      while (currentPage.length > 0 && isHeading(currentPage[currentPage.length - 1])) {
+        const last = currentPage[currentPage.length - 1];
+        const lastSize = measureBlock(last, writingMode);
+        if (carriedSize + lastSize + blockSize > maxBlockSize) break;
+        carried.unshift(currentPage.pop()!);
+        carriedSize += lastSize;
+      }
+      pages.push([]);
+      currentBlockUsed = 0;
+      for (const h of carried) {
+        pages[pages.length - 1].push(h);
+        currentBlockUsed += measureBlock(h, writingMode);
+      }
+    }
+    pages[pages.length - 1].push(el);
+    currentBlockUsed += blockSize;
+  }
+
+  return pages.filter(p => p.length > 0);
+}
+
+// ── Rendering ──────────────────────────────────────────────────
+
+export function renderPages(
+  manuscript: HTMLElement,
+  pages: HTMLElement[][],
+  writingMode: WritingMode
+): void {
+  manuscript.innerHTML = '';
+  manuscript.style.columnWidth = 'unset';
+  manuscript.style.columnGap = 'unset';
+  manuscript.style.columnFill = 'unset';
+
+  pages.forEach((pageElements, i) => {
+    const page = document.createElement('div');
+    page.className = 'slide-page';
+    page.dataset.page = String(i);
+
+    if (writingMode === 'vertical-rl') {
+      page.style.writingMode = 'vertical-rl';
+      page.style.textOrientation = 'mixed';
+    } else {
+      page.style.writingMode = 'horizontal-tb';
+    }
+
+    pageElements.forEach((el: HTMLElement) => page.appendChild(el));
+    manuscript.appendChild(page);
+  });
+}
+
+export function showPage(index: number): void {
+  const pages = document.querySelectorAll<HTMLElement>('.slide-page');
+  pages.forEach((p: HTMLElement, i: number) => {
+    p.style.display = i === index ? '' : 'none';
+  });
+}
