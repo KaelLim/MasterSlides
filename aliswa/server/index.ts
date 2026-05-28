@@ -1,19 +1,9 @@
 import { join } from "path";
+// Importing `./routes/docs.ts` transitively loads `./lib/drust.ts`, which
+// validates DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN at module
+// load and throws if any is missing. That is the fail-fast for missing env.
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
 import { wsHandler } from "./routes/ws.ts";
-
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) {
-    console.error(`[boot] missing required env var: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
-
-requireEnv("DRUST_BASE_URL");
-requireEnv("DRUST_TENANT_ID");
-requireEnv("DRUST_SERVICE_TOKEN");
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
