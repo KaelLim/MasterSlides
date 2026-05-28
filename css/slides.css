@@ -912,7 +912,9 @@ kbd {
   transition: max-width 0.2s;
 }
 .goto-content.grid-mode {
-  max-width: 80%;
+  /* Fill nearly the whole viewport in grid mode so 3 columns of
+     content-area-aspect thumbnails get as much canvas as possible. */
+  max-width: 95%;
 }
 
 .goto-input-wrap {
