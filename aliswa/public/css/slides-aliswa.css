@@ -1,4 +1,4 @@
-/* Aliswa overrides — pretext pagination replaces CSS columns */
+/* Aliswa overrides — natural-overflow pagination replaces CSS columns */
 
 /* Remove CSS multi-column layout from manuscript */
 .manuscript {
@@ -30,4 +30,15 @@
   break-before: auto !important;
   break-after: auto !important;
   break-inside: auto !important;
+}
+
+/* Images: cap to slide-page in BOTH axes (overrides the main stack's 80cqw/cqh
+ * which would fall back to svw/svh in aliswa — no container-type ancestor —
+ * and produce a long thin strip when the source canvas is tall). */
+.slide-page img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
