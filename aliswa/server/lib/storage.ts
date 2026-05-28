@@ -1,77 +1,52 @@
-import { join } from "path";
-import { readdir, mkdir } from "fs/promises";
+import {
+  findDocByDocId,
+  insertDoc,
+  updateDoc,
+  deleteImage,
+  type DocRecord,
+} from "./drust";
 
-const DATA_DIR = join(import.meta.dir, "../../data");
-
-export interface DocMeta {
+export interface UpsertDocInput {
   doc_id: string;
-  title: string;
-  current_version: number;
-  created_at: string;
-  updated_at: string;
+  title: string | null;
+  html: string;
+  image_ids: string[];
 }
 
-export function docDir(docId: string): string {
-  return join(DATA_DIR, docId);
-}
+export async function upsertDoc(input: UpsertDocInput): Promise<DocRecord> {
+  const existing = await findDocByDocId(input.doc_id);
 
-export function imagesDir(docId: string): string {
-  return join(DATA_DIR, docId, "images");
-}
-
-export async function ensureDocDir(docId: string): Promise<void> {
-  await mkdir(imagesDir(docId), { recursive: true });
-}
-
-export async function readMeta(docId: string): Promise<DocMeta | null> {
-  const file = Bun.file(join(docDir(docId), "meta.json"));
-  if (!(await file.exists())) return null;
-  return file.json();
-}
-
-export async function writeMeta(meta: DocMeta): Promise<void> {
-  const path = join(docDir(meta.doc_id), "meta.json");
-  await Bun.write(path, JSON.stringify(meta, null, 2));
-}
-
-export async function nextVersion(docId: string): Promise<number> {
-  const meta = await readMeta(docId);
-  return meta ? meta.current_version + 1 : 1;
-}
-
-export async function readDocHtml(docId: string): Promise<string | null> {
-  const meta = await readMeta(docId);
-  if (!meta) return null;
-  const file = Bun.file(join(docDir(docId), `${meta.current_version}.html`));
-  if (!(await file.exists())) return null;
-  return file.text();
-}
-
-export async function writeDocHtml(docId: string, version: number, html: string): Promise<void> {
-  const path = join(docDir(docId), `${version}.html`);
-  await Bun.write(path, html);
-}
-
-export async function writeImage(docId: string, filename: string, data: Uint8Array): Promise<void> {
-  const path = join(imagesDir(docId), filename);
-  await Bun.write(path, data);
-}
-
-export async function listDocs(): Promise<DocMeta[]> {
-  const docs: DocMeta[] = [];
-  try {
-    const entries = await readdir(DATA_DIR);
-    for (const entry of entries) {
-      const meta = await readMeta(entry);
-      if (meta) docs.push(meta);
+  if (existing) {
+    // Best-effort delete of old images. Orphans are tolerated (logged, not thrown).
+    // Note: Drust stores image_ids as a JSON string in a TEXT column.
+    const oldIds = existing.image_ids
+      ? typeof existing.image_ids === "string"
+        ? JSON.parse(existing.image_ids)
+        : existing.image_ids
+      : [];
+    for (const oldId of oldIds) {
+      try {
+        await deleteImage(oldId);
+      } catch (err) {
+        console.warn(`[storage] failed to delete old image ${oldId}:`, err);
+      }
     }
-  } catch {
-    // data/ doesn't exist yet
+    await updateDoc(existing.id, {
+      title: input.title,
+      html: input.html,
+      image_ids: input.image_ids,
+    });
+    // Re-fetch to return the updated record (PATCH returns no body in our wrapper).
+    const refreshed = await findDocByDocId(input.doc_id);
+    if (!refreshed) throw new Error(`[storage] record vanished after update: ${input.doc_id}`);
+    return refreshed;
   }
-  return docs;
+
+  return insertDoc(input);
 }
 
-export function resolveDataPath(pathname: string): string {
-  // pathname like "/data/abc123/images/img_1.png"
-  return join(DATA_DIR, pathname.replace(/^\/data\//, ""));
+export async function getDocHtml(docId: string): Promise<string | null> {
+  const record = await findDocByDocId(docId);
+  if (!record || !record.html) return null;
+  return record.html;
 }
