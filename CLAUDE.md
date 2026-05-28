@@ -8,7 +8,7 @@ MasterSlides: A Google Docs to paginated HTML presentation converter for the Tzu
 
 The repo contains **two implementations** of the viewer:
 - **Main stack** (`/`) — Supabase-backed multi-tenant SaaS (Kong + Postgres + Edge Functions + Storage), CSS multi-column pagination, deployed via Docker Compose.
-- **Aliswa** (`aliswa/`) — Standalone single-user Bun server, **Drust BaaS persistence**, WebSocket remote, and pure-DOM binary-search pagination. Reuses the main viewer's `/js/slides/*` modules. Recent feature work has happened here.
+- **Aliswa** (`aliswa/`) — Standalone single-user Bun server, **Drust BaaS persistence**, WebSocket remote, and natural-overflow pagination. Reuses the main viewer's `/js/slides/*` modules. Recent feature work has happened here.
 
 ## Commands
 
@@ -142,15 +142,15 @@ Google Docs ──▶ aliswa server (Bun)
                   └─ storage.ts:     upsertDoc({doc_id, title, html, image_ids})
                                      — same doc_id overwrites + reclaims old images
                      ↓
-              slides.html  ──▶  paginator.ts (pure-DOM binary-search pagination)
-                                 ├─ measure block elements (offsetWidth/Height)
-                                 └─ binary search splits to prove zero overflow at scale
+              slides.html  ──▶  paginator.ts (natural-overflow pagination)
+                                 ├─ append into slide-page; check scrollWidth/Height
+                                 └─ retract + new page, or split textContent in place
                      ↓
               WebSocket /ws/:room  ←→  remote.html  (in-memory rooms in Bun)
 ```
 
 **Key differences from the main stack:**
-- **Pagination**: pure-DOM binary-search pagination (`paginator.ts`) replaces the main viewer's CSS multi-column layout. Each split helper proves its first half fits via DOM measurement, so there is zero visible overflow at any supported font scale. Repaginates on font scale, orientation, and resize.
+- **Pagination**: natural-overflow pagination (`paginator.ts`). Elements are appended directly into the final `.slide-page` container; `scrollWidth`/`scrollHeight` is the only overflow signal. On overflow the element is retracted and moved to a fresh page or split in place via binary search of `textContent`. Because measurement happens in the final render context, there is no wrapper-vs-page mismatch — what the algorithm sees is exactly what the user sees. Repaginates on font scale, orientation, and resize.
 - **Storage**: Drust BaaS tenant `docs` at `tool.tzuchi-org.tw`. The `docs` collection holds one record per Google Doc id (HTML inline); extracted images go to Drust public files (`https://tool.tzuchi-org.tw/public/<tenant>/<file_id>`). Requires `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_SERVICE_TOKEN` in `aliswa/.env` (see `aliswa/.env.example`). Same `doc_id` overwrites; old image files are reclaimed automatically. The frontend never sees Drust directly — all reads/writes are proxied through the Bun server using the service token.
 - **Remote**: in-memory WebSocket rooms (`server/routes/ws.ts`) replace Supabase Realtime Broadcast.
 - **Doc fetch**: direct `docs.google.com/.../export?format=md` from the Bun server (`google-docs.ts`) replaces the Edge Function.
