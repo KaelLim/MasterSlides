@@ -101,3 +101,43 @@ function splitListInPlace(
   for (const r of retracted) leftover.appendChild(r);
   return leftover;
 }
+
+// ── Element classification ─────────────────────────────────────
+
+function forcesBreakBefore(el: HTMLElement): boolean {
+  return el.tagName === 'H1' || el.tagName === 'H2';
+}
+
+function isTextElement(el: HTMLElement): boolean {
+  return ['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(el.tagName);
+}
+
+function isHeading(el: HTMLElement): boolean {
+  return ['H1', 'H2', 'H3', 'H4'].includes(el.tagName);
+}
+
+function isListElement(el: HTMLElement): boolean {
+  return el.tagName === 'UL' || el.tagName === 'OL';
+}
+
+// ── Image scaling ──────────────────────────────────────────────
+
+/**
+ * Cap an oversized image to the page's block dimension so it doesn't single-
+ * handedly overflow. Called BEFORE the image is appended to the page so the
+ * cap is in place by the time the browser lays out.
+ */
+function scaleImageToFit(
+  el: HTMLElement,
+  page: HTMLElement,
+  writingMode: WritingMode
+): void {
+  const maxBlock = writingMode === 'vertical-rl' ? page.clientWidth : page.clientHeight;
+  const naturalBlock = writingMode === 'vertical-rl' ? el.offsetWidth : el.offsetHeight;
+  if (naturalBlock > maxBlock && naturalBlock > 0) {
+    const ratio = maxBlock / naturalBlock;
+    el.style.maxWidth = `${el.offsetWidth * ratio}px`;
+    el.style.maxHeight = `${el.offsetHeight * ratio}px`;
+    el.style.objectFit = 'contain';
+  }
+}
