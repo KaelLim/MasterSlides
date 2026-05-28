@@ -67,3 +67,39 @@ export function findMaxFitting(
   }
   return best;
 }
+
+// ── DOM-bound split helpers ────────────────────────────────────
+// All split helpers obey the invariant: if they return [first, second],
+// then measureBlock(first, writingMode) <= maxAllowed. Zero-overflow is
+// guaranteed because `findMaxFitting` only commits a `best` index whose
+// DOM measurement came back under the budget.
+
+function splitTextDOM(
+  el: HTMLElement,
+  maxAllowed: number,
+  writingMode: WritingMode,
+  host: HTMLElement
+): [HTMLElement, HTMLElement] | null {
+  const text = el.textContent ?? '';
+  if (text.length < 2) return null;
+
+  // Probe inherits the element's tag + CSS but starts empty so we can
+  // mutate textContent freely between measurements.
+  const probe = el.cloneNode(false) as HTMLElement;
+  host.appendChild(probe);
+
+  const best = findMaxFitting(text.length, (n: number) => {
+    probe.textContent = text.slice(0, n);
+    return measureBlock(probe, writingMode);
+  }, maxAllowed);
+
+  host.removeChild(probe);
+
+  if (best === 0 || best >= text.length) return null;
+
+  const first = el.cloneNode(false) as HTMLElement;
+  first.textContent = text.slice(0, best);
+  const second = el.cloneNode(false) as HTMLElement;
+  second.textContent = text.slice(best);
+  return [first, second];
+}
