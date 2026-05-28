@@ -71,6 +71,24 @@ async function serveStatic(pathname: string): Promise<Response> {
     return serveFile(join(PROJECT_ROOT, pathname));
   }
 
+  // /img/<file_id> → proxy Drust public bucket as same-origin
+  // (html2canvas can't render cross-origin images; same-origin sidesteps the whole CORS problem)
+  if (pathname.startsWith("/img/")) {
+    const fileId = pathname.slice("/img/".length);
+    const upstream = await fetch(
+      `${process.env.DRUST_BASE_URL}/public/${process.env.DRUST_TENANT_ID}/${fileId}`
+    );
+    if (!upstream.ok) {
+      return new Response("Not Found", { status: upstream.status });
+    }
+    return new Response(upstream.body, {
+      headers: {
+        "Content-Type": upstream.headers.get("Content-Type") || "application/octet-stream",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
+
   // /dist/* → public/dist/ (bundled JS)
   if (pathname.startsWith("/dist/")) {
     return serveFile(join(PUBLIC_DIR, pathname));

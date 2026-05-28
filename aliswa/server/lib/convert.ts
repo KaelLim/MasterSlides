@@ -44,7 +44,10 @@ export async function processImages(
 
         const uploaded = await uploadImage(bytes, filename, contentType);
         imageIds.push(uploaded.id);
-        processedLines.push(`[${refName}]: ${uploaded.public_url}`);
+        // Reference via same-origin Bun proxy (/img/<id>) instead of direct Drust URL —
+        // html2canvas can't render cross-origin images, and the spec says the frontend
+        // should not see Drust URLs.
+        processedLines.push(`[${refName}]: /img/${uploaded.id}`);
       } catch (err) {
         console.error(`Image upload failed for ${refName}:`, err);
         processedLines.push(line);
