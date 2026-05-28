@@ -3,18 +3,18 @@ import { findMaxFitting } from './paginator';
 
 test('findMaxFitting returns N when every n in [1..N] fits', () => {
   // measure: each n is "cost n" units, max allowed 10 → all 1..10 fit
-  const best = findMaxFitting(10, n => n, 10);
+  const best = findMaxFitting(10, (n: number) => n, 10);
   expect(best).toBe(10);
 });
 
 test('findMaxFitting returns 0 when even n=1 overflows', () => {
-  const best = findMaxFitting(10, n => 999 * n, 50);
+  const best = findMaxFitting(10, (n: number) => 999 * n, 50);
   expect(best).toBe(0);
 });
 
 test('findMaxFitting finds the largest n whose measure stays under the budget', () => {
   // Linear cost; budget 35, each unit costs 4 → 35 / 4 = 8.75, so best = 8
-  const best = findMaxFitting(20, n => n * 4, 35);
+  const best = findMaxFitting(20, (n: number) => n * 4, 35);
   expect(best).toBe(8);
 });
 

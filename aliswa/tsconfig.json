@@ -3,11 +3,11 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["bun-types"],
+    "types": ["bun"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["server/**/*.ts"]
+  "include": ["server/**/*.ts", "public/js/**/*.ts"]
 }
