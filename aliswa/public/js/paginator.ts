@@ -50,3 +50,20 @@ function isHeading(el: HTMLElement): boolean {
 function isListElement(el: HTMLElement): boolean {
   return el.tagName === 'UL' || el.tagName === 'OL';
 }
+
+// ── Pure binary search core ────────────────────────────────────
+// Find the largest n in [1, upperBound] such that measure(n) <= maxAllowed.
+// Returns 0 if even n=1 overflows.
+export function findMaxFitting(
+  upperBound: number,
+  measure: (n: number) => number,
+  maxAllowed: number
+): number {
+  let lo = 1, hi = upperBound, best = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (measure(mid) <= maxAllowed) { best = mid; lo = mid + 1; }
+    else                              { hi = mid - 1; }
+  }
+  return best;
+}
