@@ -118,6 +118,10 @@ function isTextElement(el) {
   return ['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(el.tagName);
 }
 
+function isHeading(el) {
+  return ['H1', 'H2', 'H3', 'H4'].includes(el.tagName);
+}
+
 /**
  * Paginate manuscript children into page groups.
  * Uses DOM measurement for block sizes (100% accurate).
@@ -167,30 +171,82 @@ export function paginate(manuscript, containerWidth, containerHeight, writingMod
     }
 
     // Doesn't fit — try to split text elements across pages
-    if (isTextElement(el) && currentBlockUsed > 0) {
-      const remainingSpace = maxBlockSize - currentBlockUsed - getBlockMargin(el, writingMode);
-      const linesAvailable = estimateLinesFitting(el, remainingSpace, containerWidth, containerHeight, writingMode);
+    if (isTextElement(el)) {
+      // Step 1: if current page has room for >= 2 lines, split here and
+      // carry the rest to the next page.
+      if (currentBlockUsed > 0) {
+        const remainingSpace = maxBlockSize - currentBlockUsed - getBlockMargin(el, writingMode);
+        const linesAvailable = estimateLinesFitting(el, remainingSpace, containerWidth, containerHeight, writingMode);
 
-      if (linesAvailable >= 2) {
-        const parts = splitTextElement(el, linesAvailable, containerWidth, containerHeight, writingMode);
-        if (parts) {
-          const [firstHalf, secondHalf] = parts;
-          pages[pages.length - 1].push(firstHalf);
-          // Insert secondHalf into children array so it gets processed next
-          children.splice(i + 1, 0, secondHalf);
-          // Need to re-measure secondHalf — temporarily add to DOM
-          manuscript.appendChild(secondHalf);
+        if (linesAvailable >= 2) {
+          const parts = splitTextElement(el, linesAvailable, containerWidth, containerHeight, writingMode);
+          if (parts) {
+            const [firstHalf, secondHalf] = parts;
+            pages[pages.length - 1].push(firstHalf);
+            children.splice(i + 1, 0, secondHalf);
+            manuscript.appendChild(secondHalf);
+            pages.push([]);
+            currentBlockUsed = 0;
+            continue;
+          }
+        }
+      }
+
+      // Step 2: the element alone exceeds a whole page (`blockSize > maxBlockSize`).
+      // Break to a new page first (carrying any orphaned headings), then chop the
+      // element to one page's worth of lines and re-queue the remainder. The
+      // remainder will re-enter this loop and may need another chop.
+      if (blockSize > maxBlockSize) {
+        if (currentBlockUsed > 0) {
+          const currentPage = pages[pages.length - 1];
+          const carried = [];
+          while (currentPage.length > 0 && isHeading(currentPage[currentPage.length - 1])) {
+            carried.unshift(currentPage.pop());
+          }
           pages.push([]);
           currentBlockUsed = 0;
-          continue;
+          for (const h of carried) {
+            pages[pages.length - 1].push(h);
+            currentBlockUsed += measureBlock(h, writingMode);
+          }
+        }
+
+        const linesPerFullPage = Math.floor(
+          (maxBlockSize - currentBlockUsed - getBlockMargin(el, writingMode)) / getLineHeight(el)
+        );
+        if (linesPerFullPage >= 1) {
+          const parts = splitTextElement(el, linesPerFullPage, containerWidth, containerHeight, writingMode);
+          if (parts) {
+            const [firstHalf, secondHalf] = parts;
+            pages[pages.length - 1].push(firstHalf);
+            children.splice(i + 1, 0, secondHalf);
+            manuscript.appendChild(secondHalf);
+            pages.push([]);
+            currentBlockUsed = 0;
+            continue;
+          }
         }
       }
     }
 
-    // Can't split — start new page
+    // Can't split — start new page.
+    // Keep-with-next: pop trailing headings off the current page so they
+    // travel with the next content instead of being orphaned (e.g. an
+    // <h3> followed by a <ul> that doesn't fit shouldn't strand the h3).
     if (currentBlockUsed > 0) {
+      const currentPage = pages[pages.length - 1];
+      const carriedHeadings = [];
+      while (currentPage.length > 0 && isHeading(currentPage[currentPage.length - 1])) {
+        carriedHeadings.unshift(currentPage.pop());
+      }
+
       pages.push([]);
       currentBlockUsed = 0;
+
+      for (const h of carriedHeadings) {
+        pages[pages.length - 1].push(h);
+        currentBlockUsed += measureBlock(h, writingMode);
+      }
     }
     pages[pages.length - 1].push(el);
     currentBlockUsed += blockSize;
