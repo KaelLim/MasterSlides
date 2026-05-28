@@ -43,7 +43,7 @@ bun run build                # bundle public/js/app.js → public/dist/
 bun test                     # run drust.test.ts + storage.test.ts (hits live Drust)
 ```
 
-The main stack has no build step (vanilla JS with ES Modules); Aliswa requires `bun run build` after editing `public/js/app.js` or `public/js/paginator.js`. The Aliswa server fails fast at boot if `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_SERVICE_TOKEN` aren't set.
+The main stack has no build step (vanilla JS with ES Modules); Aliswa requires `bun run build` after editing `public/js/app.js` or `public/js/paginator.ts`. The Aliswa server fails fast at boot if `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_SERVICE_TOKEN` aren't set.
 
 ## Architecture
 
