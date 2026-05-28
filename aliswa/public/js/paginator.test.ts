@@ -1,3 +1,9 @@
+// Register happy-dom BEFORE importing bun:test so document.createElement works
+// in the splitListByCount tests. Scoped to this file so storage / drust tests
+// (which need Bun's native fetch for live HTTP) aren't affected.
+import { GlobalRegistrator } from '@happy-dom/global-registrator';
+GlobalRegistrator.register();
+
 import { test, expect } from 'bun:test';
 import { findMaxFitting, splitListByCount } from './paginator';
 

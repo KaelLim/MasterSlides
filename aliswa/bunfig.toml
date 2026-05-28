@@ -1,2 +1,3 @@
-[test]
-preload = ["./test-setup.ts"]
+# Test preloads are scoped per-file via direct `import` statements (see
+# public/js/paginator.test.ts). Global preload would inject happy-dom into
+# storage / drust tests too and block their cross-origin fetches.
