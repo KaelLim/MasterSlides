@@ -7,7 +7,6 @@
     "start": "bun server/index.ts"
   },
   "dependencies": {
-    "@chenglou/pretext": "../../pretext-source",
     "marked": "^9.1.6"
   },
   "devDependencies": {
