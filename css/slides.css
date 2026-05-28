@@ -1055,12 +1055,22 @@ kbd {
   display: grid;
   /* 3 columns per row, PowerPoint-like — larger thumbnails for older readers. */
   grid-template-columns: repeat(3, 1fr);
+  /* Rows take their content's natural height. Without this, the grid is
+     inside a flex container with `min-height: 0` and rows would compress
+     to 0 even when items declare `aspect-ratio`. */
+  grid-auto-rows: max-content;
   gap: 20px;
   align-items: start;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   padding: 8px;
+}
+.goto-grid-item {
+  /* Square-ish cells: PowerPoint-style sorter, much more legible at
+     small column counts on narrow viewports. JS scales the preview to
+     `contain` inside the cell and centres it. */
+  aspect-ratio: 4 / 3;
 }
 .goto-grid-item {
   position: relative;

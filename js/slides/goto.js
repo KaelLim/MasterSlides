@@ -80,9 +80,17 @@ function renderPreview(item, containerW, containerH, vertical) {
 
   item.insertBefore(preview, item.firstChild);
 
+  // Scale via `contain` semantics: pick the smaller of (cellW/contentW,
+  // cellH/contentH) so the entire slide fits regardless of cell aspect.
+  // Centre the scaled preview inside the cell so there's even letterboxing
+  // when the cell aspect differs from the slide.
   const itemW = item.clientWidth;
-  const scale = itemW / containerW;
-  preview.style.transform = `scale(${scale})`;
+  const itemH = item.clientHeight;
+  const scale = Math.min(itemW / containerW, itemH / containerH);
+  const offsetX = (itemW - containerW * scale) / 2;
+  const offsetY = (itemH - containerH * scale) / 2;
+  preview.style.transformOrigin = 'top left';
+  preview.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
 }
 
 function buildGrid() {
@@ -114,13 +122,10 @@ function buildGrid() {
     grid.appendChild(item);
   }
 
-  // Set explicit heights after layout
+  // Cell aspect is controlled by CSS (aspect-ratio: 4/3); JS no longer
+  // forces a per-item height so cells stay uniform across viewports.
   requestAnimationFrame(() => {
     const items = grid.querySelectorAll('.goto-grid-item');
-    items.forEach(item => {
-      const itemW = item.clientWidth;
-      item.style.height = (itemW * containerH / containerW) + 'px';
-    });
 
     // Observe visibility — only render previews when scrolled into view
     gridObserver = new IntersectionObserver((entries) => {
