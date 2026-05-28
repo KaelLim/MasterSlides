@@ -78,3 +78,12 @@ test('splitTextInPlace returns null when even 1 char overflows (restores origina
   expect(splitTextInPlace(el, page)).toBeNull();
   expect(el.textContent).toBe('abc'); // restored
 });
+
+// Direct test of splitListInPlace using a fake `overflows` derived from
+// children count. We don't import it (it's not exported) — verify it through
+// `paginate` once the main loop is in place (Task 5).
+test('paginator.ts exports the public surface', async () => {
+  const mod = await import('./paginator');
+  expect(typeof mod.overflows).toBe('function');
+  expect(typeof mod.splitTextInPlace).toBe('function');
+});
