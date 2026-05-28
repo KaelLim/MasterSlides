@@ -29,14 +29,26 @@ function getMime(path: string): string {
   return MIME_TYPES[ext] || "application/octet-stream";
 }
 
+// Source-like assets (HTML/JS/CSS) we update during development. Disabling
+// caching avoids the "I rebuilt the bundle but the browser still shows the
+// old version" loop. Static images / fonts get the default no-header
+// behaviour (browser heuristic caching is fine for those).
+function isHotAsset(path: string): boolean {
+  return /\.(html|css|m?js|map)$/i.test(path);
+}
+
+function headersFor(path: string): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": getMime(path) };
+  if (isHotAsset(path)) headers["Cache-Control"] = "no-cache";
+  return headers;
+}
+
 async function serveFile(filePath: string): Promise<Response> {
   const file = Bun.file(filePath);
   if (!(await file.exists())) {
     return new Response("Not Found", { status: 404 });
   }
-  return new Response(file, {
-    headers: { "Content-Type": getMime(filePath) },
-  });
+  return new Response(file, { headers: headersFor(filePath) });
 }
 
 async function serveStatic(pathname: string): Promise<Response> {
@@ -44,9 +56,7 @@ async function serveStatic(pathname: string): Promise<Response> {
   if (pathname.startsWith("/css/")) {
     const publicFile = Bun.file(join(PUBLIC_DIR, pathname));
     if (await publicFile.exists()) {
-      return new Response(publicFile, {
-        headers: { "Content-Type": getMime(pathname) },
-      });
+      return new Response(publicFile, { headers: headersFor(pathname) });
     }
     return serveFile(join(PROJECT_ROOT, pathname));
   }

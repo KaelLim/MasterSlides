@@ -34,13 +34,24 @@ export function goToPage(page) {
   if (page < 0 || page >= state.totalPages) return;
   state.currentPage = page;
 
-  const containerWidth = dom.manuscriptContainer.clientWidth;
-  const containerHeight = dom.manuscriptContainer.clientHeight;
-
-  if (isVerticalMode()) {
-    dom.manuscript.style.transform = `translateY(-${state.currentPage * containerHeight}px)`;
+  // Aliswa-style pagination renders `.slide-page` divs and toggles display.
+  // Main-stack pagination scrolls one big manuscript via transform. Detect
+  // which model we're in by the presence of `.slide-page` elements within
+  // the manuscript itself (the goto modal clones slide-pages too, so we
+  // must NOT query the whole document).
+  const slidePages = dom.manuscript.querySelectorAll('.slide-page');
+  if (slidePages.length > 0) {
+    slidePages.forEach((p, i) => {
+      p.style.display = i === state.currentPage ? '' : 'none';
+    });
   } else {
-    dom.manuscript.style.transform = `translateX(-${state.currentPage * containerWidth}px)`;
+    const containerWidth = dom.manuscriptContainer.clientWidth;
+    const containerHeight = dom.manuscriptContainer.clientHeight;
+    if (isVerticalMode()) {
+      dom.manuscript.style.transform = `translateY(-${state.currentPage * containerHeight}px)`;
+    } else {
+      dom.manuscript.style.transform = `translateX(-${state.currentPage * containerWidth}px)`;
+    }
   }
   updatePageDisplay();
   // syncRemoteState is called by main via onPageChange callback

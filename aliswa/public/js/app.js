@@ -11,6 +11,7 @@ import { initLightbox, closeLightbox, openLightbox, setLightboxZoom, resetLightb
 import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch, prevMatch, getSearchState } from '/js/slides/search.js';
 import { showGoToPageDialog, initGotoModal, closeGotoModal } from '/js/slides/goto.js';
 import { initLaser, toggleLaser, isLaserActive } from '/js/slides/laser.js';
+import { navigation } from '/js/slides/navigation.js';
 
 // ── Pagination + Navigation (pretext-based) ────────────────────
 
@@ -261,6 +262,12 @@ function handleRemoteCommand(payload) {
 }
 
 function initRemote() {
+  // Shared modules (e.g. goto.js) call into navigation.goToPage, which now
+  // toggles `.slide-page` displays directly. Wire the page-change callback
+  // so WS-connected remotes still receive sync updates when those callers
+  // change the current page.
+  navigation.onPageChange = syncRemoteState;
+
   state.roomId = Math.random().toString(36).substring(2, 8);
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${proto}//${location.host}/ws/${state.roomId}`);

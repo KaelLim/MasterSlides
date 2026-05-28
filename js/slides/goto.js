@@ -5,6 +5,12 @@ import { closeSidebar } from './display.js';
 let activeTab = 'toc';
 
 function getPageForElement(el) {
+  // Aliswa: element lives inside a `.slide-page` with dataset.page set.
+  const slidePage = el.closest('.slide-page');
+  if (slidePage && slidePage.dataset.page != null) {
+    return parseInt(slidePage.dataset.page, 10);
+  }
+  // Main-stack: derive from offset within scrolling manuscript.
   const containerWidth = dom.manuscriptContainer.clientWidth;
   const containerHeight = dom.manuscriptContainer.clientHeight;
   if (isVerticalMode()) {
@@ -47,15 +53,31 @@ function renderPreview(item, containerW, containerH, vertical) {
   preview.style.height = containerH + 'px';
   preview.style.writingMode = vertical ? 'vertical-rl' : 'horizontal-tb';
 
-  const clone = dom.manuscript.cloneNode(true);
-  clone.removeAttribute('id');
-  if (vertical) {
-    clone.style.transform = `translateY(-${pageIndex * containerH}px)`;
+  // Aliswa-style: clone the specific .slide-page directly. Scope the query
+  // to the manuscript so previously-rendered grid previews (which also
+  // contain `.slide-page` clones) don't shift the indices.
+  const slidePages = dom.manuscript.querySelectorAll('.slide-page');
+  if (slidePages.length > 0) {
+    const target = slidePages[pageIndex];
+    if (target) {
+      const clone = target.cloneNode(true);
+      clone.style.display = 'block';
+      clone.style.width = '100%';
+      clone.style.height = '100%';
+      preview.appendChild(clone);
+    }
   } else {
-    clone.style.transform = `translateX(-${pageIndex * containerW}px)`;
+    // Main-stack: clone whole manuscript and translate to the page offset.
+    const clone = dom.manuscript.cloneNode(true);
+    clone.removeAttribute('id');
+    if (vertical) {
+      clone.style.transform = `translateY(-${pageIndex * containerH}px)`;
+    } else {
+      clone.style.transform = `translateX(-${pageIndex * containerW}px)`;
+    }
+    preview.appendChild(clone);
   }
 
-  preview.appendChild(clone);
   item.insertBefore(preview, item.firstChild);
 
   const itemW = item.clientWidth;

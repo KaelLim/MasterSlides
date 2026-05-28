@@ -1053,13 +1053,14 @@ kbd {
    =========================== */
 .goto-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  /* 3 columns per row, PowerPoint-like — larger thumbnails for older readers. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
   align-items: start;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  padding: 4px;
+  padding: 8px;
 }
 .goto-grid-item {
   position: relative;
@@ -1092,14 +1093,15 @@ kbd {
 }
 .goto-grid-page {
   position: absolute;
-  bottom: 6px;
-  right: 8px;
-  background: rgba(0,0,0,0.7);
+  bottom: 8px;
+  right: 10px;
+  background: rgba(0,0,0,0.75);
   color: #5FCFC3;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  z-index: 1;
 }
 
 /* ===========================
