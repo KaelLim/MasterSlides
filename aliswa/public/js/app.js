@@ -2,7 +2,7 @@
 // Loads via /api/docs/:id or direct URL, WebSocket remote control
 
 import { initDOM, state, dom, isMac, modKey, FONT_SCALES, STORAGE_KEYS } from '/js/slides/state.js';
-import { paginate, renderPages, showPage } from './paginator.js';
+import { paginate, renderPages, showPage } from './paginator.ts';
 import {
   loadSettings, resetNavHideTimer, updateFullscreenButton, showNav,
   toggleFullscreen, toggleSidebar, closeSidebar, toggleNavVisibility
