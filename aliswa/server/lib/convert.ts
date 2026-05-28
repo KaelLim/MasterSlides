@@ -1,17 +1,18 @@
 import { marked } from "marked";
-import { writeImage } from "./storage.ts";
+import { uploadImage } from "./drust";
 
 export interface ConvertResult {
   html: string;
   imageCount: number;
+  imageIds: string[];
 }
 
 export async function processImages(
-  markdown: string,
-  docId: string
-): Promise<{ markdown: string; imageCount: number }> {
+  markdown: string
+): Promise<{ markdown: string; imageCount: number; imageIds: string[] }> {
   const lines = markdown.split("\n");
   const processedLines: string[] = [];
+  const imageIds: string[] = [];
   let imageCount = 0;
 
   for (const line of lines) {
@@ -30,7 +31,8 @@ export async function processImages(
       imageCount++;
 
       const ext = format === "jpeg" ? "jpg" : format;
-      const imgFilename = `img_${imageCount}.${ext}`;
+      const filename = `img_${imageCount}.${ext}`;
+      const contentType = `image/${format === "jpg" ? "jpeg" : format}`;
       const cleanBase64 = base64Data.replace(/[\r\n\s]/g, "");
 
       try {
@@ -40,10 +42,11 @@ export async function processImages(
           bytes[i] = binary.charCodeAt(i);
         }
 
-        await writeImage(docId, imgFilename, bytes);
-        processedLines.push(`[${refName}]: /data/${docId}/images/${imgFilename}`);
+        const uploaded = await uploadImage(bytes, filename, contentType);
+        imageIds.push(uploaded.id);
+        processedLines.push(`[${refName}]: ${uploaded.public_url}`);
       } catch (err) {
-        console.error(`Image processing failed for ${refName}:`, err);
+        console.error(`Image upload failed for ${refName}:`, err);
         processedLines.push(line);
       }
     } else {
@@ -51,23 +54,20 @@ export async function processImages(
     }
   }
 
-  return { markdown: processedLines.join("\n"), imageCount };
+  return { markdown: processedLines.join("\n"), imageCount, imageIds };
 }
 
 function cleanImageStyles(html: string): string {
   return html.replace(/<img([^>]*)\s+style="[^"]*"([^>]*)>/gi, "<img$1$2>");
 }
 
-export async function convertDocument(
-  markdown: string,
-  docId: string
-): Promise<ConvertResult> {
-  const { markdown: processed, imageCount } = await processImages(markdown, docId);
+export async function convertDocument(markdown: string): Promise<ConvertResult> {
+  const { markdown: processed, imageCount, imageIds } = await processImages(markdown);
 
   marked.setOptions({ breaks: true, gfm: true });
   const rawHtml = marked.parse(processed) as string;
   const cleanHtml = cleanImageStyles(rawHtml);
   const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
 
-  return { html, imageCount };
+  return { html, imageCount, imageIds };
 }
