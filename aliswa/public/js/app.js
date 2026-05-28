@@ -2,7 +2,7 @@
 // Loads via /api/docs/:id or direct URL, WebSocket remote control
 
 import { initDOM, state, dom, isMac, modKey, FONT_SCALES, STORAGE_KEYS } from '/js/slides/state.js';
-import { paginate, renderPages, showPage } from './paginator.ts';
+import { paginate, showPage } from './paginator.ts';
 import {
   loadSettings, resetNavHideTimer, updateFullscreenButton, showNav,
   toggleFullscreen, toggleSidebar, closeSidebar, toggleNavVisibility
@@ -48,29 +48,15 @@ function nextPage() {
 }
 
 function repaginate() {
-  const containerWidth = dom.manuscriptContainer.clientWidth;
-  const containerHeight = dom.manuscriptContainer.clientHeight;
+  // Re-wrap the original elements in a fresh <article> so paginate has a
+  // queue to walk. allPageElements is the canonical source captured at load.
+  const article = document.createElement('article');
+  article.className = 'slide-content';
+  allPageElements.forEach(el => article.appendChild(el));
 
-  // Restore all elements back to manuscript for re-measurement
-  dom.manuscript.innerHTML = '';
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'absolute';
-  wrapper.style.visibility = 'hidden';
-  wrapper.style.writingMode = currentWritingMode;
-  wrapper.style.textOrientation = 'mixed';
-  wrapper.style.width = containerWidth + 'px';
-  wrapper.style.height = containerHeight + 'px';
-  allPageElements.forEach(el => wrapper.appendChild(el));
-  dom.manuscript.appendChild(wrapper);
+  // paginate() builds .slide-page children directly inside dom.manuscript.
+  paginate(article, dom.manuscript, currentWritingMode);
 
-  // Measure and paginate
-  const pages = paginate(wrapper, containerWidth, containerHeight, currentWritingMode);
-
-  // Render pages
-  dom.manuscript.removeChild(wrapper);
-  renderPages(dom.manuscript, pages, currentWritingMode);
-
-  // Update state
   updatePageCount();
   goToPage(Math.min(state.currentPage, state.totalPages - 1));
 }
