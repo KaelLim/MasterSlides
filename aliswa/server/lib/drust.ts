@@ -47,6 +47,20 @@ export interface UploadedFile {
   public_url: string;
 }
 
+// Drust serializes json-typed columns as strings on the wire (e.g. image_ids = '["abc"]').
+// Normalize to the declared `string[] | null` shape so callers see what the type says.
+function normalizeRecord(raw: any): DocRecord {
+  let image_ids: string[] | null = null;
+  if (raw.image_ids != null) {
+    if (typeof raw.image_ids === "string") {
+      try { image_ids = JSON.parse(raw.image_ids); } catch { image_ids = []; }
+    } else if (Array.isArray(raw.image_ids)) {
+      image_ids = raw.image_ids;
+    }
+  }
+  return { ...raw, image_ids };
+}
+
 export async function findDocByDocId(docId: string): Promise<DocRecord | null> {
   const res = await drustJson<{ records: DocRecord[] }>(
     `/collections/docs/list`,
@@ -56,7 +70,8 @@ export async function findDocByDocId(docId: string): Promise<DocRecord | null> {
       body: JSON.stringify({ filter: { doc_id: docId }, per_page: 1 }),
     }
   );
-  return res.records[0] ?? null;
+  const first = res.records[0];
+  return first ? normalizeRecord(first) : null;
 }
 
 export async function insertDoc(data: DocFields): Promise<DocRecord> {
@@ -68,7 +83,7 @@ export async function insertDoc(data: DocFields): Promise<DocRecord> {
       body: JSON.stringify({ data }),
     }
   );
-  return res.record;
+  return normalizeRecord(res.record);
 }
 
 export async function updateDoc(

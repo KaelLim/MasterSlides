@@ -18,13 +18,7 @@ export async function upsertDoc(input: UpsertDocInput): Promise<DocRecord> {
 
   if (existing) {
     // Best-effort delete of old images. Orphans are tolerated (logged, not thrown).
-    // Note: Drust stores image_ids as a JSON string in a TEXT column.
-    const oldIds = existing.image_ids
-      ? typeof existing.image_ids === "string"
-        ? JSON.parse(existing.image_ids)
-        : existing.image_ids
-      : [];
-    for (const oldId of oldIds) {
+    for (const oldId of existing.image_ids ?? []) {
       try {
         await deleteImage(oldId);
       } catch (err) {
