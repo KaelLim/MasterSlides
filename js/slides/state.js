@@ -1,6 +1,10 @@
 // Shared state and constants for slides viewer
 
-export const FONT_SCALES = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0];
+// Capped at 1.5 — above that the pretext-based paginator can't keep up with
+// long headings + adjacent paragraphs without visible overflow.
+export const FONT_SCALES = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5];
+export const FONT_SCALE_MIN = 0.5;
+export const FONT_SCALE_MAX = 1.5;
 
 export const STORAGE_KEYS = {
   fontSize: 'slides-font-size',

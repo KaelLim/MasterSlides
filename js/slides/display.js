@@ -1,4 +1,4 @@
-import { state, dom, FONT_SCALES, STORAGE_KEYS } from './state.js';
+import { state, dom, FONT_SCALES, FONT_SCALE_MIN, FONT_SCALE_MAX, STORAGE_KEYS } from './state.js';
 import { updatePageCount, goToPage } from './navigation.js';
 
 // ===========================
@@ -171,8 +171,10 @@ export function toggleNavVisibility() {
 export function loadSettings() {
   const savedScale = localStorage.getItem(STORAGE_KEYS.fontSize);
   if (savedScale) {
-    const scale = parseFloat(savedScale);
-    if (!isNaN(scale) && scale >= 0.5 && scale <= 2.0) {
+    let scale = parseFloat(savedScale);
+    if (!isNaN(scale) && scale >= FONT_SCALE_MIN) {
+      // Clamp any pre-cap stored value (e.g. 1.8) to the new max.
+      if (scale > FONT_SCALE_MAX) scale = FONT_SCALE_MAX;
       setFontScale(scale, false);
     }
   }
