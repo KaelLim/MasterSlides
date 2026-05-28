@@ -376,12 +376,10 @@ async function loadDocument(src) {
     allPageElements = Array.from(dom.manuscript.children);
   }
 
-  requestAnimationFrame(() => {
-    repaginate();
-    initEventListeners();
-    initRemote();
-    resetNavHideTimer();
-  });
+  repaginate();
+  initEventListeners();
+  initRemote();
+  resetNavHideTimer();
 }
 
 // ── Modals ──────────────────────────────────────────────────────
