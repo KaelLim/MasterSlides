@@ -8,7 +8,7 @@ MasterSlides: A Google Docs to paginated HTML presentation converter for the Tzu
 
 The repo contains **two implementations** of the viewer:
 - **Main stack** (`/`) — Supabase-backed multi-tenant SaaS (Kong + Postgres + Edge Functions + Storage), CSS multi-column pagination, deployed via Docker Compose.
-- **Aliswa** (`aliswa/`) — Standalone single-user Bun server, **Drust BaaS persistence**, WebSocket remote, and pretext-based DOM-measurement pagination. Reuses the main viewer's `/js/slides/*` modules. Recent feature work has happened here.
+- **Aliswa** (`aliswa/`) — Standalone single-user Bun server, **Drust BaaS persistence**, WebSocket remote, and pure-DOM binary-search pagination. Reuses the main viewer's `/js/slides/*` modules. Recent feature work has happened here.
 
 ## Commands
 
@@ -36,7 +36,7 @@ docker compose --profile app down -v
 # Aliswa (standalone Bun server) — runs at :3000
 cd aliswa
 cp .env.example .env         # one-time: fill in DRUST_SERVICE_TOKEN
-bun install                  # one-time (requires sibling ../../pretext-source/)
+bun install                  # one-time
 bun run dev                  # watch mode
 bun run start                # plain run
 bun run build                # bundle public/js/app.js → public/dist/
@@ -142,15 +142,15 @@ Google Docs ──▶ aliswa server (Bun)
                   └─ storage.ts:     upsertDoc({doc_id, title, html, image_ids})
                                      — same doc_id overwrites + reclaims old images
                      ↓
-              slides.html  ──▶  paginator.js (pretext + DOM measurement)
+              slides.html  ──▶  paginator.ts (pure-DOM binary-search pagination)
                                  ├─ measure block elements (offsetWidth/Height)
-                                 └─ split paragraphs at line boundaries via @chenglou/pretext
+                                 └─ binary search splits to prove zero overflow at scale
                      ↓
               WebSocket /ws/:room  ←→  remote.html  (in-memory rooms in Bun)
 ```
 
 **Key differences from the main stack:**
-- **Pagination**: pretext-based DOM measurement (`paginator.js`) replaces the main viewer's CSS multi-column layout. Repaginates on font scale, orientation, and resize.
+- **Pagination**: pure-DOM binary-search pagination (`paginator.ts`) replaces the main viewer's CSS multi-column layout. Each split helper proves its first half fits via DOM measurement, so there is zero visible overflow at any supported font scale. Repaginates on font scale, orientation, and resize.
 - **Storage**: Drust BaaS tenant `docs` at `tool.tzuchi-org.tw`. The `docs` collection holds one record per Google Doc id (HTML inline); extracted images go to Drust public files (`https://tool.tzuchi-org.tw/public/<tenant>/<file_id>`). Requires `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_SERVICE_TOKEN` in `aliswa/.env` (see `aliswa/.env.example`). Same `doc_id` overwrites; old image files are reclaimed automatically. The frontend never sees Drust directly — all reads/writes are proxied through the Bun server using the service token.
 - **Remote**: in-memory WebSocket rooms (`server/routes/ws.ts`) replace Supabase Realtime Broadcast.
 - **Doc fetch**: direct `docs.google.com/.../export?format=md` from the Bun server (`google-docs.ts`) replaces the Edge Function.
@@ -158,9 +158,9 @@ Google Docs ──▶ aliswa server (Bun)
 - **Module reuse**: `server/index.ts` serves `/js/slides/*` and `/theme/*` from the project root, so aliswa shares `state.js`, `display.js`, `lightbox.js`, `search.js`, `goto.js`, `laser.js` with the main viewer. Only `paginator.js` and `app.js` (orchestration + PDF export + WS remote) are aliswa-specific.
 - **CSS**: `public/css/slides-aliswa.css` overrides the column-based rules from the main `/css/slides.css`.
 
-**External dependency**: `package.json` references `@chenglou/pretext` via the relative path `../../pretext-source`, which must exist as a sibling to the `slides/` repo. `bun install` will fail without it.
+**External dependencies**: none beyond what npm resolves. `bun install` works from a clean checkout without requiring any sibling repositories.
 
-**Build**: `app.js` is an ES module that imports from `@chenglou/pretext`; `bun run build` bundles it to `public/dist/app.js` (referenced by `public/slides.html`). The `/js/slides/*` shared modules are marked `external` so they load at runtime from the project root.
+**Build**: `app.js` is an ES module that imports `paginate` / `renderPages` / `showPage` from `./paginator.ts`. `bun run build` bundles the TS sources into `public/dist/app.js` (referenced by `public/slides.html`). The `/js/slides/*` shared modules are marked `external` so they load at runtime from the project root.
 
 **Tests**: `bun test` runs the Drust REST round-trip tests in `server/lib/drust.test.ts` and `storage.test.ts`. These hit the live Drust tenant — they insert `__roundtrip_*` / `__upsert_*` rows and clean them up at the end. A leftover row means a test panicked partway through; safe to delete manually.
 
