@@ -11,6 +11,7 @@
     "marked": "^9.1.6"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.9.0",
     "@types/bun": "latest"
   }
 }

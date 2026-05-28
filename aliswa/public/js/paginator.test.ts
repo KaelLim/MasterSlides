@@ -26,3 +26,26 @@ test('findMaxFitting handles upperBound = 1', () => {
 test('findMaxFitting handles upperBound = 0', () => {
   expect(findMaxFitting(0, () => 0, 10)).toBe(0);
 });
+
+import { splitListByCount } from './paginator';
+
+test('splitListByCount puts first N items in first list, rest in second', () => {
+  const ul = document.createElement('ul');
+  const items = ['a', 'b', 'c', 'd'].map(t => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    return li;
+  });
+  const [first, second] = splitListByCount(ul, items, 2);
+  expect(Array.from(first.children).map(c => c.textContent)).toEqual(['a', 'b']);
+  expect(Array.from(second.children).map(c => c.textContent)).toEqual(['c', 'd']);
+  expect(first.tagName).toBe('UL');
+  expect(second.tagName).toBe('UL');
+});
+
+test('splitListByCount clones list element type (OL stays OL)', () => {
+  const ol = document.createElement('ol');
+  const items = [document.createElement('li')];
+  const [first] = splitListByCount(ol, items, 1);
+  expect(first.tagName).toBe('OL');
+});

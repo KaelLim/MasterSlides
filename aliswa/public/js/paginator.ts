@@ -103,3 +103,70 @@ function splitTextDOM(
   second.textContent = text.slice(best);
   return [first, second];
 }
+
+// ── List splitters ─────────────────────────────────────────────
+
+export function splitListByCount(
+  listEl: HTMLElement,
+  items: HTMLElement[],
+  count: number
+): [HTMLElement, HTMLElement] {
+  const first  = listEl.cloneNode(false) as HTMLElement;
+  const second = listEl.cloneNode(false) as HTMLElement;
+  for (let j = 0; j < count; j++)              first.appendChild(items[j]);
+  for (let j = count; j < items.length; j++)   second.appendChild(items[j]);
+  return [first, second];
+}
+
+function findFittingItemCount(
+  listEl: HTMLElement,
+  items: HTMLElement[],
+  maxSize: number,
+  writingMode: WritingMode,
+  host: HTMLElement
+): number {
+  const probe = listEl.cloneNode(false) as HTMLElement;
+  host.appendChild(probe);
+
+  const best = findMaxFitting(items.length, (n: number) => {
+    probe.innerHTML = '';
+    for (let j = 0; j < n; j++) probe.appendChild(items[j].cloneNode(true));
+    return measureBlock(probe, writingMode);
+  }, maxSize);
+
+  host.removeChild(probe);
+  return best;
+}
+
+function splitListDOM(
+  el: HTMLElement,
+  maxAllowed: number,
+  writingMode: WritingMode,
+  host: HTMLElement
+): [HTMLElement, HTMLElement] | null {
+  const items = Array.from(el.children).filter(c => c.tagName === 'LI') as HTMLElement[];
+  if (items.length === 0) return null;
+
+  // Case A — multi-item list, at least one whole item fits
+  if (items.length >= 2) {
+    const fits = findFittingItemCount(el, items, maxAllowed, writingMode, host);
+    if (fits >= 1 && fits < items.length) {
+      return splitListByCount(el, items, fits);
+    }
+    // fits === 0 → fall through to Case B
+    // fits === N → caller bug; would have fit in the "fits on current page" check
+  }
+
+  // Case B — split items[0] text, carry remaining items into second list
+  const li = items[0];
+  const innerMargin = getBlockMargin(el, writingMode);
+  const parts = splitTextDOM(li, maxAllowed - innerMargin, writingMode, host);
+  if (!parts) return null;
+
+  const first  = el.cloneNode(false) as HTMLElement;
+  first.appendChild(parts[0]);
+  const second = el.cloneNode(false) as HTMLElement;
+  second.appendChild(parts[1]);
+  for (let j = 1; j < items.length; j++) second.appendChild(items[j]);
+  return [first, second];
+}
