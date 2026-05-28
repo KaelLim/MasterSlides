@@ -48,11 +48,13 @@ function nextPage() {
 }
 
 function repaginate() {
-  // Re-wrap the original elements in a fresh <article> so paginate has a
-  // queue to walk. allPageElements is the canonical source captured at load.
+  // Deep-clone the canonical elements so paginate's in-place splits (which
+  // mutate textContent and move LIs) never touch the originals captured at
+  // load. Without this, a second repaginate at a different font scale would
+  // see already-truncated text and silently lose the leftover halves.
   const article = document.createElement('article');
   article.className = 'slide-content';
-  allPageElements.forEach(el => article.appendChild(el));
+  allPageElements.forEach(el => article.appendChild(el.cloneNode(true)));
 
   // paginate() builds .slide-page children directly inside dom.manuscript.
   paginate(article, dom.manuscript, currentWritingMode);
