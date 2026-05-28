@@ -2,10 +2,22 @@ import { join } from "path";
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
 import { wsHandler } from "./routes/ws.ts";
 
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) {
+    console.error(`[boot] missing required env var: ${name}`);
+    process.exit(1);
+  }
+  return v;
+}
+
+requireEnv("DRUST_BASE_URL");
+requireEnv("DRUST_TENANT_ID");
+requireEnv("DRUST_SERVICE_TOKEN");
+
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
 const PROJECT_ROOT = join(import.meta.dir, "../..");  // slides/ root for css/, theme/
-const DATA_DIR = join(import.meta.dir, "../data");
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -38,11 +50,6 @@ async function serveFile(filePath: string): Promise<Response> {
 }
 
 async function serveStatic(pathname: string): Promise<Response> {
-  // /data/* → data directory (converted docs + images)
-  if (pathname.startsWith("/data/")) {
-    return serveFile(join(DATA_DIR, pathname.replace(/^\/data\//, "")));
-  }
-
   // /css/* → check public first (aliswa overrides), then project root
   if (pathname.startsWith("/css/")) {
     const publicFile = Bun.file(join(PUBLIC_DIR, pathname));
