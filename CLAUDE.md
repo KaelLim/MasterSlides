@@ -155,12 +155,12 @@ Google Docs ──▶ aliswa server (Bun)
 - **Remote**: in-memory WebSocket rooms (`server/routes/ws.ts`) replace Supabase Realtime Broadcast.
 - **Doc fetch**: direct `docs.google.com/.../export?format=md` from the Bun server (`google-docs.ts`) replaces the Edge Function.
 - **Auth**: none. Single-user local tool.
-- **Module reuse**: `server/index.ts` serves `/js/slides/*` and `/theme/*` from the project root, so aliswa shares `state.js`, `display.js`, `lightbox.js`, `search.js`, `goto.js`, `laser.js` with the main viewer. Only `paginator.js` and `app.js` (orchestration + PDF export + WS remote) are aliswa-specific.
+- **Module reuse**: `server/index.ts` serves `/js/slides/*` and `/theme/*` from the project root, so aliswa shares `state.js`, `display.js`, `lightbox.js`, `search.js`, `goto.js`, `laser.js` with the main viewer. Only `paginator.ts` and `app.js` (orchestration + PDF export + WS remote) are aliswa-specific.
 - **CSS**: `public/css/slides-aliswa.css` overrides the column-based rules from the main `/css/slides.css`.
 
 **External dependencies**: none beyond what npm resolves. `bun install` works from a clean checkout without requiring any sibling repositories.
 
-**Build**: `app.js` is an ES module that imports `paginate` / `renderPages` / `showPage` from `./paginator.ts`. `bun run build` bundles the TS sources into `public/dist/app.js` (referenced by `public/slides.html`). The `/js/slides/*` shared modules are marked `external` so they load at runtime from the project root.
+**Build**: `app.js` is an ES module that imports `paginate` / `showPage` from `./paginator.ts`. `bun run build` bundles the TS sources into `public/dist/app.js` (referenced by `public/slides.html`). The `/js/slides/*` shared modules are marked `external` so they load at runtime from the project root.
 
 **Tests**: `bun test` runs the Drust REST round-trip tests in `server/lib/drust.test.ts` and `storage.test.ts`. These hit the live Drust tenant — they insert `__roundtrip_*` / `__upsert_*` rows and clean them up at the end. A leftover row means a test panicked partway through; safe to delete manually.
 
