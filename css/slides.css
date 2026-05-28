@@ -1067,10 +1067,11 @@ kbd {
   padding: 8px;
 }
 .goto-grid-item {
-  /* Square-ish cells: PowerPoint-style sorter, much more legible at
-     small column counts on narrow viewports. JS scales the preview to
-     `contain` inside the cell and centres it. */
-  aspect-ratio: 4 / 3;
+  /* JS sets `aspect-ratio` per-item to match the live content-area's
+     aspect, so the thumbnail mirrors what the user actually sees on
+     screen. CSS aspect-ratio: 1 / 1 here is a safe fallback that
+     prevents rows from collapsing to 0 before JS runs. */
+  aspect-ratio: 1 / 1;
 }
 .goto-grid-item {
   position: relative;

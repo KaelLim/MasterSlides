@@ -107,11 +107,16 @@ function buildGrid() {
   const containerH = dom.manuscriptContainer.clientHeight;
   const vertical = isVerticalMode();
 
+  // Each cell mirrors the live content-area aspect so the thumbnail
+  // matches what the viewer actually shows on screen (no letterbox).
+  const cellAspect = `${containerW} / ${containerH}`;
+
   // Create lightweight placeholder items (no cloning yet)
   for (let i = 0; i < state.totalPages; i++) {
     const item = document.createElement('div');
     item.className = 'goto-grid-item' + (i === state.currentPage ? ' current' : '');
     item.dataset.page = i;
+    item.style.aspectRatio = cellAspect;
 
     const badge = document.createElement('span');
     badge.className = 'goto-grid-page';
