@@ -7,7 +7,7 @@ export type WritingMode = 'vertical-rl' | 'horizontal-tb';
 // ── Overflow detection ────────────────────────────────────────
 
 // `+1` slack absorbs sub-pixel rounding without misfiring on real overflows.
-function overflows(page: HTMLElement): boolean {
+export function overflows(page: HTMLElement): boolean {
   return (
     page.scrollWidth  > page.clientWidth  + 1 ||
     page.scrollHeight > page.clientHeight + 1
