@@ -202,12 +202,33 @@ export function paginate(
 
     if (!overflows(current)) continue;
 
-    // Overflow. Retract.
+    // Strategy 1: if `el` is splittable AND current has prior content
+    // (e.g. a heading + earlier siblings), try splitting in place so the
+    // first chunk stays attached to that prior content. This is the
+    // common case for a list/paragraph that follows a heading: without
+    // this fast path, the heading gets orphaned on its own page while
+    // the entire list moves to a fresh page.
+    if ((isListElement(el) || isTextElement(el)) && current.children.length > 1) {
+      let leftover: HTMLElement | null = null;
+      if (isListElement(el)) {
+        leftover = splitListInPlace(el, current);
+      } else {
+        leftover = splitTextInPlace(el, current);
+      }
+      if (leftover) {
+        queue.unshift(leftover);
+        continue;
+      }
+      // Split couldn't produce a fitting first chunk (el unsplittable or
+      // the minimum unit is still too big alongside current's content).
+      // Fall through to Strategy 2.
+    }
+
+    // Strategy 2: retract `el` and allocate a fresh page. Carry trailing
+    // headings backward so they travel with their content.
     current.removeChild(el);
 
     if (current.children.length > 0) {
-      // Carry trailing headings (size-aware): only those that would still fit
-      // alongside `el` on the new page travel; the rest stay on `current`.
       const fresh = createSlidePage(manuscript, writingMode);
 
       // Move el onto fresh first so size-checks include it.
@@ -235,7 +256,7 @@ export function paginate(
       current.appendChild(el);
     }
 
-    // Split `el` in place.
+    // Final fallback: split `el` on the fresh page (alone, or with carried headings).
     let leftover: HTMLElement | null = null;
     if (isListElement(el)) {
       leftover = splitListInPlace(el, current);
