@@ -4,6 +4,16 @@ import { join } from "path";
 // load and throws if any is missing. That is the fail-fast for missing env.
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
 import { handlePublish, handleConfig } from "./routes/publish.ts";
+import {
+  handleLogin,
+  handleLogout,
+  handleMe,
+  handleSetup,
+  handleSetupState,
+  handleDocsList,
+  handleDocPatch,
+  handleDocDelete,
+} from "./routes/admin.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
@@ -97,6 +107,19 @@ const server = Bun.serve({
       const room = pathname.slice("/api/publish/".length);
       if (!room) return new Response("Missing room", { status: 400 });
       return handlePublish(room, req);
+    }
+
+    // ── Admin (Drust users + session cookie) ──
+    if (pathname === "/api/admin/login" && req.method === "POST")  return handleLogin(req);
+    if (pathname === "/api/admin/logout" && req.method === "POST") return handleLogout(req);
+    if (pathname === "/api/admin/me" && req.method === "GET")      return handleMe(req);
+    if (pathname === "/api/admin/setup-state" && req.method === "GET") return handleSetupState();
+    if (pathname === "/api/admin/setup" && req.method === "POST")  return handleSetup(req);
+    if (pathname === "/api/admin/docs" && req.method === "GET")    return handleDocsList(req);
+    if (pathname.startsWith("/api/admin/docs/")) {
+      const docId = pathname.slice("/api/admin/docs/".length);
+      if (req.method === "PATCH")  return handleDocPatch(docId, req);
+      if (req.method === "DELETE") return handleDocDelete(docId, req);
     }
 
     // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →
