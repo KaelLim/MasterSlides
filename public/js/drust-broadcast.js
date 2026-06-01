@@ -81,14 +81,19 @@ export async function connectRoom(roomName, { onMessage, onOpen, onClose } = {})
 
   async function publish(payload) {
     try {
-      await fetch(`/api/publish/${roomName}`, {
+      const res = await fetch(`/api/publish/${roomName}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      // Non-2xx is silent by default (best-effort). Log so payload-size
+      // failures (Drust caps at 64 KiB) are visible during debugging.
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.warn(`[drust] publish to ${roomName} → ${res.status}: ${text}`);
+      }
     } catch {
-      // Best-effort. Reconnect logic will resync via phone-join on the next
-      // open if a publish dropped.
+      // Network error. Reconnect + phone-join will eventually resync.
     }
   }
 

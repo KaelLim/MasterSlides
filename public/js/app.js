@@ -183,9 +183,20 @@ function getCurrentPageImages() {
     const iL = rect.left - cRect.left, iT = rect.top - cRect.top;
     const vW = Math.min(iL + rect.width, containerWidth) - Math.max(iL, 0);
     const vH = Math.min(iT + rect.height, containerHeight) - Math.max(iT, 0);
-    if (vW > rect.width * 0.5 && vH > rect.height * 0.5 && img.src) {
-      visible.push({ src: img.src, alt: img.alt || '' });
+    if (!(vW > rect.width * 0.5 && vH > rect.height * 0.5 && img.src)) return;
+    // Table-image is a html2canvas dataURL (too large for the 64 KiB Drust
+    // broadcast cap). The originals are stashed on dataset.innerImages
+    // during convertTablesToImages.
+    if (img.classList.contains('table-image')) {
+      try {
+        const inner = JSON.parse(img.dataset.innerImages || '[]');
+        visible.push(...inner);
+      } catch {
+        /* malformed stash — skip */
+      }
+      return;
     }
+    visible.push({ src: img.src, alt: img.alt || '' });
   });
   return visible;
 }
@@ -401,10 +412,21 @@ async function convertTablesToImages() {
           c.style.padding = `${10 + extra}px 14px`;
         });
       });
+      // Capture inner-image refs BEFORE html2canvas + DOM replacement: the
+      // remote sends thumbnails of every visible image on the current page,
+      // and the replacement img's dataURL is too large to ship (Drust
+      // broadcast caps payloads at 64 KiB). Stash real URLs on the
+      // replacement so getCurrentPageImages can surface them instead.
+      const innerImages = Array.from(table.querySelectorAll('img'))
+        .map((img) => ({ src: img.src, alt: img.alt || '' }))
+        .filter((it) => it.src);
       const canvas = await html2canvas(table, { backgroundColor: 'transparent', scale: 2, logging: false });
       const img = document.createElement('img');
       img.src = canvas.toDataURL('image/png');
       img.className = 'table-image';
+      if (innerImages.length) {
+        img.dataset.innerImages = JSON.stringify(innerImages);
+      }
       table.parentNode.replaceChild(img, table);
     } catch (err) {
       console.error('table conversion failed:', err);
