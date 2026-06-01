@@ -7,7 +7,6 @@ import { handlePublish, handleConfig } from "./routes/publish.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
-const PROJECT_ROOT = join(import.meta.dir, "..");  // repo root for css/, theme/, js/slides/
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -52,27 +51,9 @@ async function serveFile(filePath: string): Promise<Response> {
 }
 
 async function serveStatic(pathname: string): Promise<Response> {
-  // /css/* → check public first (slide-page overrides), then project root
-  if (pathname.startsWith("/css/")) {
-    const publicFile = Bun.file(join(PUBLIC_DIR, pathname));
-    if (await publicFile.exists()) {
-      return new Response(publicFile, { headers: headersFor(pathname) });
-    }
-    return serveFile(join(PROJECT_ROOT, pathname));
-  }
-
-  // /theme/* → project root (shared assets)
-  if (pathname.startsWith("/theme/")) {
-    return serveFile(join(PROJECT_ROOT, pathname));
-  }
-
-  // /js/slides/* → project root's js/slides/ (shared viewer modules)
-  if (pathname.startsWith("/js/slides/")) {
-    return serveFile(join(PROJECT_ROOT, pathname));
-  }
-
   // /img/<file_id> → proxy Drust public bucket as same-origin
-  // (html2canvas can't render cross-origin images; same-origin sidesteps the whole CORS problem)
+  // (html2canvas can't render cross-origin images; same-origin sidesteps
+  // the whole CORS problem).
   if (pathname.startsWith("/img/")) {
     const fileId = pathname.slice("/img/".length);
     const upstream = await fetch(
@@ -89,19 +70,10 @@ async function serveStatic(pathname: string): Promise<Response> {
     });
   }
 
-  // /dist/* → public/dist/ (bundled JS)
-  if (pathname.startsWith("/dist/")) {
-    return serveFile(join(PUBLIC_DIR, pathname));
-  }
-
-  // Everything else → public/ directory
-  let filePath = join(PUBLIC_DIR, pathname);
-
-  // Default to index.html for directory requests
-  if (pathname === "/") {
-    filePath = join(PUBLIC_DIR, "slides.html");
-  }
-
+  // Everything else → public/ directory (single source for static assets).
+  const filePath = pathname === "/"
+    ? join(PUBLIC_DIR, "slides.html")
+    : join(PUBLIC_DIR, pathname);
   return serveFile(filePath);
 }
 

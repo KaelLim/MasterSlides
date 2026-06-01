@@ -6,3 +6,6 @@ public/dist/
 key.md
 *.secret
 secrets/
+.claude/
+.codegraph/
+aliswa/
