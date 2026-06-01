@@ -5,6 +5,23 @@ export interface ConvertResult {
   html: string;
   imageCount: number;
   imageIds: string[];
+  title: string | null;
+}
+
+// First level-1 ATX heading ("# Title") in the document — that's what
+// Google Docs renders as the doc's H1. Returns null if absent so callers
+// can fall back to doc_id or an explicit override.
+export function extractTitle(markdown: string): string | null {
+  for (const raw of markdown.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("[")) continue;
+    const m = line.match(/^#\s+(.+?)\s*#*$/);
+    if (m) {
+      const t = m[1].trim();
+      return t || null;
+    }
+  }
+  return null;
 }
 
 export async function processImages(
@@ -65,6 +82,7 @@ function cleanImageStyles(html: string): string {
 }
 
 export async function convertDocument(markdown: string): Promise<ConvertResult> {
+  const title = extractTitle(markdown);
   const { markdown: processed, imageCount, imageIds } = await processImages(markdown);
 
   marked.setOptions({ breaks: true, gfm: true });
@@ -72,5 +90,5 @@ export async function convertDocument(markdown: string): Promise<ConvertResult> 
   const cleanHtml = cleanImageStyles(rawHtml);
   const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
 
-  return { html, imageCount, imageIds };
+  return { html, imageCount, imageIds, title };
 }

@@ -23,11 +23,14 @@ export async function handleFetchDoc(req: Request): Promise<Response> {
     }
 
     const markdown = await fetchMarkdown(docId);
-    const { html, imageCount, imageIds } = await convertDocument(markdown);
+    const { html, imageCount, imageIds, title: extractedTitle } = await convertDocument(markdown);
 
     await upsertDoc({
       doc_id: docId,
-      title: title ?? docId,
+      // Explicit `title` in the request wins. Otherwise use the first H1 we
+      // extracted from the markdown; final fallback is the bare doc_id so
+      // dashboards still have something to show.
+      title: title ?? extractedTitle ?? docId,
       html,
       image_ids: imageIds,
     });

@@ -38,6 +38,7 @@ export interface DocRecord {
   title: string | null;
   html: string | null;
   image_ids: string[] | null;
+  is_public: number;  // 0 = draft (URL-only), 1 = listed
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,7 @@ export interface DocFields {
   title: string | null;
   html: string;
   image_ids: string[];
+  is_public?: number;
 }
 
 export interface UploadedFile {
@@ -95,13 +97,29 @@ export async function insertDoc(data: DocFields): Promise<DocRecord> {
 
 export async function updateDoc(
   id: number,
-  data: Partial<Pick<DocFields, "title" | "html" | "image_ids">>
+  data: Partial<Pick<DocFields, "title" | "html" | "image_ids" | "is_public">>
 ): Promise<void> {
   await drustFetch(`/records/docs/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ data }),
   });
+}
+
+// Admin: full list for dashboard, sorted by created_at desc.
+export async function listAllDocs(): Promise<DocRecord[]> {
+  const res = await drustJson<{ records: DocRecord[] }>(
+    `/collections/docs/list`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sort: { field: "created_at", desc: true },
+        per_page: 200,
+      }),
+    }
+  );
+  return res.records.map(normalizeRecord);
 }
 
 export async function deleteDoc(id: number): Promise<void> {
