@@ -7,13 +7,24 @@
 //
 // Replaces the previous SSE+POST implementation in routes/remote.ts.
 
-const BASE = process.env.DRUST_BASE_URL!;
-const TENANT = process.env.DRUST_TENANT_ID!;
-const SERVICE_TOKEN = process.env.DRUST_SERVICE_TOKEN!;
-const ANON_TOKEN = process.env.DRUST_ANON_TOKEN;
-
-if (!ANON_TOKEN) {
-  throw new Error("DRUST_ANON_TOKEN must be set (subscribers need it)");
+// Read env at call-time so the same code runs under Bun (native process.env)
+// and CF Pages Functions (where the entrypoint shims process.env from the
+// per-request `context.env`).
+interface PublishEnv {
+  base: string;
+  tenant: string;
+  serviceToken: string;
+  anonToken: string;
+}
+function readEnv(): PublishEnv {
+  const base = process.env.DRUST_BASE_URL;
+  const tenant = process.env.DRUST_TENANT_ID;
+  const serviceToken = process.env.DRUST_SERVICE_TOKEN;
+  const anonToken = process.env.DRUST_ANON_TOKEN;
+  if (!base || !tenant || !serviceToken || !anonToken) {
+    throw new Error("DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN / DRUST_ANON_TOKEN must be set");
+  }
+  return { base, tenant, serviceToken, anonToken };
 }
 
 // Drust enforces ^[a-zA-Z][a-zA-Z0-9_:.-]{0,127}$ on room names server-side,
@@ -43,10 +54,11 @@ export async function handlePublish(
     return jsonResponse({ error: "bad-json" }, 400);
   }
 
-  const res = await fetch(`${BASE}/drust/t/${TENANT}/rooms/${roomId}`, {
+  const { base, tenant, serviceToken } = readEnv();
+  const res = await fetch(`${base}/drust/t/${tenant}/rooms/${roomId}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SERVICE_TOKEN}`,
+      Authorization: `Bearer ${serviceToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -60,6 +72,7 @@ export async function handlePublish(
 }
 
 export function handleConfig(): Response {
-  const wsUrl = `${BASE.replace(/^http/, "ws")}/drust/t/${TENANT}/realtime?token=${ANON_TOKEN}`;
+  const { base, tenant, anonToken } = readEnv();
+  const wsUrl = `${base.replace(/^http/, "ws")}/drust/t/${tenant}/realtime?token=${anonToken}`;
   return jsonResponse({ wsUrl });
 }

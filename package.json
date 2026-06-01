@@ -10,6 +10,7 @@
     "marked": "^9.1.6"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260531.1",
     "@happy-dom/global-registrator": "^20.9.0",
     "@types/bun": "latest"
   }

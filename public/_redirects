@@ -1,0 +1,5 @@
+# Bare Google Docs URL (e.g. /document/d/<id>/edit) → clean /?src=<id>.
+# Mirrors the in-server handler in server/index.ts so behaviour is identical
+# under either runtime.
+/document/d/:id/*  /?src=:id  302
+/document/d/:id    /?src=:id  302

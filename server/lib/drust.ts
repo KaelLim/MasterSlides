@@ -1,18 +1,25 @@
-const BASE   = process.env.DRUST_BASE_URL;
-const TENANT = process.env.DRUST_TENANT_ID;
-const TOKEN  = process.env.DRUST_SERVICE_TOKEN;
-
-if (!BASE || !TENANT || !TOKEN) {
-  throw new Error("DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN must be set");
+// Read env at call-time, not module-load. Workers/Pages Functions inject
+// secrets via the per-request `context.env`; the Function entrypoint
+// shims globalThis.process so this code path works there too. Bun reads
+// directly from its native process.env.
+function drustConfig(): { tenantBase: string; auth: { Authorization: string } } {
+  const base = process.env.DRUST_BASE_URL;
+  const tenant = process.env.DRUST_TENANT_ID;
+  const token = process.env.DRUST_SERVICE_TOKEN;
+  if (!base || !tenant || !token) {
+    throw new Error("DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN must be set");
+  }
+  return {
+    tenantBase: `${base}/drust/t/${tenant}`,
+    auth: { Authorization: `Bearer ${token}` },
+  };
 }
 
-const TENANT_BASE = `${BASE}/drust/t/${TENANT}`;
-const AUTH = { Authorization: `Bearer ${TOKEN}` };
-
 async function drustFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const res = await fetch(`${TENANT_BASE}${path}`, {
+  const { tenantBase, auth } = drustConfig();
+  const res = await fetch(`${tenantBase}${path}`, {
     ...init,
-    headers: { ...AUTH, ...(init.headers || {}) },
+    headers: { ...auth, ...(init.headers || {}) },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
