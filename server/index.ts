@@ -52,14 +52,6 @@ function headersFor(path: string): Record<string, string> {
   return headers;
 }
 
-async function serveFile(filePath: string): Promise<Response> {
-  const file = Bun.file(filePath);
-  if (!(await file.exists())) {
-    return new Response("Not Found", { status: 404 });
-  }
-  return new Response(file, { headers: headersFor(filePath) });
-}
-
 async function serveStatic(pathname: string): Promise<Response> {
   // /img/<file_id> → proxy Drust public bucket as same-origin
   // (html2canvas can't render cross-origin images; same-origin sidesteps
@@ -81,10 +73,28 @@ async function serveStatic(pathname: string): Promise<Response> {
   }
 
   // Everything else → public/ directory (single source for static assets).
-  const filePath = pathname === "/"
-    ? join(PUBLIC_DIR, "index.html")
-    : join(PUBLIC_DIR, pathname);
-  return serveFile(filePath);
+  // Mirror CF Pages' clean-URL behaviour: bare directory falls back to
+  // index.html; extensionless paths try .html. Keeps `/admin/login` and
+  // `/admin/` resolving the same way locally as on production.
+  const candidates: string[] = [];
+  if (pathname === "/") {
+    candidates.push(join(PUBLIC_DIR, "index.html"));
+  } else if (pathname.endsWith("/")) {
+    candidates.push(join(PUBLIC_DIR, pathname, "index.html"));
+  } else if (/\.[a-z0-9]+$/i.test(pathname)) {
+    candidates.push(join(PUBLIC_DIR, pathname));
+  } else {
+    candidates.push(join(PUBLIC_DIR, pathname));
+    candidates.push(join(PUBLIC_DIR, pathname + ".html"));
+    candidates.push(join(PUBLIC_DIR, pathname, "index.html"));
+  }
+  for (const p of candidates) {
+    const f = Bun.file(p);
+    if (await f.exists()) {
+      return new Response(f, { headers: headersFor(p) });
+    }
+  }
+  return new Response("Not Found", { status: 404 });
 }
 
 const server = Bun.serve({

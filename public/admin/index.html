@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文件管理 - 簡報後台</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>簡報後台</h1>
+    <div class="user">
+      <span class="email" id="userEmail"></span>
+      <button id="logoutBtn">登出</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-header">
+      <h2>文件 <span id="docsCount" style="font-weight:400;color:#8a9aae;font-size:14px;margin-left:8px"></span></h2>
+      <div class="actions">
+        <button class="primary" id="newDocBtn">+ 新增文件</button>
+      </div>
+    </div>
+
+    <div id="content">
+      <div class="loading-state">載入中…</div>
+    </div>
+  </main>
+
+  <script type="module" src="/admin/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登入 - 簡報後台</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+  <div class="auth-page">
+    <form class="auth-card" id="loginForm" autocomplete="on">
+      <h1>簡報後台</h1>
+      <p class="subtitle">輸入帳號密碼登入</p>
+      <label for="email">電子郵件</label>
+      <input id="email" name="email" type="email" required autocomplete="email" autofocus>
+      <label for="password">密碼</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password">
+      <button type="submit" id="submit">登入</button>
+      <div class="error" id="error"></div>
+    </form>
+  </div>
+
+  <script type="module">
+    // Redirect to /admin if already logged in, or to /admin/setup if no
+    // admin exists yet.
+    const meRes = await fetch("/api/admin/me", { credentials: "same-origin" });
+    if (meRes.ok) window.location.replace("/admin");
+    else {
+      const s = await fetch("/api/admin/setup-state");
+      if (s.ok && (await s.json()).needsSetup) {
+        window.location.replace("/admin/setup");
+      }
+    }
+
+    const form = document.getElementById("loginForm");
+    const submit = document.getElementById("submit");
+    const errEl = document.getElementById("error");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.textContent = "";
+      submit.disabled = true;
+      submit.textContent = "登入中…";
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          errEl.textContent = body.error === "invalid-credentials"
+            ? "電子郵件或密碼錯誤"
+            : `登入失敗（${body.error || res.status}）`;
+          submit.disabled = false;
+          submit.textContent = "登入";
+          return;
+        }
+        window.location.replace("/admin");
+      } catch (err) {
+        errEl.textContent = `網路錯誤：${err.message}`;
+        submit.disabled = false;
+        submit.textContent = "登入";
+      }
+    });
+  </script>
+</body>
+</html>
