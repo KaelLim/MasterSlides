@@ -72,7 +72,7 @@ async function serveStatic(pathname: string): Promise<Response> {
 
   // Everything else → public/ directory (single source for static assets).
   const filePath = pathname === "/"
-    ? join(PUBLIC_DIR, "slides.html")
+    ? join(PUBLIC_DIR, "index.html")
     : join(PUBLIC_DIR, pathname);
   return serveFile(filePath);
 }

@@ -1,0 +1,19 @@
+# Cloudflare Pages — slides project
+#
+# Local dev uses Bun (`bun run dev` against server/) for fast iteration;
+# CF Pages serves the same surface via the static files in public/ plus
+# the Functions in functions/. Both paths share server/lib/* and
+# server/routes/* through the Function entrypoints' process.env shim.
+#
+# Secrets (DRUST_*) are configured via `wrangler pages secret put` or
+# the Pages dashboard — they MUST NOT live in this file.
+
+name = "slides"
+pages_build_output_dir = "public"
+
+# Date affects available Workers runtime APIs. Bumping forward is safe;
+# rolling back can break code that relied on newer behaviour.
+compatibility_date = "2026-05-01"
+
+# No nodejs_compat: the Functions only use fetch / Blob / FormData /
+# atob — all Web Standards. The env-shim handles process.env explicitly.
