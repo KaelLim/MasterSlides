@@ -1,5 +1,5 @@
 {
-  "name": "aliswa",
+  "name": "slides",
   "type": "module",
   "scripts": {
     "build": "bun build public/js/app.js --outdir public/dist --bundle --format esm --external html2canvas --external qrcodejs --external '/js/slides/*'",

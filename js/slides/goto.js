@@ -160,8 +160,8 @@ function buildGrid() {
     dom.manuscript.querySelectorAll(':scope > .slide-page')
   );
 
-  // Cell aspect mirrors the preview's outer aspect: in aliswa we include the
-  // content-area padding (matches PDF print's @page); in main-stack fallback
+  // Cell aspect mirrors the preview's outer aspect: when slide-pages exist we
+  // include the content-area padding (matches PDF print's @page); otherwise
   // we use raw container aspect (no padding wrapper).
   const cellAspect = slidePageSnapshot.length > 0
     ? `${containerW + 160} / ${containerH + 120}`

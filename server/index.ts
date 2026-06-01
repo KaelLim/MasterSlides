@@ -12,7 +12,7 @@ import {
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
-const PROJECT_ROOT = join(import.meta.dir, "../..");  // slides/ root for css/, theme/
+const PROJECT_ROOT = join(import.meta.dir, "..");  // repo root for css/, theme/, js/slides/
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -57,7 +57,7 @@ async function serveFile(filePath: string): Promise<Response> {
 }
 
 async function serveStatic(pathname: string): Promise<Response> {
-  // /css/* → check public first (aliswa overrides), then project root
+  // /css/* → check public first (slide-page overrides), then project root
   if (pathname.startsWith("/css/")) {
     const publicFile = Bun.file(join(PUBLIC_DIR, pathname));
     if (await publicFile.exists()) {
@@ -168,4 +168,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`Aliswa server running at http://localhost:${server.port}`);
+console.log(`Slides server running at http://localhost:${server.port}`);

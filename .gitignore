@@ -1,5 +1,5 @@
 node_modules/
 .DS_Store
-docs/*
-!docs/plans/
-deployment/supabase-official/
+data/
+public/dist/
+.env
