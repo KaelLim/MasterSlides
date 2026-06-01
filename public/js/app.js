@@ -516,18 +516,25 @@ async function loadDocument(src, { forceSync = false } = {}) {
 
   loadSettings();
   updateModKeyDisplay();
-  await convertTablesToImages();
 
   // Wait for fonts to load (critical for accurate pretext measurement)
   await document.fonts.ready;
 
-  // Wait for all images to load (critical for accurate dimension measurement)
+  // Wait for ALL images to load (critical for accurate dimension measurement
+  // AND for html2canvas — table-to-image conversion sees 0×0 imgs if it runs
+  // before this and html2canvas then mis-lays-out the cells, producing visible
+  // duplication).
   const images = dom.manuscript.querySelectorAll('img');
   if (images.length > 0) {
     await Promise.all(Array.from(images).map(img =>
       img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
     ));
   }
+
+  // Imgs must be loaded BEFORE this — html2canvas reads natural dimensions
+  // off DOM nodes at capture time and falls back to its own broken layout for
+  // 0×0 placeholders.
+  await convertTablesToImages();
 
   // Store all content elements for repagination
   const content = dom.manuscript.firstElementChild;
