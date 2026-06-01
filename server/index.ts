@@ -13,6 +13,12 @@ import {
   handleDocsList,
   handleDocPatch,
   handleDocDelete,
+  handlePlaylistsList,
+  handlePlaylistCreate,
+  handlePlaylistGet,
+  handlePlaylistPatch,
+  handlePlaylistDelete,
+  handlePublicPlaylistGet,
 } from "./routes/admin.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
@@ -130,6 +136,19 @@ const server = Bun.serve({
       const docId = pathname.slice("/api/admin/docs/".length);
       if (req.method === "PATCH")  return handleDocPatch(docId, req);
       if (req.method === "DELETE") return handleDocDelete(docId, req);
+    }
+    if (pathname === "/api/admin/playlists" && req.method === "GET")  return handlePlaylistsList(req);
+    if (pathname === "/api/admin/playlists" && req.method === "POST") return handlePlaylistCreate(req);
+    if (pathname.startsWith("/api/admin/playlists/")) {
+      const id = pathname.slice("/api/admin/playlists/".length);
+      if (req.method === "GET")    return handlePlaylistGet(id, req);
+      if (req.method === "PATCH")  return handlePlaylistPatch(id, req);
+      if (req.method === "DELETE") return handlePlaylistDelete(id, req);
+    }
+    // Public playlist read — for the slides viewer.
+    if (pathname.startsWith("/api/playlists/") && req.method === "GET") {
+      const id = pathname.slice("/api/playlists/".length);
+      return handlePublicPlaylistGet(id);
     }
 
     // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →

@@ -41,10 +41,20 @@ function goToPage(page) {
 }
 
 function prevPage() {
+  // In playlist mode, crossing back past page 1 jumps to the previous doc.
+  if (state.currentPage <= 0 && playlistState) {
+    void jumpToPlaylistDoc(-1);
+    return;
+  }
   goToPage(state.currentPage - 1);
 }
 
 function nextPage() {
+  // In playlist mode, going forward past the last page jumps to the next doc.
+  if (state.currentPage >= state.totalPages - 1 && playlistState) {
+    void jumpToPlaylistDoc(+1);
+    return;
+  }
   goToPage(state.currentPage + 1);
 }
 
@@ -845,11 +855,77 @@ function initEventListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initDOM();
-  const src = new URLSearchParams(window.location.search).get('src');
-  if (!src) {
-    dom.manuscript.innerHTML = '<p style="color:#ff6b6b;font-size:24px;">請提供 src 參數</p>';
-    return;
+  const params = new URLSearchParams(window.location.search);
+  const src = params.get('src');
+  const playlistId = params.get('playlist');
+  if (playlistId) {
+    loadPlaylist(playlistId);
+  } else if (src) {
+    currentSrc = src;
+    loadDocument(src);
+  } else {
+    dom.manuscript.innerHTML = '<p style="color:#ff6b6b;font-size:24px;">請提供 src 或 playlist 參數</p>';
   }
-  currentSrc = src;
-  loadDocument(src);
 });
+
+// ── Playlist mode ────────────────────────────────────────────────
+//
+// /?playlist=<id> fetches /api/playlists/:id and plays each doc in
+// sequence. "Next page" on the LAST page of the current doc advances
+// to the next doc; "prev page" on the FIRST page goes back to the
+// previous doc.
+
+let playlistState = null;  // { id, title, doc_ids: [...], index: 0 }
+
+async function loadPlaylist(id) {
+  try {
+    const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">找不到 playlist (${res.status})</p>`;
+      return;
+    }
+    const { playlist } = await res.json();
+    if (!playlist.doc_ids || playlist.doc_ids.length === 0) {
+      dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">「${playlist.title}」沒有文件</p>`;
+      return;
+    }
+    playlistState = { id: playlist.id, title: playlist.title, doc_ids: playlist.doc_ids, index: 0 };
+    updatePlaylistBadge();
+    currentSrc = playlistState.doc_ids[0];
+    await loadDocument(currentSrc);
+  } catch (err) {
+    dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">Playlist 載入失敗: ${err.message}</p>`;
+  }
+}
+
+// Tiny top-center indicator showing playlist progress.
+function updatePlaylistBadge() {
+  if (!playlistState) return;
+  let badge = document.getElementById('playlistBadge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'playlistBadge';
+    badge.style.cssText =
+      'position:fixed;top:14px;left:50%;transform:translateX(-50%);' +
+      'background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);color:white;' +
+      'padding:6px 14px;border-radius:16px;font-size:13px;z-index:50;' +
+      'pointer-events:none;font-family:-apple-system,sans-serif;';
+    document.body.appendChild(badge);
+  }
+  badge.textContent = `${playlistState.title} · ${playlistState.index + 1} / ${playlistState.doc_ids.length}`;
+}
+
+async function jumpToPlaylistDoc(delta) {
+  if (!playlistState) return false;
+  const next = playlistState.index + delta;
+  if (next < 0 || next >= playlistState.doc_ids.length) return false;
+  playlistState.index = next;
+  currentSrc = playlistState.doc_ids[next];
+  updatePlaylistBadge();
+  // For prev jumps, land on the LAST page of the prior doc; otherwise page 1.
+  const landOnLast = delta < 0;
+  await loadDocument(currentSrc);
+  if (landOnLast) goToPage(state.totalPages - 1);
+  return true;
+}
+

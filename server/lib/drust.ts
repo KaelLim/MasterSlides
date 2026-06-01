@@ -143,6 +143,104 @@ export async function uploadImage(
   return { id: res.id, public_url: res.url };
 }
 
+// ── Playlists ────────────────────────────────────────────────────
+
+export interface PlaylistRecord {
+  id: number;
+  title: string;
+  doc_ids: string[];
+  is_public: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlaylistFields {
+  title: string;
+  doc_ids: string[];
+  is_public?: number;
+}
+
+function normalizePlaylist(raw: any): PlaylistRecord {
+  let doc_ids: string[] = [];
+  if (raw.doc_ids != null) {
+    if (typeof raw.doc_ids === "string") {
+      try { doc_ids = JSON.parse(raw.doc_ids); } catch { doc_ids = []; }
+    } else if (Array.isArray(raw.doc_ids)) {
+      doc_ids = raw.doc_ids;
+    }
+  }
+  return { ...raw, doc_ids };
+}
+
+export async function listAllPlaylists(): Promise<PlaylistRecord[]> {
+  const res = await drustJson<{ records: PlaylistRecord[] }>(
+    `/collections/playlists/list`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sort: { field: "created_at", desc: true },
+        per_page: 200,
+      }),
+    },
+  );
+  return res.records.map(normalizePlaylist);
+}
+
+export async function findPlaylist(id: number): Promise<PlaylistRecord | null> {
+  try {
+    // GET /records/playlists/:id returns { record: { ... } } — unwrap.
+    const raw = await drustJson<{ record: PlaylistRecord }>(`/records/playlists/${id}`);
+    return normalizePlaylist(raw.record);
+  } catch (err: any) {
+    if (/→ 404/.test(err.message)) return null;
+    throw err;
+  }
+}
+
+export async function insertPlaylist(
+  data: PlaylistFields,
+): Promise<PlaylistRecord> {
+  const res = await drustJson<{ id: number; record: PlaylistRecord }>(
+    `/records/playlists`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: {
+          ...data,
+          // Drust expects doc_ids as a JSON-encoded string in the TEXT column.
+          doc_ids: JSON.stringify(data.doc_ids ?? []),
+          is_public: data.is_public ?? 0,
+        },
+      }),
+    },
+  );
+  return normalizePlaylist(res.record);
+}
+
+export async function updatePlaylist(
+  id: number,
+  data: Partial<PlaylistFields>,
+): Promise<void> {
+  const patch: Record<string, unknown> = {};
+  if (data.title !== undefined) patch.title = data.title;
+  if (data.doc_ids !== undefined) patch.doc_ids = JSON.stringify(data.doc_ids);
+  if (data.is_public !== undefined) patch.is_public = data.is_public;
+  if (Object.keys(patch).length === 0) return;
+  await drustFetch(`/records/playlists/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: patch }),
+  });
+}
+
+export async function deletePlaylist(id: number): Promise<void> {
+  await drustFetch(`/records/playlists/${id}`, { method: "DELETE" });
+}
+
+// ── Files ────────────────────────────────────────────────────────
+
 export async function deleteImage(fileId: string): Promise<void> {
   try {
     await drustFetch(`/files/${fileId}`, { method: "DELETE" });

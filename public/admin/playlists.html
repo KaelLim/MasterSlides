@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>文件管理 - 簡報後台</title>
+  <title>Playlists - 簡報後台</title>
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
   <header class="topbar">
     <h1>簡報後台</h1>
     <nav>
-      <a href="/admin" class="active">文件</a>
-      <a href="/admin/playlists">Playlists</a>
+      <a href="/admin">文件</a>
+      <a href="/admin/playlists" class="active">Playlists</a>
     </nav>
     <div class="user">
       <span class="email" id="userEmail"></span>
@@ -21,9 +21,9 @@
 
   <main>
     <div class="section-header">
-      <h2>文件 <span id="docsCount" style="font-weight:400;color:#8a9aae;font-size:14px;margin-left:8px"></span></h2>
+      <h2>Playlists <span id="count" style="font-weight:400;color:#8a9aae;font-size:14px;margin-left:8px"></span></h2>
       <div class="actions">
-        <button class="primary" id="newDocBtn">+ 新增文件</button>
+        <a class="primary" href="/admin/playlist-edit" style="text-decoration:none">+ 新增 Playlist</a>
       </div>
     </div>
 
@@ -32,6 +32,6 @@
     </div>
   </main>
 
-  <script type="module" src="/admin/js/dashboard.js"></script>
+  <script type="module" src="/admin/js/playlists.js"></script>
 </body>
 </html>
