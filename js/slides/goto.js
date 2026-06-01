@@ -41,6 +41,38 @@ function buildTocList() {
 }
 
 let gridObserver = null;
+let gridResizeObserver = null;
+// Snapshot of live .slide-page refs taken at buildGrid time. Using a frozen
+// snapshot makes the grid stable against any repaginate() that fires while
+// the modal is open (e.g. via resize) — every tile renders from the same
+// set of refs, not from whatever dom.manuscript happens to look like when
+// the IntersectionObserver lazily fires for that tile.
+let slidePageSnapshot = [];
+
+/**
+ * Compute and apply the contain-scale transform for a single tile. Called
+ * both at render time and from a ResizeObserver — that observer is what
+ * corrects the scale when the modal's max-width transition (50% → 95%) ends
+ * after the tile was already rendered at a smaller intermediate size.
+ */
+function applyPreviewScale(item, containerW, containerH) {
+  const preview = item.querySelector('.goto-grid-preview');
+  if (!preview) return;
+
+  const hasSnapshot = slidePageSnapshot.length > 0;
+  const previewW = hasSnapshot ? containerW + 160 : containerW;
+  const previewH = hasSnapshot ? containerH + 120 : containerH;
+
+  const itemW = item.clientWidth;
+  const itemH = item.clientHeight;
+  if (itemW === 0 || itemH === 0) return; // not laid out yet
+
+  const scale = Math.min(itemW / previewW, itemH / previewH);
+  const offsetX = (itemW - previewW * scale) / 2;
+  const offsetY = (itemH - previewH * scale) / 2;
+  preview.style.transformOrigin = 'top left';
+  preview.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+}
 
 function renderPreview(item, containerW, containerH, vertical) {
   if (item.dataset.rendered) return;
@@ -49,27 +81,49 @@ function renderPreview(item, containerW, containerH, vertical) {
   const pageIndex = parseInt(item.dataset.page);
   const preview = document.createElement('div');
   preview.className = 'goto-grid-preview';
-  preview.style.width = containerW + 'px';
-  preview.style.height = containerH + 'px';
   preview.style.writingMode = vertical ? 'vertical-rl' : 'horizontal-tb';
 
-  // Aliswa-style: clone the specific .slide-page directly. Scope the query
-  // to the manuscript so previously-rendered grid previews (which also
-  // contain `.slide-page` clones) don't shift the indices.
-  const slidePages = dom.manuscript.querySelectorAll('.slide-page');
-  if (slidePages.length > 0) {
-    const target = slidePages[pageIndex];
-    if (target) {
-      const clone = target.cloneNode(true);
-      clone.style.display = 'block';
-      clone.style.width = '100%';
-      clone.style.height = '100%';
-      preview.appendChild(clone);
+  if (slidePageSnapshot.length > 0) {
+    // Aliswa: mirror the PDF-print structure — one slide-page clone wrapped
+    // in bg (theme background + content-area padding) and clip (restores the
+    // container-type: size chain so cqw/cqh and percent units behave like
+    // the live render).
+    const sourcePage = slidePageSnapshot[pageIndex];
+    if (!sourcePage) {
+      item.insertBefore(preview, item.firstChild);
+      return;
     }
+
+    const bg = document.createElement('div');
+    bg.className = 'goto-preview-bg';
+
+    const clip = document.createElement('div');
+    clip.className = 'goto-preview-clip';
+
+    const clone = sourcePage.cloneNode(true);
+    clone.style.display = '';
+    clone.style.width = containerW + 'px';
+    clone.style.height = containerH + 'px';
+
+    clip.appendChild(clone);
+    bg.appendChild(clip);
+    preview.appendChild(bg);
+
+    // Outer mirrors the print @page (containerW + 80*2, containerH + 60*2)
+    // so bg padding leaves an inner clip of exactly containerW × containerH.
+    preview.style.width = (containerW + 160) + 'px';
+    preview.style.height = (containerH + 120) + 'px';
   } else {
-    // Main-stack: clone whole manuscript and translate to the page offset.
+    // Main-stack fallback (no .slide-page divs — CSS columns scroll model):
+    // clone the whole manuscript and translate to the target page offset.
+    preview.style.width = containerW + 'px';
+    preview.style.height = containerH + 'px';
+
     const clone = dom.manuscript.cloneNode(true);
     clone.removeAttribute('id');
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+
     if (vertical) {
       clone.style.transform = `translateY(-${pageIndex * containerH}px)`;
     } else {
@@ -79,37 +133,39 @@ function renderPreview(item, containerW, containerH, vertical) {
   }
 
   item.insertBefore(preview, item.firstChild);
-
-  // Scale via `contain` semantics: pick the smaller of (cellW/contentW,
-  // cellH/contentH) so the entire slide fits regardless of cell aspect.
-  // Centre the scaled preview inside the cell so there's even letterboxing
-  // when the cell aspect differs from the slide.
-  const itemW = item.clientWidth;
-  const itemH = item.clientHeight;
-  const scale = Math.min(itemW / containerW, itemH / containerH);
-  const offsetX = (itemW - containerW * scale) / 2;
-  const offsetY = (itemH - containerH * scale) / 2;
-  preview.style.transformOrigin = 'top left';
-  preview.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+  applyPreviewScale(item, containerW, containerH);
 }
 
 function buildGrid() {
   const grid = document.getElementById('gotoGrid');
   grid.innerHTML = '';
 
-  // Clean up previous observer
+  // Clean up previous observers
   if (gridObserver) {
     gridObserver.disconnect();
     gridObserver = null;
+  }
+  if (gridResizeObserver) {
+    gridResizeObserver.disconnect();
+    gridResizeObserver = null;
   }
 
   const containerW = dom.manuscriptContainer.clientWidth;
   const containerH = dom.manuscriptContainer.clientHeight;
   const vertical = isVerticalMode();
 
-  // Each cell mirrors the live content-area aspect so the thumbnail
-  // matches what the viewer actually shows on screen (no letterbox).
-  const cellAspect = `${containerW} / ${containerH}`;
+  // Take the slide-page snapshot now, NOT lazily inside renderPreview, so
+  // every tile uses a consistent set of refs even if repaginate runs later.
+  slidePageSnapshot = Array.from(
+    dom.manuscript.querySelectorAll(':scope > .slide-page')
+  );
+
+  // Cell aspect mirrors the preview's outer aspect: in aliswa we include the
+  // content-area padding (matches PDF print's @page); in main-stack fallback
+  // we use raw container aspect (no padding wrapper).
+  const cellAspect = slidePageSnapshot.length > 0
+    ? `${containerW + 160} / ${containerH + 120}`
+    : `${containerW} / ${containerH}`;
 
   // Create lightweight placeholder items (no cloning yet)
   for (let i = 0; i < state.totalPages; i++) {
@@ -127,8 +183,6 @@ function buildGrid() {
     grid.appendChild(item);
   }
 
-  // Cell aspect is controlled by CSS (aspect-ratio: 4/3); JS no longer
-  // forces a per-item height so cells stay uniform across viewports.
   requestAnimationFrame(() => {
     const items = grid.querySelectorAll('.goto-grid-item');
 
@@ -141,7 +195,18 @@ function buildGrid() {
       });
     }, { root: grid, rootMargin: '200px' });
 
-    items.forEach(item => gridObserver.observe(item));
+    // Re-scale any already-rendered preview when its cell size changes.
+    // Handles: modal max-width transition, window resize, future layout shifts.
+    gridResizeObserver = new ResizeObserver(entries => {
+      entries.forEach(entry => {
+        applyPreviewScale(entry.target, containerW, containerH);
+      });
+    });
+
+    items.forEach(item => {
+      gridObserver.observe(item);
+      gridResizeObserver.observe(item);
+    });
   });
 }
 
@@ -178,12 +243,17 @@ export function showGoToPageDialog() {
 export function closeGotoModal() {
   dom.gotoModal.classList.remove('active');
   dom.gotoPageInput.value = '';
-  // Clean up observer and clones
+  // Clean up observers, clones, and snapshot refs
   if (gridObserver) {
     gridObserver.disconnect();
     gridObserver = null;
   }
+  if (gridResizeObserver) {
+    gridResizeObserver.disconnect();
+    gridResizeObserver = null;
+  }
   document.getElementById('gotoGrid').innerHTML = '';
+  slidePageSnapshot = [];
 }
 
 export function initGotoModal() {
