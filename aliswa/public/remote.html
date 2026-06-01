@@ -472,15 +472,49 @@
   </div>
 
   <script type="module">
-    let ws = null;
+    // ── SSE Remote Control ──
+    // Module-level state. `es` is the EventSource singleton; `errorStreak`
+    // (I5) counts consecutive 'error' events without an intervening 'open'
+    // or message, so we don't flag transient network blips as disconnects.
+    let es = null
+    let errorStreak = 0
+    const MAX_ERRORS = 5
+    let roomId = null
 
+    // Public API: signature preserved for existing callers (joystick,
+    // button onclick handlers). POST to /api/room/:room/command — the
+    // server re-injects {type:"command", ...} on the wire, so the body
+    // is just { action, ...extras }.
+    //
+    // (I4) NO keepalive on regular commands. The joystick fires pan
+    // every 100ms; browsers cap keepalive bodies at 64KB total in-flight
+    // per origin, which would silently drop pan commands mid-drag.
     function sendCommand(action, data = {}) {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ type: 'command', action, ...data }));
+      if (!roomId) return
+      fetch(`/api/room/${roomId}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...data }),
+      }).catch(() => { /* commands are best-effort; SSE will resync state */ })
+    }
+
+    // Extracted from the old ws.onmessage 'sync' branch — reused by both
+    // the 'init' (cached sync from server) and 'sync' SSE listeners.
+    function applySnapshot(data) {
+      document.getElementById('status').textContent = '已連線'
+      document.getElementById('status').classList.add('connected')
+      document.getElementById('status').classList.remove('error')
+      document.getElementById('errorBox').style.display = 'none'
+      document.getElementById('currentPage').textContent = data.currentPage
+      document.getElementById('totalPages').textContent = data.totalPages
+      document.getElementById('remoteGotoInput').max = data.totalPages
+      updateImages(data.images || [])
+      updateZoomControls(data.lightboxActive, data.lightboxZoom)
+      updateSearchState(data)
     }
 
     const params = new URLSearchParams(window.location.search)
-    const roomId = params.get('id')
+    roomId = params.get('id')
 
     if (!roomId) {
       document.getElementById('status').textContent = '缺少房間 ID'
@@ -489,40 +523,59 @@
     } else {
       document.getElementById('status').textContent = '連線中...'
 
-      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${proto}//${location.host}/ws/${roomId}`);
+      es = new EventSource(`/sse/phone/${roomId}`)
 
-      ws.onopen = () => {
+      // Reset error counter on successful network handshake.
+      es.addEventListener('open', () => {
+        errorStreak = 0
         document.getElementById('status').textContent = '等待簡報同步...'
-        ws.send(JSON.stringify({ type: 'remote-joined' }));
-      };
+        document.getElementById('status').classList.remove('error')
+        document.getElementById('errorBox').style.display = 'none'
+      })
 
-      ws.onmessage = (e) => {
+      // 'init' arrives in the same tick as 'open'. Server sends EITHER
+      // the cached lastSync wrapped as {type:"sync", currentPage, ...}
+      // OR a waiting envelope {role:"phone", room, waiting:true}. Branch
+      // on shape — only the sync shape carries renderable state.
+      es.addEventListener('init', (e) => {
+        errorStreak = 0
         try {
-          const data = JSON.parse(e.data);
-          if (data.type === 'sync') {
-            document.getElementById('status').textContent = '已連線'
-            document.getElementById('status').classList.add('connected')
-            document.getElementById('currentPage').textContent = data.currentPage
-            document.getElementById('totalPages').textContent = data.totalPages
-            document.getElementById('remoteGotoInput').max = data.totalPages
-            updateImages(data.images || [])
-            updateZoomControls(data.lightboxActive, data.lightboxZoom)
-            updateSearchState(data)
+          const data = JSON.parse(e.data)
+          if (data && data.type === 'sync') {
+            applySnapshot(data)
+          } else {
+            document.getElementById('status').textContent = '等待簡報同步...'
+            document.getElementById('status').classList.remove('error')
           }
         } catch {}
-      };
+      })
 
-      ws.onerror = () => {
-        document.getElementById('status').textContent = '連線失敗'
-        document.getElementById('status').classList.add('error')
-        document.getElementById('errorBox').style.display = 'block'
-      };
+      es.addEventListener('sync', (e) => {
+        errorStreak = 0
+        try {
+          const data = JSON.parse(e.data)
+          applySnapshot(data)
+        } catch {}
+      })
 
-      ws.onclose = () => {
+      es.addEventListener('bye', () => {
         document.getElementById('status').textContent = '連線已斷開'
         document.getElementById('status').classList.remove('connected')
-      };
+        // Don't bump errorStreak — bye is graceful close, not a fault.
+      })
+
+      // (I5) EventSource fires onerror on every disconnect/retry tick;
+      // most are silent transients on mobile. Only escalate after N=5
+      // consecutive errors without an intervening open/message.
+      es.onerror = () => {
+        errorStreak += 1
+        if (errorStreak >= MAX_ERRORS) {
+          document.getElementById('status').textContent = '連線中斷'
+          document.getElementById('status').classList.remove('connected')
+          document.getElementById('status').classList.add('error')
+          document.getElementById('errorBox').style.display = 'block'
+        }
+      }
 
       // Navigation
       document.getElementById('prevBtn').onclick = () => sendCommand('prev')

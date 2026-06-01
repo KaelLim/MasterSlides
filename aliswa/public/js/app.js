@@ -1,5 +1,5 @@
 // Aliswa slides app — standalone Bun backend, no Supabase
-// Loads via /api/docs/:id or direct URL, WebSocket remote control
+// Loads via /api/docs/:id or direct URL, SSE+POST remote control
 
 import { initDOM, state, dom, isMac, modKey, FONT_SCALES, STORAGE_KEYS } from '/js/slides/state.js';
 import { paginate, showPage } from './paginator.ts';
@@ -161,9 +161,16 @@ function exportPDF() {
   window.print();
 }
 
-// ── WebSocket Remote Control ────────────────────────────────────
+// ── SSE Remote Control ─────────────────────────────────────────
 
-let ws = null;
+// Module-level state for the SSE viewer stream.
+// `es` is the EventSource subscribed to /sse/viewer/:room; `esRoomId` is the
+// room id that `es` was opened with — used by the (I6) singleton/stale-roomId
+// guard in initRemote. `syncTimer` is the trailing-edge throttle handle for
+// syncRemoteState (50ms window) — see (I3).
+let es = null;
+let esRoomId = null;
+let syncTimer = null;
 
 function getCurrentPageImages() {
   const containerWidth = dom.manuscriptContainer.clientWidth;
@@ -183,11 +190,11 @@ function getCurrentPageImages() {
   return visible;
 }
 
-function syncRemoteState() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+// Build a snapshot of the viewer's current state for the sync POST body.
+// Server re-injects {type:"sync", ...} on the wire, so we omit "type" here.
+function buildSyncPayload() {
   const searchState = getSearchState();
-  ws.send(JSON.stringify({
-    type: 'sync',
+  return {
     currentPage: state.currentPage + 1,
     totalPages: state.totalPages,
     images: getCurrentPageImages(),
@@ -195,7 +202,35 @@ function syncRemoteState() {
     lightboxZoom: state.lbZoom,
     spotlightActive: isLaserActive(),
     ...searchState
-  }));
+  };
+}
+
+// Best-effort POST of a sync snapshot. No keepalive — the viewer never
+// sends on unload (only the phone has a beforeunload path, and even there
+// keepalive is reserved for that single case).
+async function postSync(payload) {
+  if (!state.roomId) return;
+  try {
+    await fetch(`/api/room/${state.roomId}/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    /* sync is best-effort — swallow transient errors */
+  }
+}
+
+// (I3) Trailing-edge throttle: coalesce calls within a 50ms window. The
+// payload is captured at FIRE TIME via buildSyncPayload() so the POST
+// always reflects the latest state, not the state at first-call time.
+// Bounds POST rate at 20/sec even during joystick pan storms.
+function syncRemoteState() {
+  if (syncTimer != null) return;
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    postSync(buildSyncPayload());
+  }, 50);
 }
 
 function handleRemoteCommand(payload) {
@@ -249,33 +284,90 @@ function handleRemoteCommand(payload) {
   syncRemoteState();
 }
 
+// (I1) Shared helper used by BOTH the 'init' (when phoneConnected=true) and
+// 'remote-joined' handlers so the "phone connected" UX is consistent.
+function markRemoteConnected() {
+  const status = document.getElementById('remoteStatus');
+  if (status) {
+    status.textContent = '遙控器已連線！';
+    status.classList.add('connected');
+  }
+  setTimeout(closeRemoteModal, 2000);
+}
+
 function initRemote() {
-  // Shared modules (e.g. goto.js) call into navigation.goToPage, which now
-  // toggles `.slide-page` displays directly. Wire the page-change callback
-  // so WS-connected remotes still receive sync updates when those callers
-  // change the current page.
-  navigation.onPageChange = syncRemoteState;
+  // First-time-only setup: allocate room id, wire navigation callback, modal
+  // handlers. Gated on falsy state.roomId so refresh-triggered loadDocument
+  // re-runs don't change the room id (QR code stays stable).
+  if (!state.roomId) {
+    state.roomId = Math.random().toString(36).substring(2, 8);
+    // Shared modules (e.g. goto.js) call into navigation.goToPage, which now
+    // toggles `.slide-page` displays directly. Wire the page-change callback
+    // so connected remotes still receive sync updates when those callers
+    // change the current page.
+    navigation.onPageChange = syncRemoteState;
+    document.getElementById('remoteBtn').onclick = openRemoteModal;
+    document.getElementById('remoteModalClose').onclick = closeRemoteModal;
+    dom.remoteModal.onclick = (e) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
+  }
 
-  state.roomId = Math.random().toString(36).substring(2, 8);
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws/${state.roomId}`);
+  // (I6) Singleton + stale-roomId guard. If we already have an EventSource
+  // for the CURRENT roomId, do nothing. If state.roomId somehow changed
+  // (latent footgun), close the old one and recreate against the new room.
+  if (es != null) {
+    if (esRoomId === state.roomId) return;
+    es.close();
+    es = null;
+    esRoomId = null;
+  }
 
-  ws.onmessage = (e) => {
+  // Set esRoomId BEFORE constructing EventSource so a synchronous throw
+  // during construction doesn't leave esRoomId stale.
+  esRoomId = state.roomId;
+  es = new EventSource(`/sse/viewer/${state.roomId}`);
+
+  es.addEventListener('init', (e) => {
+    // (I2) Always warm the server's lastSync cache on init so the NEXT
+    // phone connect receives a ready-made snapshot in its own init frame.
+    // Also mitigates the server's joinedOnce bug that may skip the
+    // 'remote-joined' SSE event on phone reconnects. OUTSIDE the try so a
+    // malformed init payload can't silently suppress the mitigation.
+    postSync(buildSyncPayload());
     try {
-      const data = JSON.parse(e.data);
-      if (data.type === 'command') handleRemoteCommand(data);
-      if (data.type === 'remote-joined') {
-        document.getElementById('remoteStatus').textContent = '遙控器已連線！';
-        document.getElementById('remoteStatus').classList.add('connected');
-        syncRemoteState();
-        setTimeout(closeRemoteModal, 2000);
+      const data = JSON.parse(e.data); // { role:'viewer', room, phoneConnected }
+      // (I1) If a phone is already connected at viewer-init time, mirror
+      // the 'remote-joined' UX so the user sees the success state.
+      if (data && data.phoneConnected === true) {
+        markRemoteConnected();
       }
-    } catch {}
-  };
+    } catch {
+      /* ignore malformed init */
+    }
+  });
 
-  document.getElementById('remoteBtn').onclick = openRemoteModal;
-  document.getElementById('remoteModalClose').onclick = closeRemoteModal;
-  dom.remoteModal.onclick = (e) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
+  es.addEventListener('command', (e) => {
+    try {
+      const data = JSON.parse(e.data); // { type:'command', action, …extras }
+      handleRemoteCommand(data);
+    } catch {
+      /* ignore malformed command */
+    }
+  });
+
+  es.addEventListener('remote-joined', () => {
+    markRemoteConnected();
+    // Push the current snapshot immediately so the freshly-joined phone
+    // has state. Bypass the throttle for the same reason as 'init'.
+    postSync(buildSyncPayload());
+  });
+
+  es.addEventListener('bye', () => {
+    // Server-initiated close. Let EventSource's built-in reconnect
+    // logic run naturally; don't tear down so transient byes recover.
+  });
+
+  // No es.onerror override: EventSource auto-reconnects with backoff.
+  // The viewer has no DOM error counter — that lives on the phone (I5).
 }
 
 function openRemoteModal() {
@@ -303,12 +395,39 @@ async function convertTablesToImages() {
   const containerWidth = dom.manuscriptContainer.clientWidth * 0.95;
   for (const table of tables) {
     try {
-      table.style.cssText = `writing-mode:horizontal-tb;width:${containerWidth}px;background:rgba(0,0,0,0.3);color:white;border-collapse:collapse;font-size:18px`;
+      table.style.cssText = `writing-mode:horizontal-tb;width:${containerWidth}px;background:rgba(0,0,0,0.3);color:white;border-collapse:collapse;font-size:24px`;
       table.querySelectorAll('td').forEach(td => {
         td.style.cssText = 'writing-mode:horizontal-tb;border:1px solid rgba(255,255,255,0.3);padding:10px 14px;color:white;vertical-align:middle;text-align:left';
       });
       table.querySelectorAll('th').forEach(th => {
         th.style.cssText = 'writing-mode:horizontal-tb;border:1px solid rgba(255,255,255,0.3);padding:10px 14px;color:white;vertical-align:middle;text-align:center;background:#1a365d;font-weight:bold';
+      });
+      // Kill inline-image baseline strut so row height = image height (no extra
+      // gap below). Without this, text cells appear top-biased because their
+      // vertical-align: middle is centered within the strut-inflated row.
+      table.querySelectorAll('img').forEach(img => {
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+      });
+      // html2canvas does not reliably respect vertical-align on td/th, nor
+      // does it resolve `height: 100%` on divs inside td (so flex centering
+      // via a wrapper collapses). Center via plain padding math instead:
+      // measure each cell's intrinsic height, add (max - height)/2 to the
+      // top/bottom padding of shorter cells so all cells in a row reach the
+      // row's max height with content visually centered. Pure box model —
+      // html2canvas handles this correctly.
+      table.querySelectorAll('tr').forEach(tr => {
+        const cells = Array.from(tr.children).filter(c => c.tagName === 'TD' || c.tagName === 'TH');
+        if (cells.length === 0) return;
+        const heights = cells.map(c => c.offsetHeight);
+        const maxH = Math.max(...heights);
+        cells.forEach((c, i) => {
+          const diff = maxH - heights[i];
+          if (diff <= 0) return;
+          const extra = Math.round(diff / 2);
+          // We set padding:10px 14px above — preserve horizontal, bump vertical.
+          c.style.padding = `${10 + extra}px 14px`;
+        });
       });
       const canvas = await html2canvas(table, { backgroundColor: 'transparent', scale: 2, logging: false });
       const img = document.createElement('img');
@@ -323,33 +442,79 @@ async function convertTablesToImages() {
 
 // ── Document loader ─────────────────────────────────────────────
 
+// Original src from the URL bar, captured on first load. Refresh re-runs
+// loadDocument with this value, so if the user landed via a Google Docs URL
+// (?src=https://docs.google.com/...) refresh triggers a real re-sync; if they
+// used a bare doc_id it re-reads the cached HTML.
+let currentSrc = null;
+
+async function refresh() {
+  if (!currentSrc) return;
+  const btn = document.getElementById('refreshBtn');
+  if (btn?.classList.contains('refreshing')) return;
+  btn?.classList.add('refreshing');
+  try {
+    // forceSync: always re-pull from Google, bypassing the Drust cache.
+    await loadDocument(currentSrc, { forceSync: true });
+  } finally {
+    btn?.classList.remove('refreshing');
+  }
+}
+
 function extractDocId(url) {
   const match = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
   return match ? match[1] : null;
 }
 
-async function loadDocument(src) {
+async function syncFromGoogle(googleUrl) {
+  const res = await fetch('/api/fetch-doc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: googleUrl })
+  });
+  const result = await res.json();
+  if (!result.success) throw new Error(result.error);
+  return result;
+}
+
+async function loadDocument(src, { forceSync = false } = {}) {
   try {
-    // Detect Google Docs URL → convert first, then load
+    // Normalise `src` into a doc_id (or leave as external URL) and decide
+    // whether to re-pull from Google.
     const googleDocId = extractDocId(src);
+    const isDocId = !googleDocId && /^[a-zA-Z0-9_-]+$/.test(src);
+    let docId = null;
+
     if (googleDocId) {
+      // src is a Google Docs URL — always sync (that's the intent of pasting one).
       dom.manuscript.innerHTML = '<p class="loading-message">轉換中，請稍候...</p>';
-      const convertRes = await fetch('/api/fetch-doc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: src })
-      });
-      const result = await convertRes.json();
-      if (!result.success) throw new Error(result.error);
-      src = result.doc_id;
+      const result = await syncFromGoogle(src);
+      docId = result.doc_id;
+    } else if (isDocId) {
+      docId = src;
+      if (forceSync) {
+        dom.manuscript.innerHTML = '<p class="loading-message">同步中，請稍候...</p>';
+        await syncFromGoogle(`https://docs.google.com/document/d/${docId}/edit`);
+      }
     }
 
-    // If src looks like a doc_id (alphanumeric/hyphens/underscores), use API
-    const isDocId = /^[a-zA-Z0-9_-]+$/.test(src);
-    const url = isDocId ? `/api/docs/${src}` : src;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    dom.manuscript.innerHTML = await res.text();
+    if (docId) {
+      // Cache-first read; on miss (and we didn't already force-sync) auto-sync
+      // and retry so first-time visits via short /?src=<doc_id> still work.
+      let res = await fetch(`/api/docs/${docId}`);
+      if (!res.ok && !forceSync) {
+        dom.manuscript.innerHTML = '<p class="loading-message">首次載入，同步中...</p>';
+        await syncFromGoogle(`https://docs.google.com/document/d/${docId}/edit`);
+        res = await fetch(`/api/docs/${docId}`);
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      dom.manuscript.innerHTML = await res.text();
+    } else {
+      // External URL (not Google Docs, not doc_id) — fetch directly.
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      dom.manuscript.innerHTML = await res.text();
+    }
   } catch (err) {
     dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">載入失敗: ${err.message}</p>`;
     return;
@@ -381,6 +546,12 @@ async function loadDocument(src) {
   repaginate();
   initEventListeners();
   initRemote();
+  // After refresh, initRemote's singleton guard early-returns (same roomId),
+  // so no 'init' event fires to warm lastSync. Push the new doc's snapshot
+  // explicitly so any already-connected phone sees the new pagination/images
+  // immediately. On first load this is a redundant POST (the upcoming 'init'
+  // will also warm), but harmless — same data, server takes last writer.
+  syncRemoteState();
   resetNavHideTimer();
 }
 
@@ -625,6 +796,7 @@ function initEventListeners() {
   document.getElementById('laserBtn').onclick = toggleLaser;
   initLaser();
   document.getElementById('exportPdfBtn').onclick = exportPDF;
+  document.getElementById('refreshBtn').onclick = refresh;
 
   initHelpModal();
   initGotoModal();
@@ -667,5 +839,6 @@ document.addEventListener('DOMContentLoaded', () => {
     dom.manuscript.innerHTML = '<p style="color:#ff6b6b;font-size:24px;">請提供 src 參數</p>';
     return;
   }
+  currentSrc = src;
   loadDocument(src);
 });

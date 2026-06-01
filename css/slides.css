@@ -107,6 +107,43 @@ body {
   transform: translateY(-8px) rotate(-45deg);
 }
 
+/* Refresh / sync button — mirrors hamburger-btn visual treatment. Re-runs
+ * loadDocument on the original src so Google Docs URLs re-sync from upstream. */
+.refresh-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 30px;
+  transition: background 0.15s;
+}
+
+.refresh-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.refresh-btn.refreshing {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.refresh-btn.refreshing svg {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .page-indicator {
   display: flex;
   flex-direction: column;

@@ -3,7 +3,12 @@ import { join } from "path";
 // validates DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN at module
 // load and throws if any is missing. That is the fail-fast for missing env.
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
-import { wsHandler } from "./routes/ws.ts";
+import {
+  handleViewerStream,
+  handlePhoneStream,
+  handleCommandPost,
+  handleSyncPost,
+} from "./routes/remote.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
@@ -108,17 +113,44 @@ async function serveStatic(pathname: string): Promise<Response> {
 const server = Bun.serve({
   port: PORT,
 
-  async fetch(req, server) {
+  async fetch(req) {
     const url = new URL(req.url);
     const { pathname } = url;
 
-    // WebSocket upgrade: /ws/:room
-    if (pathname.startsWith("/ws/")) {
-      const room = pathname.split("/")[2];
-      if (room && server.upgrade(req, { data: { room } })) {
-        return undefined as any;
+    // SSE viewer stream: GET /sse/viewer/:room
+    if (pathname.startsWith("/sse/viewer/") && req.method === "GET") {
+      const room = pathname.slice("/sse/viewer/".length);
+      if (!room) return new Response("Missing room", { status: 400 });
+      return handleViewerStream(room, url);
+    }
+
+    // SSE phone stream: GET /sse/phone/:room
+    if (pathname.startsWith("/sse/phone/") && req.method === "GET") {
+      const room = pathname.slice("/sse/phone/".length);
+      if (!room) return new Response("Missing room", { status: 400 });
+      return handlePhoneStream(room, url);
+    }
+
+    // POST /api/room/:room/command  (phone → viewer)
+    // POST /api/room/:room/sync     (viewer → phone)
+    if (pathname.startsWith("/api/room/") && req.method === "POST") {
+      const rest = pathname.slice("/api/room/".length);
+      const slash = rest.indexOf("/");
+      if (slash > 0) {
+        const room = rest.slice(0, slash);
+        const action = rest.slice(slash + 1);
+        if (action === "command") return handleCommandPost(room, req);
+        if (action === "sync") return handleSyncPost(room, req);
       }
-      return new Response("WebSocket upgrade failed", { status: 400 });
+    }
+
+    // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →
+    // redirect to the clean short form /?src=<doc_id>. The frontend's
+    // loadDocument auto-syncs from Google on cache miss, so first-time visits
+    // still work; subsequent visits read from Drust cache.
+    const docMatch = pathname.match(/^\/document\/d\/([a-zA-Z0-9_-]+)/);
+    if (docMatch) {
+      return Response.redirect(`/?src=${docMatch[1]}`, 302);
     }
 
     // API: POST /api/fetch-doc
@@ -134,8 +166,6 @@ const server = Bun.serve({
     // Static files
     return serveStatic(pathname);
   },
-
-  websocket: wsHandler,
 });
 
 console.log(`Aliswa server running at http://localhost:${server.port}`);
