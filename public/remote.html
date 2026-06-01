@@ -472,34 +472,25 @@
   </div>
 
   <script type="module">
-    // ── SSE Remote Control ──
-    // Module-level state. `es` is the EventSource singleton; `errorStreak`
-    // (I5) counts consecutive 'error' events without an intervening 'open'
-    // or message, so we don't flag transient network blips as disconnects.
-    let es = null
-    let errorStreak = 0
-    const MAX_ERRORS = 5
+    import { connectRoom } from '/js/drust-broadcast.js'
+
+    // ── Drust Broadcast Remote Control ──
+    // Module-level state. `room` is the connectRoom() handle. `closeStreak`
+    // counts consecutive WS closes without an intervening open, so we don't
+    // flag transient network blips as a disconnect.
+    let room = null
+    let closeStreak = 0
+    const MAX_CLOSES_BEFORE_ERROR = 3
     let roomId = null
 
-    // Public API: signature preserved for existing callers (joystick,
-    // button onclick handlers). POST to /api/room/:room/command — the
-    // server re-injects {type:"command", ...} on the wire, so the body
-    // is just { action, ...extras }.
-    //
-    // (I4) NO keepalive on regular commands. The joystick fires pan
-    // every 100ms; browsers cap keepalive bodies at 64KB total in-flight
-    // per origin, which would silently drop pan commands mid-drag.
+    // Public API: signature preserved for existing callers (joystick, button
+    // onclick handlers). Publishes through the Bun proxy → Drust broadcast.
+    // Best-effort; broadcast is fire-and-forget, no retry.
     function sendCommand(action, data = {}) {
-      if (!roomId) return
-      fetch(`/api/room/${roomId}/command`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...data }),
-      }).catch(() => { /* commands are best-effort; SSE will resync state */ })
+      if (!room) return
+      room.publish({ type: 'command', action, ...data })
     }
 
-    // Extracted from the old ws.onmessage 'sync' branch — reused by both
-    // the 'init' (cached sync from server) and 'sync' SSE listeners.
     function applySnapshot(data) {
       document.getElementById('status').textContent = '已連線'
       document.getElementById('status').classList.add('connected')
@@ -523,59 +514,36 @@
     } else {
       document.getElementById('status').textContent = '連線中...'
 
-      es = new EventSource(`/sse/phone/${roomId}`)
+      // Drust requires room names to start with a letter; static 'slides-'
+      // prefix satisfies that. Must match the viewer's drustRoomFor().
+      const channel = `slides-${roomId}`
 
-      // Reset error counter on successful network handshake.
-      es.addEventListener('open', () => {
-        errorStreak = 0
-        document.getElementById('status').textContent = '等待簡報同步...'
-        document.getElementById('status').classList.remove('error')
-        document.getElementById('errorBox').style.display = 'none'
-      })
-
-      // 'init' arrives in the same tick as 'open'. Server sends EITHER
-      // the cached lastSync wrapped as {type:"sync", currentPage, ...}
-      // OR a waiting envelope {role:"phone", room, waiting:true}. Branch
-      // on shape — only the sync shape carries renderable state.
-      es.addEventListener('init', (e) => {
-        errorStreak = 0
-        try {
-          const data = JSON.parse(e.data)
-          if (data && data.type === 'sync') {
-            applySnapshot(data)
-          } else {
-            document.getElementById('status').textContent = '等待簡報同步...'
-            document.getElementById('status').classList.remove('error')
+      room = await connectRoom(channel, {
+        onOpen: () => {
+          closeStreak = 0
+          document.getElementById('status').textContent = '等待簡報同步...'
+          document.getElementById('status').classList.remove('error')
+          document.getElementById('errorBox').style.display = 'none'
+          // Announce ourselves so the viewer publishes its current snapshot.
+          // Drust broadcast is fire-and-forget — the only way to catch a
+          // late-joining phone up is via a request/response handshake.
+          room.publish({ type: 'phone-join' })
+        },
+        onMessage: (msg) => {
+          if (!msg || typeof msg !== 'object') return
+          if (msg.type === 'sync') applySnapshot(msg)
+          // 'command' / 'phone-join' are our own echoes — ignore.
+        },
+        onClose: () => {
+          closeStreak += 1
+          if (closeStreak >= MAX_CLOSES_BEFORE_ERROR) {
+            document.getElementById('status').textContent = '連線中斷'
+            document.getElementById('status').classList.remove('connected')
+            document.getElementById('status').classList.add('error')
+            document.getElementById('errorBox').style.display = 'block'
           }
-        } catch {}
+        },
       })
-
-      es.addEventListener('sync', (e) => {
-        errorStreak = 0
-        try {
-          const data = JSON.parse(e.data)
-          applySnapshot(data)
-        } catch {}
-      })
-
-      es.addEventListener('bye', () => {
-        document.getElementById('status').textContent = '連線已斷開'
-        document.getElementById('status').classList.remove('connected')
-        // Don't bump errorStreak — bye is graceful close, not a fault.
-      })
-
-      // (I5) EventSource fires onerror on every disconnect/retry tick;
-      // most are silent transients on mobile. Only escalate after N=5
-      // consecutive errors without an intervening open/message.
-      es.onerror = () => {
-        errorStreak += 1
-        if (errorStreak >= MAX_ERRORS) {
-          document.getElementById('status').textContent = '連線中斷'
-          document.getElementById('status').classList.remove('connected')
-          document.getElementById('status').classList.add('error')
-          document.getElementById('errorBox').style.display = 'block'
-        }
-      }
 
       // Navigation
       document.getElementById('prevBtn').onclick = () => sendCommand('prev')

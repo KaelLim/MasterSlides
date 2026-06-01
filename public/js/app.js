@@ -1,5 +1,5 @@
-// Aliswa slides app — standalone Bun backend, no Supabase
-// Loads via /api/docs/:id or direct URL, SSE+POST remote control
+// Slides app — Bun server backend, Drust broadcast remote control.
+// Loads via /api/docs/:id or direct URL.
 
 import { initDOM, state, dom, isMac, modKey, FONT_SCALES, STORAGE_KEYS } from '/js/slides/state.js';
 import { paginate, showPage } from './paginator.ts';
@@ -12,6 +12,7 @@ import { initSearch, openSearch, closeSearch, isSearchOpen, searchFor, nextMatch
 import { showGoToPageDialog, initGotoModal, closeGotoModal } from '/js/slides/goto.js';
 import { initLaser, toggleLaser, isLaserActive } from '/js/slides/laser.js';
 import { navigation } from '/js/slides/navigation.js';
+import { connectRoom } from './drust-broadcast.js';
 
 // ── Pagination + Navigation (pretext-based) ────────────────────
 
@@ -161,15 +162,14 @@ function exportPDF() {
   window.print();
 }
 
-// ── SSE Remote Control ─────────────────────────────────────────
+// ── Drust Broadcast Remote Control ─────────────────────────────
 
-// Module-level state for the SSE viewer stream.
-// `es` is the EventSource subscribed to /sse/viewer/:room; `esRoomId` is the
-// room id that `es` was opened with — used by the (I6) singleton/stale-roomId
-// guard in initRemote. `syncTimer` is the trailing-edge throttle handle for
-// syncRemoteState (50ms window) — see (I3).
-let es = null;
-let esRoomId = null;
+// Module-level state for the viewer's broadcast subscription.
+// `room` is the connectRoom() handle (publish + stop); `roomChannel` is the
+// Drust room name we opened it with, used by the singleton guard in
+// initRemote. `syncTimer` throttles syncRemoteState to ~20/sec.
+let room = null;
+let roomChannel = null;
 let syncTimer = null;
 
 function getCurrentPageImages() {
@@ -190,11 +190,13 @@ function getCurrentPageImages() {
   return visible;
 }
 
-// Build a snapshot of the viewer's current state for the sync POST body.
-// Server re-injects {type:"sync", ...} on the wire, so we omit "type" here.
+// Build a snapshot of the viewer's current state. Wire-shape: { type:'sync',
+// ...fields } — recipients (phones) discriminate by `type`. Viewer ignores
+// its own echo because it has no 'sync' branch.
 function buildSyncPayload() {
   const searchState = getSearchState();
   return {
+    type: 'sync',
     currentPage: state.currentPage + 1,
     totalPages: state.totalPages,
     images: getCurrentPageImages(),
@@ -205,31 +207,21 @@ function buildSyncPayload() {
   };
 }
 
-// Best-effort POST of a sync snapshot. No keepalive — the viewer never
-// sends on unload (only the phone has a beforeunload path, and even there
-// keepalive is reserved for that single case).
-async function postSync(payload) {
-  if (!state.roomId) return;
-  try {
-    await fetch(`/api/room/${state.roomId}/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch {
-    /* sync is best-effort — swallow transient errors */
-  }
+// Publish a sync to the room (best-effort).
+function publishSync() {
+  if (!room) return;
+  room.publish(buildSyncPayload());
 }
 
-// (I3) Trailing-edge throttle: coalesce calls within a 50ms window. The
-// payload is captured at FIRE TIME via buildSyncPayload() so the POST
-// always reflects the latest state, not the state at first-call time.
-// Bounds POST rate at 20/sec even during joystick pan storms.
+// Trailing-edge throttle: coalesce calls within a 50ms window. The payload
+// is captured at FIRE TIME via buildSyncPayload() so the publish always
+// reflects the latest state, not the state at first-call time. Bounds
+// publish rate at 20/sec even during joystick pan storms.
 function syncRemoteState() {
   if (syncTimer != null) return;
   syncTimer = setTimeout(() => {
     syncTimer = null;
-    postSync(buildSyncPayload());
+    publishSync();
   }, 50);
 }
 
@@ -295,7 +287,14 @@ function markRemoteConnected() {
   setTimeout(closeRemoteModal, 2000);
 }
 
-function initRemote() {
+// Drust requires room names to match ^[a-zA-Z][a-zA-Z0-9_:.-]{0,127}$ —
+// our 6-char random suffix is alphanumeric so a static 'slides-' prefix
+// satisfies the leading-letter rule.
+function drustRoomFor(roomId) {
+  return `slides-${roomId}`;
+}
+
+async function initRemote() {
   // First-time-only setup: allocate room id, wire navigation callback, modal
   // handlers. Gated on falsy state.roomId so refresh-triggered loadDocument
   // re-runs don't change the room id (QR code stays stable).
@@ -311,63 +310,36 @@ function initRemote() {
     dom.remoteModal.onclick = (e) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
   }
 
-  // (I6) Singleton + stale-roomId guard. If we already have an EventSource
-  // for the CURRENT roomId, do nothing. If state.roomId somehow changed
-  // (latent footgun), close the old one and recreate against the new room.
-  if (es != null) {
-    if (esRoomId === state.roomId) return;
-    es.close();
-    es = null;
-    esRoomId = null;
+  const channel = drustRoomFor(state.roomId);
+
+  // Singleton + stale-channel guard. If we're already on the right channel,
+  // do nothing. If state.roomId changed, tear down the old subscription.
+  if (room != null) {
+    if (roomChannel === channel) return;
+    room.stop();
+    room = null;
+    roomChannel = null;
   }
 
-  // Set esRoomId BEFORE constructing EventSource so a synchronous throw
-  // during construction doesn't leave esRoomId stale.
-  esRoomId = state.roomId;
-  es = new EventSource(`/sse/viewer/${state.roomId}`);
-
-  es.addEventListener('init', (e) => {
-    // (I2) Always warm the server's lastSync cache on init so the NEXT
-    // phone connect receives a ready-made snapshot in its own init frame.
-    // Also mitigates the server's joinedOnce bug that may skip the
-    // 'remote-joined' SSE event on phone reconnects. OUTSIDE the try so a
-    // malformed init payload can't silently suppress the mitigation.
-    postSync(buildSyncPayload());
-    try {
-      const data = JSON.parse(e.data); // { role:'viewer', room, phoneConnected }
-      // (I1) If a phone is already connected at viewer-init time, mirror
-      // the 'remote-joined' UX so the user sees the success state.
-      if (data && data.phoneConnected === true) {
-        markRemoteConnected();
+  roomChannel = channel;
+  room = await connectRoom(channel, {
+    onMessage: (msg) => {
+      if (!msg || typeof msg !== 'object') return;
+      switch (msg.type) {
+        case 'command':
+          handleRemoteCommand(msg);
+          break;
+        case 'phone-join':
+          // Phone is announcing itself (initial connect or reconnect). Mark
+          // the UI as connected and push the current snapshot so the phone
+          // catches up immediately. Bypass the throttle.
+          markRemoteConnected();
+          publishSync();
+          break;
+        // 'sync' is our own echo — ignore.
       }
-    } catch {
-      /* ignore malformed init */
-    }
+    },
   });
-
-  es.addEventListener('command', (e) => {
-    try {
-      const data = JSON.parse(e.data); // { type:'command', action, …extras }
-      handleRemoteCommand(data);
-    } catch {
-      /* ignore malformed command */
-    }
-  });
-
-  es.addEventListener('remote-joined', () => {
-    markRemoteConnected();
-    // Push the current snapshot immediately so the freshly-joined phone
-    // has state. Bypass the throttle for the same reason as 'init'.
-    postSync(buildSyncPayload());
-  });
-
-  es.addEventListener('bye', () => {
-    // Server-initiated close. Let EventSource's built-in reconnect
-    // logic run naturally; don't tear down so transient byes recover.
-  });
-
-  // No es.onerror override: EventSource auto-reconnects with backoff.
-  // The viewer has no DOM error counter — that lives on the phone (I5).
 }
 
 function openRemoteModal() {
@@ -546,11 +518,12 @@ async function loadDocument(src, { forceSync = false } = {}) {
   repaginate();
   initEventListeners();
   initRemote();
-  // After refresh, initRemote's singleton guard early-returns (same roomId),
-  // so no 'init' event fires to warm lastSync. Push the new doc's snapshot
-  // explicitly so any already-connected phone sees the new pagination/images
-  // immediately. On first load this is a redundant POST (the upcoming 'init'
-  // will also warm), but harmless — same data, server takes last writer.
+  // After refresh, initRemote's singleton guard early-returns (same channel),
+  // so no fresh subscribe happens. Push the new doc's snapshot explicitly so
+  // any already-connected phone sees the new pagination/images immediately.
+  // On first load this is redundant (the phone-join handler will publish a
+  // sync once the phone announces itself), but harmless — Drust is
+  // fire-and-forget and the next snapshot supersedes any prior.
   syncRemoteState();
   resetNavHideTimer();
 }

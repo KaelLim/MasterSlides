@@ -3,12 +3,7 @@ import { join } from "path";
 // validates DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN at module
 // load and throws if any is missing. That is the fail-fast for missing env.
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
-import {
-  handleViewerStream,
-  handlePhoneStream,
-  handleCommandPost,
-  handleSyncPost,
-} from "./routes/remote.ts";
+import { handlePublish, handleConfig } from "./routes/publish.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
@@ -117,31 +112,19 @@ const server = Bun.serve({
     const url = new URL(req.url);
     const { pathname } = url;
 
-    // SSE viewer stream: GET /sse/viewer/:room
-    if (pathname.startsWith("/sse/viewer/") && req.method === "GET") {
-      const room = pathname.slice("/sse/viewer/".length);
-      if (!room) return new Response("Missing room", { status: 400 });
-      return handleViewerStream(room, url);
+    // GET /api/config → { wsUrl } for the browser to subscribe directly to
+    // Drust's broadcast WS using the anon token (publish requires service
+    // token, which the browser never sees — it POSTs through /api/publish).
+    if (pathname === "/api/config" && req.method === "GET") {
+      return handleConfig();
     }
 
-    // SSE phone stream: GET /sse/phone/:room
-    if (pathname.startsWith("/sse/phone/") && req.method === "GET") {
-      const room = pathname.slice("/sse/phone/".length);
+    // POST /api/publish/:room → proxy to Drust broadcast (service token held
+    // server-side). Body is forwarded verbatim as the broadcast payload.
+    if (pathname.startsWith("/api/publish/") && req.method === "POST") {
+      const room = pathname.slice("/api/publish/".length);
       if (!room) return new Response("Missing room", { status: 400 });
-      return handlePhoneStream(room, url);
-    }
-
-    // POST /api/room/:room/command  (phone → viewer)
-    // POST /api/room/:room/sync     (viewer → phone)
-    if (pathname.startsWith("/api/room/") && req.method === "POST") {
-      const rest = pathname.slice("/api/room/".length);
-      const slash = rest.indexOf("/");
-      if (slash > 0) {
-        const room = rest.slice(0, slash);
-        const action = rest.slice(slash + 1);
-        if (action === "command") return handleCommandPost(room, req);
-        if (action === "sync") return handleSyncPost(room, req);
-      }
+      return handlePublish(room, req);
     }
 
     // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →

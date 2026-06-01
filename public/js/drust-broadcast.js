@@ -1,0 +1,106 @@
+// Browser-side Drust broadcast client.
+//
+// connectRoom(roomName, { onMessage, onOpen, onClose }) opens a WebSocket to
+// Drust's /realtime endpoint using the anon token (fetched once via
+// /api/config), subscribes to roomName, and dispatches each incoming
+// envelope's `.payload` to onMessage.
+//
+// publish(payload) goes through the Bun server's /api/publish/:room proxy
+// (the server holds the service token; the browser never sees it).
+//
+// Reconnects automatically with exponential backoff. Re-subscribes on each
+// reconnect. Drust broadcast is fire-and-forget — late subscribers receive
+// nothing — so callers are responsible for any rejoin handshake (e.g. phone
+// publishes 'phone-join' on open so the viewer answers with a fresh sync).
+
+let _configPromise = null;
+function getConfig() {
+  if (!_configPromise) {
+    _configPromise = fetch("/api/config")
+      .then((r) => {
+        if (!r.ok) throw new Error(`/api/config → ${r.status}`);
+        return r.json();
+      })
+      .catch((err) => {
+        // Don't memoize failures — let the next caller retry.
+        _configPromise = null;
+        throw err;
+      });
+  }
+  return _configPromise;
+}
+
+const MIN_BACKOFF_MS = 1000;
+const MAX_BACKOFF_MS = 15000;
+
+export async function connectRoom(roomName, { onMessage, onOpen, onClose } = {}) {
+  const { wsUrl } = await getConfig();
+
+  let ws = null;
+  let backoff = MIN_BACKOFF_MS;
+  let stopped = false;
+  let openTimer = null;
+
+  function open() {
+    if (stopped) return;
+    ws = new WebSocket(wsUrl);
+
+    ws.addEventListener("open", () => {
+      backoff = MIN_BACKOFF_MS;
+      // (Re-)subscribe on every open — Drust subscriptions are per-connection.
+      ws.send(JSON.stringify({ op: "subscribe", room: roomName }));
+      onOpen?.();
+    });
+
+    ws.addEventListener("message", (ev) => {
+      let env;
+      try {
+        env = JSON.parse(ev.data);
+      } catch {
+        return; // malformed frame
+      }
+      // Drust wraps payloads as { kind:'message', room, payload, ts }. Drop
+      // anything that isn't a broadcast for our room (heartbeats etc).
+      if (env && env.kind === "message" && env.room === roomName && env.payload) {
+        onMessage?.(env.payload);
+      }
+    });
+
+    ws.addEventListener("close", () => {
+      onClose?.();
+      if (stopped) return;
+      openTimer = setTimeout(open, backoff);
+      backoff = Math.min(backoff * 2, MAX_BACKOFF_MS);
+    });
+
+    // 'error' precedes 'close'; the reconnect lives in close so nothing here.
+    ws.addEventListener("error", () => {});
+  }
+
+  open();
+
+  async function publish(payload) {
+    try {
+      await fetch(`/api/publish/${roomName}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Best-effort. Reconnect logic will resync via phone-join on the next
+      // open if a publish dropped.
+    }
+  }
+
+  function stop() {
+    stopped = true;
+    if (openTimer) clearTimeout(openTimer);
+    try {
+      ws?.close();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { publish, stop };
+}
