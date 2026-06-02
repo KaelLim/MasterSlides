@@ -1,5 +1,5 @@
 import { state, dom } from './state.js';
-import { loadSettings, resetNavHideTimer, updateFullscreenButton } from './display.js';
+import { loadSettings, resetNavHideTimer } from './display.js';
 import { repaginate } from './pagination.js';
 import { convertTablesToImages } from './table-canvas.js';
 import { syncRemoteState } from './remote-control.js';
