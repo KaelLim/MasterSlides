@@ -63,7 +63,7 @@ test("me: returns user with valid cookie", async () => {
   });
   const res = await handleMe(req);
   expect(res.status).toBe(200);
-  const body = await res.json();
+  const body = (await res.json()) as { user: { email: string } };
   expect(body.user.email).toBe(TEST_EMAIL);
 });
 
