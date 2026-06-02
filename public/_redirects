@@ -1,4 +1,3 @@
-# Reserved for future static-only redirects. The Google Docs URL
-# (/document/d/<id>) is handled by functions/document/d/[[path]].ts —
-# CF Pages doesn't expand :id placeholders into query strings, so a
-# Function path is the only reliable shape.
+# /  → admin dashboard (Function functions/index.ts handles viewer
+# query strings first; this fires only for bare /).
+/    /admin/    302
