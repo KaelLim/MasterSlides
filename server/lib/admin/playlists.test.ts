@@ -8,7 +8,6 @@ import {
   handlePlaylistPatch,
   handlePlaylistDelete,
   handlePublicPlaylistGet,
-  handlePlaylistsList,
 } from "../../routes/admin";
 
 const TEST_EMAIL = `__test_pl_${Date.now()}@example.com`;
