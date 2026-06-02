@@ -1,13 +1,18 @@
 import { test, expect, beforeAll, afterAll } from "bun:test";
-import { createAdminUser, loginToDrust } from "../auth";
+import { createAdminUser, loginToDrust, type AdminUser } from "../auth";
 import { handleLogin, handleLogout, handleMe } from "../../routes/admin";
 
 const TEST_EMAIL = `__test_auth_${Date.now()}@example.com`;
 const TEST_PASSWORD = "test-password-12345";
 
+let sessionToken: string | null = null;
+
 beforeAll(async () => {
   const r = await createAdminUser(TEST_EMAIL, TEST_PASSWORD);
   if ("error" in r) throw new Error(`setup failed: ${r.error}`);
+  const login = await loginToDrust(TEST_EMAIL, TEST_PASSWORD);
+  if ("error" in login) throw new Error(`login failed: ${login.error}`);
+  sessionToken = login.token;
 });
 
 afterAll(async () => {
@@ -54,16 +59,13 @@ test("me: returns 401 without cookie", async () => {
 });
 
 test("me: returns user with valid cookie", async () => {
-  const login = await loginToDrust(TEST_EMAIL, TEST_PASSWORD);
-  if ("error" in login) throw new Error(`login failed: ${login.error}`);
-
   const req = new Request("http://localhost/api/admin/me", {
     method: "GET",
-    headers: { Cookie: `slides_admin_session=${login.token}` },
+    headers: { Cookie: `slides_admin_session=${sessionToken}` },
   });
   const res = await handleMe(req);
   expect(res.status).toBe(200);
-  const body = (await res.json()) as { user: { email: string } };
+  const body = (await res.json()) as { user: AdminUser };
   expect(body.user.email).toBe(TEST_EMAIL);
 });
 
