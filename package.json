@@ -2,7 +2,7 @@
   "name": "slides",
   "type": "module",
   "scripts": {
-    "build": "bun build public/js/app.js --outdir public/dist --bundle --format esm --external html2canvas --external qrcodejs --external '/js/slides/*'",
+    "build": "bun build public/slides/js/app.js --outfile public/slides/dist/app.js",
     "dev": "bun --watch server/index.ts",
     "start": "bun server/index.ts"
   },

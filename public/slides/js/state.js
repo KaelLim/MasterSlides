@@ -67,20 +67,3 @@ export function initDOM() {
   dom.gotoPageInput = document.getElementById('gotoPageInput');
   dom.remoteModal = document.getElementById('remoteModal');
 }
-
-// Supabase modules (lazy-loaded)
-let supabaseClient = null;
-let realtimeModule = null;
-
-export async function getSupabaseClient() {
-  if (supabaseClient) return supabaseClient;
-  const mod = await import('/js/supabase-client.js');
-  supabaseClient = await mod.getSupabase();
-  return supabaseClient;
-}
-
-export async function getRealtimeModule() {
-  if (realtimeModule) return realtimeModule;
-  realtimeModule = await import('/js/realtime.js');
-  return realtimeModule;
-}
