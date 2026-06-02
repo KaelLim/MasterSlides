@@ -1,5 +1,5 @@
 import { shimProcessEnv, type Env } from "../../../_lib/env-shim";
-import { handleDocPatch, handleDocDelete } from "../../../../server/routes/admin";
+import { handleDocPatch, handleDocDelete } from "../../../../server/lib/admin/docs";
 
 export const onRequest: PagesFunction<Env, "doc_id"> = async ({
   env,

@@ -2,7 +2,7 @@ import { shimProcessEnv, type Env } from "../../../_lib/env-shim";
 import {
   handlePlaylistsList,
   handlePlaylistCreate,
-} from "../../../../server/routes/admin";
+} from "../../../../server/lib/admin/playlists";
 
 export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
   shimProcessEnv(env);

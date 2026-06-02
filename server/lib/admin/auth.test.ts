@@ -1,6 +1,6 @@
 import { test, expect, beforeAll, afterAll } from "bun:test";
 import { createAdminUser, loginToDrust, type AdminUser } from "../auth";
-import { handleLogin, handleLogout, handleMe } from "../../routes/admin";
+import { handleLogin, handleLogout, handleMe } from "./auth";
 
 const TEST_EMAIL = `__test_auth_${Date.now()}@example.com`;
 const TEST_PASSWORD = "test-password-12345";

@@ -3,7 +3,7 @@ import {
   handlePlaylistGet,
   handlePlaylistPatch,
   handlePlaylistDelete,
-} from "../../../../server/routes/admin";
+} from "../../../../server/lib/admin/playlists";
 
 export const onRequest: PagesFunction<Env, "id"> = async ({
   env,

@@ -8,7 +8,7 @@ import {
   handlePlaylistPatch,
   handlePlaylistDelete,
   handlePublicPlaylistGet,
-} from "../../routes/admin";
+} from "./playlists";
 
 const TEST_EMAIL = `__test_pl_${Date.now()}@example.com`;
 const TEST_PASSWORD = "test-password-12345";
