@@ -12,8 +12,14 @@ export interface ConvertResult {
 // Google Docs renders as the doc's H1. Returns null if absent so callers
 // can fall back to doc_id or an explicit override.
 export function extractTitle(markdown: string): string | null {
+  let inFence = false;
   for (const raw of markdown.split("\n")) {
     const line = raw.trim();
+    if (line.startsWith("```")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
     if (!line || line.startsWith("[")) continue;
     const m = line.match(/^#\s+(.+?)\s*#*$/);
     if (m) {
