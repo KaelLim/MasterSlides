@@ -1,5 +1,5 @@
 import { state, dom } from './state.js';
-import { prevPage, nextPage, repaginate, setWritingMode, isVerticalMode } from './pagination.js';
+import { prevPage, nextPage, repaginate, setWritingMode } from './pagination.js';
 import { toggleSidebar, closeSidebar, showNav, toggleFullscreen, updateFullscreenButton, toggleNavVisibility } from './display.js';
 import { increaseFontSize, decreaseFontSize, applyFont } from './font.js';
 import { initLaser, toggleLaser } from './laser.js';
