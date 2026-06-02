@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>簡報遙控器</title>
+  <link rel="stylesheet" href="/remote/remote.css">
+</head>
+<body>
+
+  <div id="mainControls">
+    <!-- 頂部列 -->
+    <div class="top-bar">
+      <div class="page-badge">
+        <span class="current" id="currentPage">-</span>
+        <span class="sep">/</span>
+        <span class="total" id="totalPages">-</span>
+      </div>
+      <span class="status" id="status">連線中...</span>
+    </div>
+
+    <div id="errorBox" style="display: none;" class="error-message">
+      <p>無法連線到簡報</p>
+      <p>請確認簡報頁面已開啟遙控功能</p>
+    </div>
+
+    <!-- 動作按鈕 -->
+    <div class="action-row">
+      <button class="action-btn" id="toolSearch">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        搜尋
+      </button>
+      <button class="action-btn" id="toolGoto">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        跳頁
+      </button>
+    </div>
+
+    <!-- 搜尋面板 -->
+    <div class="search-panel" id="searchPanel">
+      <div class="panel-input-row">
+        <input type="text" id="remoteSearchInput" placeholder="搜尋文字...">
+        <button class="panel-btn" id="remoteSearchBtn">搜尋</button>
+      </div>
+      <div class="panel-nav" id="searchPanelNav" style="display: none;">
+        <span class="panel-nav-count" id="remoteSearchCount">0 / 0</span>
+        <button class="panel-nav-btn" id="remoteSearchPrev">▲</button>
+        <button class="panel-nav-btn" id="remoteSearchNext">▼</button>
+        <button class="panel-close-btn" id="remoteSearchClose">✕</button>
+      </div>
+    </div>
+
+    <!-- 跳頁面板 -->
+    <div class="goto-panel" id="gotoPanel">
+      <div class="panel-input-row">
+        <input type="number" id="remoteGotoInput" placeholder="頁碼..." min="1">
+        <button class="panel-btn" id="remoteGotoBtn">跳轉</button>
+      </div>
+    </div>
+
+    <!-- 圖片區域 -->
+    <div class="images-section">
+      <h2>本頁圖片</h2>
+      <div class="images-grid" id="imagesGrid">
+        <span class="empty">此頁沒有圖片</span>
+      </div>
+    </div>
+
+    <!-- 縮放控制（Lightbox 時顯示）: 左邊按鈕列 + 右邊搖桿 -->
+    <div class="zoom-controls" id="zoomControls">
+      <div class="zoom-btn-col">
+        <button class="zoom-btn" id="zoomInBtn">+</button>
+        <button class="zoom-btn" id="zoomOutBtn">−</button>
+        <button class="zoom-btn" id="zoomResetBtn">⟲</button>
+        <span class="zoom-level" id="zoomLevel">100%</span>
+      </div>
+      <div class="joystick-area">
+        <div class="joystick-base" id="joystickBase">
+          <div class="joystick-thumb" id="joystickThumb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部固定導航 -->
+  <div class="bottom-nav">
+    <button id="prevBtn">‹</button>
+    <button id="nextBtn">›</button>
+  </div>
+
+  <script type="module" src="/remote/remote.js"></script>
+</body>
+</html>
