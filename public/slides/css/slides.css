@@ -1,4 +1,4 @@
-/* Entry — imports section files in cascade order (mirrors source line order; aliswa appended to last file). */
+/* Entry — imports section files in cascade order (mirrors source line order). */
 @import "base.css";
 @import "ui-shell.css";
 @import "manuscript.css";
@@ -10,3 +10,4 @@
 @import "search.css";
 @import "print.css";
 @import "context-menu.css";
+@import "aliswa-overrides.css";
