@@ -1,0 +1,127 @@
+   左側面板（漢堡 + 頁碼）
+   =========================== */
+.left-panel {
+  width: var(--left-panel-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.hamburger-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  margin-bottom: 30px;
+}
+
+.hamburger-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.hamburger-btn.active {
+  z-index: 10001;
+}
+
+.hamburger-btn span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Refresh / sync button — mirrors hamburger-btn visual treatment. Re-runs
+ * loadDocument on the original src so Google Docs URLs re-sync from upstream. */
+.refresh-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 30px;
+  transition: background 0.15s;
+}
+
+.refresh-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.refresh-btn.refreshing {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.refresh-btn.refreshing svg {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.page-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 16px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.page-indicator .current {
+  font-size: 42px;
+  font-weight: bold;
+  color: var(--color-secondary);
+  line-height: 1;
+}
+
+.page-indicator .separator {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 6px 0;
+  font-weight: normal;
+}
+
+.page-indicator .total {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1;
+}
+
+/* ===========================

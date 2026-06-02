@@ -1,0 +1,158 @@
+/* ===========================
+   Lightbox
+   =========================== */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 20000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  cursor: pointer;
+  padding: 60px;
+}
+
+.lightbox.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 圖文容器 - 直式模式（預設） */
+.lightbox-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 30px;
+  width: 100vw;
+  height: 80vh;
+}
+
+/* 橫式模式 */
+body.horizontal-mode .lightbox-content {
+  flex-direction: row;
+}
+
+.lightbox-image-wrap {
+  flex: 1 1 70%;
+  max-width: 70%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 無 caption 時圖片可擴展 */
+.lightbox-content:has(.lightbox-caption:empty) .lightbox-image-wrap {
+  max-width: 100%;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.1s ease-out;
+}
+
+.lightbox img:active {
+  cursor: grabbing;
+}
+
+.lightbox-caption {
+  flex: 0 0 30%;
+  color: white;
+  font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
+  line-height: 1.8;
+  letter-spacing: 0.1em;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.lightbox-caption:empty {
+  display: none;
+}
+
+/* 橫式模式文字 */
+body.horizontal-mode .lightbox-caption {
+  writing-mode: horizontal-tb;
+}
+
+.lightbox-controls {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.lightbox-controls button {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.lightbox-zoom-info {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: white;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.lightbox-zoom-info.show {
+  opacity: 1;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 40px;
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.lightbox-close:hover {
+  opacity: 1;
+}
+
+/* 讓內容圖片可點擊 */
+.manuscript img {
+  cursor: zoom-in;
+}
+
+/* 載入訊息 */
+.loading-message {
+  font-size: 32px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 100px;
+}
+

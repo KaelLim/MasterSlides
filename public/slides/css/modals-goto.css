@@ -1,0 +1,273 @@
+/* ===========================
+   Go-to-page Modal
+   =========================== */
+.goto-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 30000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+.goto-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+.goto-modal * {
+  writing-mode: horizontal-tb;
+}
+.goto-modal-close {
+  position: absolute;
+  top: 20px; right: 30px;
+  font-size: 40px;
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.goto-modal-close:hover { opacity: 1; }
+
+.goto-content {
+  width: 90%;
+  max-width: 50%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: max-width 0.2s;
+}
+.goto-content.grid-mode {
+  /* Fill nearly the whole viewport in grid mode so 3 columns of
+     content-area-aspect thumbnails get as much canvas as possible. */
+  max-width: 95%;
+}
+
+.goto-input-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+.goto-input-wrap input {
+  flex: 1;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 24px;
+  font-family: inherit;
+  outline: none;
+  text-align: center;
+}
+.goto-input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
+.goto-input-wrap input:focus { border-color: #5FCFC3; box-shadow: 0 0 0 3px rgba(95,207,195,0.2); }
+.goto-input-wrap button {
+  height: 56px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 8px;
+  background: #5FCFC3;
+  color: #1a1a2e;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.goto-input-wrap button:hover { background: #7EDDD3; }
+
+.goto-toc {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.goto-toc-title {
+  color: #FFD700;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.goto-toc-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+  gap: 14px;
+}
+.goto-toc-item:hover { background: rgba(255,255,255,0.08); }
+.goto-toc-item .toc-page {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(95,207,195,0.15);
+  color: #5FCFC3;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.goto-toc-item .toc-text {
+  flex: 1;
+  color: #E8E8E8;
+  font-size: 24px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.goto-toc-item[data-level="1"] .toc-text { font-size: 28px; font-weight: 600; color: #fff; }
+.goto-toc-item[data-level="2"] .toc-text { padding-left: 16px; }
+.goto-toc-item[data-level="3"] .toc-text { padding-left: 32px; font-size: 22px; color: rgba(255,255,255,0.7); }
+.goto-toc-empty {
+  color: rgba(255,255,255,0.4);
+  font-size: 20px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ===========================
+   Go-to-page Tabs
+   =========================== */
+.goto-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 4px;
+}
+.goto-tab {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.goto-tab:hover {
+  color: rgba(255,255,255,0.8);
+}
+.goto-tab.active {
+  background: rgba(95,207,195,0.2);
+  color: #5FCFC3;
+}
+
+.goto-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.goto-panel-hidden {
+  display: none;
+}
+
+/* ===========================
+   Grid Overview
+   =========================== */
+.goto-grid {
+  display: grid;
+  /* 3 columns per row, PowerPoint-like — larger thumbnails for older readers. */
+  grid-template-columns: repeat(3, 1fr);
+  /* Rows take their content's natural height. Without this, the grid is
+     inside a flex container with `min-height: 0` and rows would compress
+     to 0 even when items declare `aspect-ratio`. */
+  grid-auto-rows: max-content;
+  gap: 20px;
+  align-items: start;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+}
+.goto-grid-item {
+  /* JS sets `aspect-ratio` per-item to match the live content-area's
+     aspect, so the thumbnail mirrors what the user actually sees on
+     screen. CSS aspect-ratio: 1 / 1 here is a safe fallback that
+     prevents rows from collapsing to 0 before JS runs. */
+  aspect-ratio: 1 / 1;
+}
+.goto-grid-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.1);
+  transition: border-color 0.15s, transform 0.15s;
+  background: rgba(0,0,0,0.4);
+}
+.goto-grid-item:hover {
+  border-color: rgba(95,207,195,0.5);
+  transform: scale(1.03);
+}
+.goto-grid-item.current {
+  border-color: #5FCFC3;
+  box-shadow: 0 0 0 2px rgba(95,207,195,0.3);
+}
+.goto-grid-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Mirrors .print-page-bg — paints the theme background and applies the
+ * content-area padding (60/80) so the inner clip equals the live
+ * manuscript-container size. */
+.goto-preview-bg {
+  width: 100%;
+  height: 100%;
+  background-image: url('../theme/default/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #1a1a2e;
+  padding: 60px 80px;
+  box-sizing: border-box;
+}
+/* Mirrors .print-page-clip — restores the container-type:size chain so
+ * cqw/cqh and percent units inside the slide-page clone behave like the
+ * live render. */
+.goto-preview-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  container-type: size;
+}
+.goto-modal .goto-grid-preview * {
+  writing-mode: inherit;
+}
+.goto-grid-page {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  background: rgba(0,0,0,0.75);
+  color: #5FCFC3;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  z-index: 1;
+}
+

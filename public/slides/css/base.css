@@ -1,0 +1,52 @@
+/* ===========================
+   CSS Variables
+   =========================== */
+:root {
+  --color-primary: #5FCFC3;
+  --color-primary-light: #7EDDD3;
+  --color-secondary: #FFD700;
+  --color-accent: #FF8C00;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #E8E8E8;
+  --font-family-body: "DFKai-SB", "BiauKai", "標楷體", serif;
+  --font-scale: 1;
+  --mode-scale: 1.6;  /* 直式 +60% */
+  --left-panel-width: 100px;
+}
+
+body.horizontal-mode {
+  --mode-scale: 0.8;  /* 橫式 -20% */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+body {
+  font-family: var(--font-family-body);
+  color: var(--color-text-primary);
+  background: #1a1a2e;
+}
+
+/* ===========================
+   主要 Flex 布局
+   =========================== */
+.app-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('../theme/default/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ===========================

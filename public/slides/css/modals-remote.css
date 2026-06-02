@@ -1,0 +1,83 @@
+/* ===========================
+   遙控 Modal
+   =========================== */
+.remote-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 30000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.remote-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.remote-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 40px;
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.remote-modal-close:hover {
+  opacity: 1;
+}
+
+.remote-modal * {
+  writing-mode: horizontal-tb;
+}
+
+.remote-modal h2 {
+  color: #5FCFC3;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.remote-modal p {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+#qrcode {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.remote-url {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #5FCFC3;
+  word-break: break-all;
+  max-width: 90%;
+  text-align: center;
+}
+
+.remote-status {
+  margin-top: 20px;
+  color: #888;
+  font-size: 14px;
+}
+
+.remote-status.connected {
+  color: #4CAF50;
+}
+
