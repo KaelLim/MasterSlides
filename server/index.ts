@@ -114,13 +114,21 @@ const server = Bun.serve({
     const adminRes = await handleAdminRoute(req, url);
     if (adminRes) return adminRes;
 
+    // / smart router — viewer query → /slides/; otherwise admin.
+    if (pathname === "/" && req.method === "GET") {
+      if (url.searchParams.has("src") || url.searchParams.has("playlist")) {
+        return Response.redirect(`/slides/${url.search}`, 302);
+      }
+      return Response.redirect("/admin/", 302);
+    }
+
     // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →
-    // redirect to the clean short form /?src=<doc_id>. The frontend's
+    // redirect to the clean short form /slides/?src=<doc_id>. The frontend's
     // loadDocument auto-syncs from Google on cache miss, so first-time visits
     // still work; subsequent visits read from Drust cache.
     const docMatch = pathname.match(/^\/document\/d\/([a-zA-Z0-9_-]+)/);
     if (docMatch) {
-      return Response.redirect(`/?src=${docMatch[1]}`, 302);
+      return Response.redirect(`/slides/?src=${docMatch[1]}`, 302);
     }
 
     // API: POST /api/fetch-doc
