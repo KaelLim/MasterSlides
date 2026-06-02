@@ -1,8 +1,14 @@
-// Register happy-dom BEFORE bun:test so the helpers can operate on real DOM
-// elements in the unit tests. Scoped to this file so storage/drust tests still
-// see Bun's native fetch.
+// Register happy-dom for DOM helpers (document.createElement etc.) used by
+// paginator tests. happy-dom's `register()` also replaces `globalThis.fetch`
+// with a Same-Origin-Policy-enforcing version — that breaks the live-Drust
+// tests in server/ when `bun test` runs the whole suite (they share a single
+// JS context). Capture Bun's native fetch first, then restore it immediately
+// after registering — happy-dom's DOM stays in place, only its CORS-enforcing
+// fetch is rolled back.
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
+const nativeFetch = globalThis.fetch;
 GlobalRegistrator.register();
+globalThis.fetch = nativeFetch;
 
 import { test, expect } from 'bun:test';
 import { overflows, splitTextInPlace } from './paginator';
