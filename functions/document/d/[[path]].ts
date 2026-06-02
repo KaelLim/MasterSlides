@@ -1,5 +1,5 @@
 // Redirect helper: pasted Google Docs URLs land here. /document/d/<id>(/...)
-// becomes /?src=<id>.
+// becomes /slides/?src=<id>.
 //
 // We had this as a _redirects rule, but CF Pages doesn't expand
 // :placeholder substitutions when the source matched a query string or
@@ -18,6 +18,6 @@ export const onRequest: PagesFunction<unknown, "path"> = ({ params }) => {
   // the response so we don't have to reconstruct the origin.
   return new Response(null, {
     status: 302,
-    headers: { Location: `/?src=${encodeURIComponent(id)}` },
+    headers: { Location: `/slides/?src=${encodeURIComponent(id)}` },
   });
 };

@@ -90,7 +90,7 @@ async function onAction(e) {
 
   if (action === "play") {
     if (p && p.doc_ids.length > 0) {
-      window.open(`/?playlist=${id}`, "_blank");
+      window.open(`/slides/?playlist=${id}`, "_blank");
     } else {
       alert("這個 Playlist 還沒有加入任何文件。");
     }

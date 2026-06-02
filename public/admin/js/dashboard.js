@@ -98,7 +98,7 @@ async function onRowAction(e) {
   const action = target.dataset.action;
 
   if (action === "view") {
-    window.open(`/?src=${encodeURIComponent(docId)}`, "_blank");
+    window.open(`/slides/?src=${encodeURIComponent(docId)}`, "_blank");
     return;
   }
   if (action === "toggle") {
