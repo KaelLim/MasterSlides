@@ -1,10 +1,4 @@
 // /admin/playlists — list playlists + actions.
-import { requireAuth, logout } from "/admin/js/auth-check.js";
-
-const user = await requireAuth();
-document.getElementById("userEmail").textContent = user.email;
-document.getElementById("logoutBtn").addEventListener("click", () => logout());
-
 const contentEl = document.getElementById("content");
 const countEl = document.getElementById("count");
 

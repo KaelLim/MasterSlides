@@ -1,11 +1,5 @@
 // /admin/playlist-edit — create or edit a playlist.
 // URL: ?id=<n> → edit; no id → new.
-import { requireAuth, logout } from "/admin/js/auth-check.js";
-
-const user = await requireAuth();
-document.getElementById("userEmail").textContent = user.email;
-document.getElementById("logoutBtn").addEventListener("click", () => logout());
-
 const params = new URLSearchParams(location.search);
 const playlistId = params.get("id") ? Number(params.get("id")) : null;
 

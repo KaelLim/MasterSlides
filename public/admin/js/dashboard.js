@@ -1,10 +1,4 @@
 // /admin dashboard — docs list + actions.
-import { requireAuth, logout } from "/admin/js/auth-check.js";
-
-const user = await requireAuth();
-document.getElementById("userEmail").textContent = user.email;
-document.getElementById("logoutBtn").addEventListener("click", () => logout());
-
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
 

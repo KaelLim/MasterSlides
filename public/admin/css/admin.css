@@ -32,18 +32,6 @@ a:hover { text-decoration: underline; }
 }
 .topbar nav a:hover { background: #2a3a52; color: #cdd6e2; }
 .topbar nav a.active { color: #e3e8ee; background: #2a3a52; }
-.topbar .user { color: #8a9aae; font-size: 13px; }
-.topbar .user .email { color: #cdd6e2; margin-right: 12px; }
-.topbar .user button {
-  background: transparent;
-  border: 1px solid #3a4a62;
-  color: #cdd6e2;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.topbar .user button:hover { background: #2a3a52; }
 
 /* ── Main area ──────────────────────────────────────── */
 main { max-width: 1200px; margin: 0 auto; padding: 32px 28px; }
