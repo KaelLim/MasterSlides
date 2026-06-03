@@ -57,6 +57,16 @@ export function initEventListeners() {
 
   let resizeTimer;
   window.addEventListener('resize', () => {
+    // Skip when a child element (e.g. a YouTube iframe) is fullscreen.
+    // repaginate rebuilds manuscript.innerHTML, detaching the fullscreen
+    // element and force-exiting fullscreen. Whole-app fullscreen
+    // (documentElement) survives a rebuild so it's still allowed through.
+    if (
+      document.fullscreenElement &&
+      document.fullscreenElement !== document.documentElement
+    ) {
+      return;
+    }
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { repaginate(); }, 200);
   });
