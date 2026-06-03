@@ -99,3 +99,53 @@ test('paginate is exported', async () => {
   expect(typeof mod.paginate).toBe('function');
   expect(typeof mod.showPage).toBe('function');
 });
+
+// ── Video embed page-claim ───────────────────────────────────────
+// `overflows()` reads scrollWidth/scrollHeight which happy-dom leaves at 0
+// — so without measurement stubs, no text overflow ever triggers. That's
+// fine here: the video-embed branch creates pages by class detection, not
+// by measurement, so we can verify it deterministically.
+
+test('paginate gives .video-embed its own page (break before + after)', async () => {
+  const { paginate } = await import('./paginator');
+  const article = document.createElement('article');
+  article.innerHTML =
+    '<p>before</p>' +
+    '<div class="video-embed" data-provider="youtube"><iframe src="x"></iframe></div>' +
+    '<p>after</p>';
+  const manuscript = document.createElement('div');
+  const pages = paginate(article, manuscript, 'horizontal-tb');
+
+  expect(pages.length).toBe(3);
+  expect(pages[0].textContent).toContain('before');
+  expect(pages[1].classList.contains('video-page')).toBe(true);
+  expect(pages[1].querySelector('.video-embed')).not.toBeNull();
+  expect(pages[2].textContent).toContain('after');
+});
+
+test('paginate handles trailing video (no empty dangling page)', async () => {
+  const { paginate } = await import('./paginator');
+  const article = document.createElement('article');
+  article.innerHTML =
+    '<p>before</p>' +
+    '<div class="video-embed" data-provider="youtube"><iframe src="x"></iframe></div>';
+  const manuscript = document.createElement('div');
+  const pages = paginate(article, manuscript, 'horizontal-tb');
+
+  expect(pages.length).toBe(2);
+  expect(pages[0].textContent).toContain('before');
+  expect(pages[1].classList.contains('video-page')).toBe(true);
+});
+
+test('paginate forces horizontal writing-mode on video page even in 直書', async () => {
+  const { paginate } = await import('./paginator');
+  const article = document.createElement('article');
+  article.innerHTML =
+    '<div class="video-embed" data-provider="youtube"><iframe src="x"></iframe></div>';
+  const manuscript = document.createElement('div');
+  const pages = paginate(article, manuscript, 'vertical-rl');
+
+  expect(pages.length).toBe(1);
+  expect(pages[0].style.writingMode).toBe('horizontal-tb');
+  expect(pages[0].classList.contains('video-page')).toBe(true);
+});

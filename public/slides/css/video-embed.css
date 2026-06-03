@@ -1,19 +1,35 @@
 /* ===========================
    Video embeds (YouTube / Google Drive mp4)
    convert.ts:transformVideoEmbeds wraps single-link paragraphs into
-   `.video-embed > iframe + .video-fallback`. The iframe sits in a
-   16:9 box; the fallback link only surfaces in print where iframes
-   don't render.
+   `.video-embed > iframe + .video-fallback`. The paginator gives each
+   embed its own slide-page (paginator.ts:isVideoEmbed) and tags that
+   page with `.video-page`; CSS below makes the embed fill the page.
    =========================== */
 
+/* Page-claiming layout: a slide page that contains a video centers it
+ * via flex, with breathing room on all sides. The paginator already
+ * sets `writing-mode: horizontal-tb` inline on the page so the inner
+ * iframe renders as a regular landscape rectangle even in 直書 mode. */
+.slide-page.video-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
 .video-embed {
-  /* Reset vertical writing — iframe contents must be horizontal. */
+  /* Reset writing — iframe contents must be horizontal. */
   writing-mode: horizontal-tb;
   position: relative;
+  /* Largest 16:9 box that fits in the slide-page content area. With
+   * aspect-ratio + max-height, the browser shrinks width to maintain
+   * the ratio when height is the binding constraint. */
   width: 100%;
-  max-width: 960px;
-  margin: 24px auto;
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 16 / 9;
+  margin: 0;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
@@ -33,16 +49,14 @@
   display: none;
 }
 
-/* Horizontal-mode pages are narrower in our layout — let the embed
- * stretch to a more generous fraction of the slide. */
-body.horizontal-mode .video-embed {
-  max-width: 80%;
-}
-
 @media print {
   /* iframes don't render reliably across browsers/PDF engines. Hide the
    * player and surface the source URL so a printed slide still tells the
    * reader where to watch. */
+  .slide-page.video-page {
+    display: block;  /* flex centering wastes paper; left-align the text. */
+    padding: 60px 80px;
+  }
   .video-embed {
     aspect-ratio: auto;
     background: none;
@@ -50,6 +64,7 @@ body.horizontal-mode .video-embed {
     padding: 24px;
     text-align: center;
     box-shadow: none;
+    height: auto;
   }
   .video-embed iframe {
     display: none;

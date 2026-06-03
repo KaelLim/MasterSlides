@@ -108,6 +108,13 @@ function forcesBreakBefore(el: HTMLElement): boolean {
   return el.tagName === 'H1' || el.tagName === 'H2';
 }
 
+// Iframe embeds (YouTube / Google Drive) — emitted by convert.ts as
+// `<div class="video-embed">…<iframe>…</iframe>…</div>`. Treated as a
+// page-claiming block: break before, fill the page, break after.
+function isVideoEmbed(el: HTMLElement): boolean {
+  return el.tagName === 'DIV' && el.classList.contains('video-embed');
+}
+
 function isTextElement(el: HTMLElement): boolean {
   return ['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'BLOCKQUOTE'].includes(el.tagName);
 }
@@ -184,12 +191,37 @@ export function paginate(
   // would otherwise persist and push the entire slide-page model off-screen.
   manuscript.style.transform = '';
   let current = createSlidePage(manuscript, writingMode);
+  // When set, the *next* element starts on a fresh page. Avoids dangling
+  // empty pages when the page-claiming element is the very last in the
+  // queue (e.g. a video at the end of the document).
+  let pendingBreakAfter = false;
 
   while (queue.length > 0) {
     const el = queue.shift()!;
 
+    if (pendingBreakAfter) {
+      current = createSlidePage(manuscript, writingMode);
+      pendingBreakAfter = false;
+    }
+
     if (el.tagName === 'HR') {
       current = createSlidePage(manuscript, writingMode);
+      continue;
+    }
+
+    if (isVideoEmbed(el)) {
+      // Break before if current page already has content.
+      if (current.children.length > 0) {
+        current = createSlidePage(manuscript, writingMode);
+      }
+      // Override writing-mode to horizontal regardless of viewer setting —
+      // iframe content must not be rotated. Page-level CSS (.video-page)
+      // then flex-centers the embed.
+      current.classList.add('video-page');
+      current.style.writingMode = 'horizontal-tb';
+      current.style.textOrientation = '';
+      current.appendChild(el);
+      pendingBreakAfter = true;
       continue;
     }
 
