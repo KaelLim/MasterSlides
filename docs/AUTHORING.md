@@ -169,6 +169,41 @@ Google Docs **文件名稱**（畫面最上方那個檔名欄位）本身就等�
 
 ---
 
+## 8.5 影片嵌入（YouTube / Google Drive）
+
+把 **YouTube 或 Google Drive mp4** 的網址**單獨放在一行**並 Enter，簡報轉換時會自動變成內嵌播放器（iframe，16:9 響應式）。網址前後若有其他文字（例如「觀看 [這個影片](...) 來理解。」），就只是普通連結，不會變成播放器。
+
+### 支援的網址形式
+
+| 來源 | 接受的形式 |
+|---|---|
+| YouTube | `youtu.be/<id>`、`youtube.com/watch?v=<id>`、`youtube.com/shorts/<id>`、`youtube.com/embed/<id>`、`youtube.com/live/<id>` |
+| Google Drive 影片 | `drive.google.com/file/d/<id>/view`、`drive.google.com/open?id=<id>` |
+
+### Google Docs 操作（最少摩擦）
+
+1. 在文件裡新起一段，貼上網址 → Enter → 留空白段
+2. 不要在同一行加其他文字
+
+範例：
+
+```
+這是上一段內容。
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+下一段繼續講解。
+```
+
+### 注意事項
+
+- **YouTube 不公開影片**：請設為「公開」或「擁有連結者可觀看」，否則 iframe 是空黑框
+- **Google Drive 影片**：分享權限同樣要設成「擁有連結者可檢視」。Drive 沒有公開 mp4 直連——系統會用 `/file/d/<id>/preview` 開 Drive 的內建播放器
+- **PDF 匯出**：iframe 印不出來，會自動退回「📹 影片連結 + 原網址」做為紙本可閱讀的退路
+- **不要在影片網址旁加 markdown 樣式**（粗體、引文、清單等）會破壞偵測
+
+---
+
 ## 9. 區塊引用 / 強調段落
 
 ```markdown

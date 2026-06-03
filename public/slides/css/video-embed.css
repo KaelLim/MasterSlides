@@ -1,0 +1,68 @@
+/* ===========================
+   Video embeds (YouTube / Google Drive mp4)
+   convert.ts:transformVideoEmbeds wraps single-link paragraphs into
+   `.video-embed > iframe + .video-fallback`. The iframe sits in a
+   16:9 box; the fallback link only surfaces in print where iframes
+   don't render.
+   =========================== */
+
+.video-embed {
+  /* Reset vertical writing — iframe contents must be horizontal. */
+  writing-mode: horizontal-tb;
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  margin: 24px auto;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-embed .video-fallback {
+  /* Hidden on screen — only revealed by the print stylesheet below. */
+  display: none;
+}
+
+/* Horizontal-mode pages are narrower in our layout — let the embed
+ * stretch to a more generous fraction of the slide. */
+body.horizontal-mode .video-embed {
+  max-width: 80%;
+}
+
+@media print {
+  /* iframes don't render reliably across browsers/PDF engines. Hide the
+   * player and surface the source URL so a printed slide still tells the
+   * reader where to watch. */
+  .video-embed {
+    aspect-ratio: auto;
+    background: none;
+    border: 1px solid #999;
+    padding: 24px;
+    text-align: center;
+    box-shadow: none;
+  }
+  .video-embed iframe {
+    display: none;
+  }
+  .video-embed .video-fallback {
+    display: inline-block;
+    color: #1a1a2e;
+    word-break: break-all;
+    text-decoration: underline;
+  }
+  .video-embed::before {
+    content: "📹 影片連結 ";
+    color: #555;
+    margin-right: 6px;
+  }
+}

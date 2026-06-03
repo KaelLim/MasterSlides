@@ -87,13 +87,66 @@ function cleanImageStyles(html: string): string {
   return html.replace(/<img([^>]*)\s+style="[^"]*"([^>]*)>/gi, "<img$1$2>");
 }
 
+// ── Video embeds ────────────────────────────────────────────────────────
+// Single-link-per-paragraph YouTube/Drive URLs become responsive iframes.
+// A URL surrounded by other text in the same paragraph stays a clickable
+// link — Notion/Obsidian-style heuristic.
+
+export function extractYouTubeId(url: string): string | null {
+  // youtu.be/<id>, youtube.com/{watch?v=, embed/, shorts/, live/}<id>.
+  // Video IDs are exactly 11 chars from [A-Za-z0-9_-].
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:[^"\s]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})\b/,
+  );
+  return m ? m[1] : null;
+}
+
+export function extractDriveId(url: string): string | null {
+  let m = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/);
+  if (m) return m[1];
+  m = url.match(/drive\.google\.com\/(?:open|uc)\?(?:[^"\s]*&)?id=([A-Za-z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+
+// Replace `<p><a href="…">…</a></p>` where the <a> is the paragraph's only
+// content. Inline links (text + link + more text) are left alone.
+export function transformVideoEmbeds(html: string): string {
+  return html.replace(
+    /<p>\s*<a\s+href="([^"]+)"(?:\s+[^>]*)?>([^<]*)<\/a>\s*<\/p>/g,
+    (whole, href: string) => {
+      const yt = extractYouTubeId(href);
+      if (yt) {
+        return (
+          `<div class="video-embed" data-provider="youtube">` +
+          `<iframe src="https://www.youtube.com/embed/${yt}" loading="lazy" ` +
+          `allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ` +
+          `allowfullscreen></iframe>` +
+          `<a class="video-fallback" href="${href}" target="_blank" rel="noopener">${href}</a>` +
+          `</div>`
+        );
+      }
+      const drv = extractDriveId(href);
+      if (drv) {
+        return (
+          `<div class="video-embed" data-provider="drive">` +
+          `<iframe src="https://drive.google.com/file/d/${drv}/preview" loading="lazy" allowfullscreen></iframe>` +
+          `<a class="video-fallback" href="${href}" target="_blank" rel="noopener">${href}</a>` +
+          `</div>`
+        );
+      }
+      return whole;
+    },
+  );
+}
+
 export async function convertDocument(markdown: string): Promise<ConvertResult> {
   const title = extractTitle(markdown);
   const { markdown: processed, imageCount, imageIds } = await processImages(markdown);
 
   marked.setOptions({ breaks: true, gfm: true });
   const rawHtml = marked.parse(processed) as string;
-  const cleanHtml = cleanImageStyles(rawHtml);
+  const withVideos = transformVideoEmbeds(rawHtml);
+  const cleanHtml = cleanImageStyles(withVideos);
   const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
 
   return { html, imageCount, imageIds, title };
