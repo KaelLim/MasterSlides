@@ -1,4 +1,3 @@
-import { jsonResponse } from "../auth";
 import {
   deletePlaylist,
   findPlaylist,
@@ -6,9 +5,21 @@ import {
   listAllPlaylists,
   updatePlaylist,
 } from "../drust";
-import { readBody, requireAuth } from "./auth";
 
-// ── Playlists (auth required) ────────────────────────────────────
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function readBody(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    return (await req.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 function parsePlaylistId(s: string): number | null {
   if (!/^\d+$/.test(s)) return null;
@@ -28,17 +39,13 @@ function sanitizeDocIds(input: unknown): string[] | null {
 }
 
 // GET /api/admin/playlists → { playlists: [...] }
-export async function handlePlaylistsList(req: Request): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
+export async function handlePlaylistsList(_req: Request): Promise<Response> {
   const playlists = await listAllPlaylists();
   return jsonResponse({ playlists });
 }
 
 // POST /api/admin/playlists  { title, doc_ids[], is_public? }
 export async function handlePlaylistCreate(req: Request): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
   const body = await readBody(req);
   if (!body) return jsonResponse({ error: "bad-body" }, 400);
 
@@ -59,10 +66,8 @@ export async function handlePlaylistCreate(req: Request): Promise<Response> {
 // GET /api/admin/playlists/:id → { playlist }
 export async function handlePlaylistGet(
   idParam: string,
-  req: Request,
+  _req: Request,
 ): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
   const id = parsePlaylistId(idParam);
   if (id === null) return jsonResponse({ error: "bad-id" }, 400);
   const playlist = await findPlaylist(id);
@@ -75,8 +80,6 @@ export async function handlePlaylistPatch(
   idParam: string,
   req: Request,
 ): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
   const id = parsePlaylistId(idParam);
   if (id === null) return jsonResponse({ error: "bad-id" }, 400);
 
@@ -111,10 +114,8 @@ export async function handlePlaylistPatch(
 // DELETE /api/admin/playlists/:id → 204
 export async function handlePlaylistDelete(
   idParam: string,
-  req: Request,
+  _req: Request,
 ): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
   const id = parsePlaylistId(idParam);
   if (id === null) return jsonResponse({ error: "bad-id" }, 400);
   const existing = await findPlaylist(id);
@@ -123,9 +124,8 @@ export async function handlePlaylistDelete(
   return new Response(null, { status: 204 });
 }
 
-// GET /api/playlists/:id → { playlist } — public (no auth) so the viewer
-// can load a playlist. Drafts are returned too; the slides viewer doesn't
-// list them anywhere, just plays them.
+// GET /api/playlists/:id → { playlist } — viewer endpoint (drafts included
+// so the slides viewer can play them by id even if not listed publicly).
 export async function handlePublicPlaylistGet(idParam: string): Promise<Response> {
   const id = parsePlaylistId(idParam);
   if (id === null) return jsonResponse({ error: "bad-id" }, 400);

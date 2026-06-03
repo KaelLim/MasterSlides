@@ -2,12 +2,17 @@
 // secrets via the per-request `context.env`; the Function entrypoint
 // shims globalThis.process so this code path works there too. Bun reads
 // directly from its native process.env.
+//
+// Auth: anon token. Drust enforces what anon can do per-collection via
+// `anon_caps` (must include select/insert/update/delete on `docs` and
+// `playlists`). Service token only flows through routes/publish.ts for
+// broadcast publish — never via drust.ts.
 function drustConfig(): { tenantBase: string; auth: { Authorization: string } } {
   const base = process.env.DRUST_BASE_URL;
   const tenant = process.env.DRUST_TENANT_ID;
-  const token = process.env.DRUST_SERVICE_TOKEN;
+  const token = process.env.DRUST_ANON_TOKEN;
   if (!base || !tenant || !token) {
-    throw new Error("DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN must be set");
+    throw new Error("DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_ANON_TOKEN must be set");
   }
   return {
     tenantBase: `${base}/drust/t/${tenant}`,

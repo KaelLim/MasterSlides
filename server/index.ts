@@ -1,7 +1,7 @@
 import { join } from "path";
-// Importing `./routes/docs.ts` transitively loads `./lib/drust.ts`, which
-// validates DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_SERVICE_TOKEN at module
-// load and throws if any is missing. That is the fail-fast for missing env.
+// `./lib/drust.ts` validates DRUST_BASE_URL / DRUST_TENANT_ID / DRUST_ANON_TOKEN
+// at first call; `./routes/publish.ts` additionally requires DRUST_SERVICE_TOKEN.
+// First request that hits each path surfaces the missing-env error.
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
 import { handlePublish, handleConfig } from "./routes/publish.ts";
 import { handleAdminRoute } from "./routes/admin/index.ts";
@@ -65,8 +65,7 @@ async function serveStatic(pathname: string): Promise<Response> {
 
   // Everything else → public/ directory (single source for static assets).
   // Mirror CF Pages' clean-URL behaviour: bare directory falls back to
-  // index.html; extensionless paths try .html. Keeps `/admin/login` and
-  // `/admin/` resolving the same way locally as on production.
+  // index.html; extensionless paths try .html — matches production.
   const candidates: string[] = [];
   if (pathname === "/") {
     candidates.push(join(PUBLIC_DIR, "index.html"));

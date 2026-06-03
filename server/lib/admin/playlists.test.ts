@@ -1,5 +1,4 @@
-import { test, expect, beforeAll, afterAll } from "bun:test";
-import { createAdminUser, loginToDrust } from "../auth";
+import { test, expect, afterAll } from "bun:test";
 import { deletePlaylist, listAllPlaylists } from "../drust";
 import type { PlaylistRecord } from "../drust";
 import {
@@ -10,17 +9,6 @@ import {
   handlePublicPlaylistGet,
 } from "./playlists";
 
-const TEST_EMAIL = `__test_pl_${Date.now()}@example.com`;
-const TEST_PASSWORD = "test-password-12345";
-let cookieToken = "";
-
-beforeAll(async () => {
-  await createAdminUser(TEST_EMAIL, TEST_PASSWORD);
-  const r = await loginToDrust(TEST_EMAIL, TEST_PASSWORD);
-  if ("error" in r) throw new Error(`login failed: ${r.error}`);
-  cookieToken = r.token;
-});
-
 afterAll(async () => {
   const all = await listAllPlaylists();
   for (const p of all) {
@@ -28,23 +16,13 @@ afterAll(async () => {
   }
 });
 
-function req(method: string, path: string, body?: object, auth = true): Request {
+function req(method: string, path: string, body?: object): Request {
   return new Request(`http://localhost${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(auth ? { Cookie: `slides_admin_session=${cookieToken}` } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
 }
-
-test("create: 401 without auth cookie", async () => {
-  const res = await handlePlaylistCreate(
-    req("POST", "/api/admin/playlists", { title: "__test_pl_x", doc_ids: [] }, false),
-  );
-  expect(res.status).toBe(401);
-});
 
 test("create + get: round-trips title, doc_ids, is_public", async () => {
   const createRes = await handlePlaylistCreate(

@@ -1,4 +1,3 @@
-import { jsonResponse } from "../auth";
 import {
   deleteDoc,
   deleteImage,
@@ -6,12 +5,24 @@ import {
   listAllDocs,
   updateDoc,
 } from "../drust";
-import { readBody, requireAuth } from "./auth";
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function readBody(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    return (await req.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 // GET /api/admin/docs → { docs: [...] } (all docs, created_at desc)
-export async function handleDocsList(req: Request): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
+export async function handleDocsList(_req: Request): Promise<Response> {
   const docs = await listAllDocs();
   // html is big; admin list doesn't need it. Strip on the way out.
   const slim = docs.map(({ html: _html, ...rest }) => rest);
@@ -23,9 +34,6 @@ export async function handleDocPatch(
   docIdParam: string,
   req: Request,
 ): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
-
   const body = await readBody(req);
   if (!body) return jsonResponse({ error: "bad-body" }, 400);
 
@@ -49,11 +57,8 @@ export async function handleDocPatch(
 // DELETE /api/admin/docs/:doc_id → 204, reclaims all associated images
 export async function handleDocDelete(
   docIdParam: string,
-  req: Request,
+  _req: Request,
 ): Promise<Response> {
-  const guard = await requireAuth(req);
-  if (guard instanceof Response) return guard;
-
   const record = await findDocByDocId(docIdParam);
   if (!record) return jsonResponse({ error: "not-found" }, 404);
 
