@@ -119,7 +119,9 @@ export function transformVideoEmbeds(html: string): string {
         return (
           `<div class="video-embed" data-provider="youtube">` +
           `<iframe src="https://www.youtube.com/embed/${yt}" loading="lazy" ` +
-          `allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ` +
+          // `fullscreen` in allow= is what modern browsers actually gate on;
+          // `allowfullscreen` is kept as the legacy fallback for older UAs.
+          `allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share" ` +
           `allowfullscreen></iframe>` +
           `<a class="video-fallback" href="${href}" target="_blank" rel="noopener">${href}</a>` +
           `</div>`
@@ -129,7 +131,8 @@ export function transformVideoEmbeds(html: string): string {
       if (drv) {
         return (
           `<div class="video-embed" data-provider="drive">` +
-          `<iframe src="https://drive.google.com/file/d/${drv}/preview" loading="lazy" allowfullscreen></iframe>` +
+          `<iframe src="https://drive.google.com/file/d/${drv}/preview" loading="lazy" ` +
+          `allow="autoplay; fullscreen" allowfullscreen></iframe>` +
           `<a class="video-fallback" href="${href}" target="_blank" rel="noopener">${href}</a>` +
           `</div>`
         );

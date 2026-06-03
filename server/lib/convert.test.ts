@@ -86,6 +86,19 @@ test("transformVideoEmbeds: <p><a Drive></a></p> → iframe preview", () => {
   expect(out).toContain('src="https://drive.google.com/file/d/1abc_DEF-ghi23456789/preview"');
 });
 
+test("transformVideoEmbeds: iframes opt into fullscreen via allow + allowfullscreen", () => {
+  const yt = transformVideoEmbeds(
+    '<p><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">x</a></p>',
+  );
+  expect(yt).toMatch(/allow="[^"]*\bfullscreen\b[^"]*"/);
+  expect(yt).toContain("allowfullscreen");
+  const drv = transformVideoEmbeds(
+    '<p><a href="https://drive.google.com/file/d/1abc_DEF-ghi23456789/view">x</a></p>',
+  );
+  expect(drv).toMatch(/allow="[^"]*\bfullscreen\b[^"]*"/);
+  expect(drv).toContain("allowfullscreen");
+});
+
 test("transformVideoEmbeds: inline link inside paragraph text is left alone", () => {
   const html =
     '<p>觀看 <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">這個影片</a> 然後思考。</p>';
