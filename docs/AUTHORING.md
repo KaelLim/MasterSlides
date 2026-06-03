@@ -229,7 +229,7 @@ Google Docs 對應：選取段落 → 樣式 → 「正文」改為「引文」�
 完成編輯後：
 
 1. 複製 Google Docs 的網址列（任何 `https://docs.google.com/document/d/<id>/...` 形式皆可）
-2. 進入管理後台 `https://slides-6rb.pages.dev/admin/`
+2. 進入管理後台 `https://slides-6rb.pages.dev/admin/`（**不需要帳號密碼**，知道網址就能進）
 3. 貼上連結 → 系統會自動下載、轉換、儲存
 4. 之後從清單點「播放」即可
 5. 內容有更新時，於播放頁面按右下角的「重新整理」按鈕同步最新版

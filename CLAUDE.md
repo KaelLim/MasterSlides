@@ -6,20 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **MasterSlides**: a Google Docs → paginated HTML presentation converter for the Tzu Chi Buddhist organization. Supports Traditional Chinese vertical text layout, remote control via room-based pub/sub, and natural-overflow pagination.
 
-Single-user local tool. No auth.
+No app-layer auth — access control lives in Drust via per-collection `anon_caps`. The admin UI is reachable by anyone who knows the URL.
 
 ## Commands
 
 ```bash
-cp .env.example .env         # one-time: fill in DRUST_SERVICE_TOKEN
+cp .env.example .env         # one-time: fill in DRUST_ANON_TOKEN + DRUST_SERVICE_TOKEN
 bun install                  # one-time
 bun run dev                  # watch mode — http://localhost:3000
 bun run start                # plain run
 bun run build                # bundle public/slides/js/app.js → public/slides/dist/app.js
-bun test                     # run drust.test.ts + storage.test.ts + admin tests (hits live Drust tenant)
+bun test                     # convert/paginator/drust/storage/playlists tests (hits live Drust tenant)
 ```
 
-The server fails fast at boot if `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_SERVICE_TOKEN` are not set. After editing anything under `public/slides/js/`, re-run `bun run build`.
+`server/lib/drust.ts` requires `DRUST_BASE_URL` / `DRUST_TENANT_ID` / `DRUST_ANON_TOKEN`; `server/routes/publish.ts` additionally requires `DRUST_SERVICE_TOKEN` (broadcast publish only). Each path surfaces its own missing-env error on the first request that hits it. After editing anything under `public/slides/js/`, re-run `bun run build`.
 
 ## Routing
 
@@ -40,11 +40,11 @@ Google Docs (shared publicly)
 Bun server (server/)
     ├─ routes/docs.ts:     fetch + convert + upsert
     ├─ routes/admin/index.ts: dispatcher for /api/admin/* and /api/playlists/*
-    ├─ routes/publish.ts:  /api/publish/:room thin proxy to Drust broadcast
-    ├─ lib/admin/{auth,docs,playlists}.ts: admin handlers (used by Bun + CF Pages adapters)
+    ├─ routes/publish.ts:  /api/publish/:room thin proxy to Drust broadcast (service token)
+    ├─ lib/admin/{docs,playlists}.ts: admin CRUD handlers (used by Bun + CF Pages adapters)
     ├─ lib/google-docs.ts: download markdown via export?format=md
     ├─ lib/convert.ts:     base64 images → Drust files, markdown → HTML (marked)
-    ├─ lib/drust.ts:       REST client (collections + files)
+    ├─ lib/drust.ts:       REST client (collections + files) — uses anon token
     └─ lib/storage.ts:     upsertDoc({doc_id, title, html, image_ids})
                            same doc_id overwrites + reclaims old images
     │
@@ -91,8 +91,8 @@ remote/index.html (public/remote/) — mobile phone client.
 │  │  ├─ publish.ts                # POST /api/publish/:room → Drust broadcast
 │  │  └─ admin/index.ts            # path-based admin dispatcher
 │  └─ lib/
-│     ├─ admin/{auth,docs,playlists}.ts (+ tests)
-│     ├─ drust.ts                  # Drust REST client
+│     ├─ admin/{docs,playlists}.ts (+ playlists.test.ts)
+│     ├─ drust.ts                  # Drust REST client (anon token)
 │     ├─ google-docs.ts
 │     ├─ convert.ts                # markdown → HTML + image extraction
 │     └─ storage.ts                # upsertDoc with image reclaim
@@ -119,16 +119,19 @@ remote/index.html (public/remote/) — mobile phone client.
 
 ## Storage (Drust BaaS)
 
-Tenant `docs` at `tool.tzuchi-org.tw`. Single collection `docs` holds one record per Google Doc id (HTML inline). Extracted images go to Drust public files at `https://tool.tzuchi-org.tw/public/<tenant>/<file_id>`. Playlists live in collection `playlists`.
+Tenant `docs` at `tool.tzuchi-org.tw`. Collection `docs` holds one record per Google Doc id (HTML inline). Extracted images go to Drust public files at `https://tool.tzuchi-org.tw/public/<tenant>/<file_id>`. Playlists live in collection `playlists`. Both collections have `anon_caps=[select,insert,update,delete]`; the anon token is what the Bun server proxies with for all CRUD. The service token is held server-side and only flows through `/api/publish/:room` (Drust requires service to publish to broadcast rooms).
 
-Same `doc_id` overwrites; old image files are reclaimed automatically. Frontend never sees Drust admin URLs directly — all reads/writes proxy through the Bun server (or CF Pages adapters) using the service token.
+Same `doc_id` overwrites; old image files are reclaimed automatically. Frontend never sees Drust URLs directly — all reads/writes proxy through the Bun server (or CF Pages adapters).
 
 `.env`:
 ```
 DRUST_BASE_URL=https://tool.tzuchi-org.tw
 DRUST_TENANT_ID=1e195719-6106-4644-85d1-0eee7d135026
-DRUST_SERVICE_TOKEN=drust_...
+DRUST_ANON_TOKEN=drust_...       # used for docs/playlists/files CRUD
+DRUST_SERVICE_TOKEN=drust_...    # used ONLY for broadcast publish
 ```
+
+To adjust anon access at the Drust layer, use the Drust admin UI at `https://tool.tzuchi-org.tw/drust/` or its MCP `set_anon_caps` tool. There is no REST endpoint that mutates `anon_caps`.
 
 ## Remote Control (Drust broadcast)
 
@@ -139,10 +142,10 @@ Viewer and phone both subscribe to a per-room Drust WS channel (`slides-<roomId>
 `bun test` runs:
 - `server/lib/drust.test.ts` + `storage.test.ts` — Drust REST round-trips
 - `server/lib/convert.test.ts` — markdown → title/image extraction
-- `server/lib/admin/auth.test.ts` + `playlists.test.ts` — admin CRUD + session flow
+- `server/lib/admin/playlists.test.ts` — admin playlist CRUD (no auth — exercises handlers directly)
 - `public/slides/js/paginator.test.ts` — paginator unit tests (uses happy-dom; restores native fetch after register so the server-side tests still hit live Drust)
 
-These hit the live Drust tenant. They insert `__roundtrip_*` / `__upsert_*` / `__test_*` rows and clean them up at the end. Drust's rate limit can trip the full suite — prefer per-file `bun test path/to/file.test.ts` while iterating.
+These hit the live Drust tenant. They insert `__roundtrip_*` / `__upsert_*` / `__test_pl_*` rows and clean them up at the end. Drust's rate limit can trip the full suite — prefer per-file `bun test path/to/file.test.ts` while iterating.
 
 ## Hotkeys (viewer)
 
@@ -152,6 +155,6 @@ Other: `R` (remote QR), `?`/`H` (help), `L` (laser/spotlight), `Cmd/Ctrl + =/- /
 
 ## Google Docs Requirements
 
-Documents must be shared as "Anyone with the link can view". Paste the URL into the admin upload UI.
+Documents must be shared as "Anyone with the link can view". Paste the URL into the admin upload UI — no login required.
 
 Roadmap: see `docs/superpowers/specs/` for active design docs and `docs/superpowers/plans/` for plans.
