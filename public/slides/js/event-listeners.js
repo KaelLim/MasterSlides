@@ -56,11 +56,17 @@ export function initEventListeners() {
   document.addEventListener('mousemove', showNav);
 
   let resizeTimer;
+  // Track the last manuscript dimensions so we can skip rebuilds on
+  // resize events that didn't actually change the content area —
+  // e.g. an iframe exiting fullscreen fires a resize that nets to the
+  // same window size, and rebuilding the DOM there produces a visible
+  // refresh flash.
+  let lastManuscriptSize = '';
   window.addEventListener('resize', () => {
-    // Skip when a child element (e.g. a YouTube iframe) is fullscreen.
-    // repaginate rebuilds manuscript.innerHTML, detaching the fullscreen
-    // element and force-exiting fullscreen. Whole-app fullscreen
-    // (documentElement) survives a rebuild so it's still allowed through.
+    // Hard skip: a child element (typically a YouTube iframe) is currently
+    // fullscreen. repaginate() clears manuscript.innerHTML, which detaches
+    // the fullscreen element and force-exits its fullscreen state.
+    // Whole-app fullscreen (documentElement) survives a rebuild.
     if (
       document.fullscreenElement &&
       document.fullscreenElement !== document.documentElement
@@ -68,7 +74,14 @@ export function initEventListeners() {
       return;
     }
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { repaginate(); }, 200);
+    resizeTimer = setTimeout(() => {
+      const m = dom.manuscript;
+      if (!m) return;
+      const cur = `${m.clientWidth}x${m.clientHeight}`;
+      if (cur === lastManuscriptSize) return;  // no real layout change
+      lastManuscriptSize = cur;
+      repaginate();
+    }, 200);
   });
 
   let touchStartX = 0;
