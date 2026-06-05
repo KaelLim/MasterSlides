@@ -121,11 +121,11 @@
     <div class="settings-section">
       <h3>文字方向</h3>
       <div class="toggle-group">
-        <button id="verticalBtn" class="active">
+        <button id="verticalBtn" class="active" aria-pressed="true">
           <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-vertical"/></svg>
           直書
         </button>
-        <button id="horizontalBtn">
+        <button id="horizontalBtn" aria-pressed="false">
           <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-horizontal"/></svg>
           橫書
         </button>
@@ -142,24 +142,24 @@
     </div>
     <div class="settings-section">
       <div class="icon-btn-row">
-        <button class="icon-btn" id="fullscreenBtn" data-tooltip="全螢幕">
+        <button class="icon-btn" id="fullscreenBtn" data-tooltip="全螢幕" aria-label="全螢幕">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-fullscreen"/></svg>
         </button>
-        <button class="icon-btn" id="toggleNavBtn" data-tooltip="隱藏導航列">
+        <button class="icon-btn" id="toggleNavBtn" data-tooltip="隱藏導航列" aria-label="隱藏導航列">
           <svg width="20" height="20" aria-hidden="true" focusable="false">
             <use id="toggleNavIcon" href="#icon-eye-open"/>
           </svg>
         </button>
-        <button class="icon-btn" id="remoteBtn" data-tooltip="遙控器">
+        <button class="icon-btn" id="remoteBtn" data-tooltip="遙控器" aria-label="遙控器">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-remote"/></svg>
         </button>
-        <button class="icon-btn" id="laserBtn" data-tooltip="聚光燈">
+        <button class="icon-btn" id="laserBtn" data-tooltip="聚光燈" aria-label="聚光燈" aria-pressed="false">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-laser"/></svg>
         </button>
-        <button class="icon-btn" id="exportPdfBtn" data-tooltip="匯出 PDF">
+        <button class="icon-btn" id="exportPdfBtn" data-tooltip="匯出 PDF" aria-label="匯出 PDF">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-pdf"/></svg>
         </button>
-        <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明">
+        <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明" aria-label="快捷鍵說明">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-help"/></svg>
         </button>
       </div>
@@ -241,7 +241,7 @@
   <div class="app-layout">
     <!-- 左側面板 -->
     <aside class="left-panel">
-      <button class="hamburger-btn" id="hamburgerBtn">
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="開啟選單" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <button class="refresh-btn" id="refreshBtn" title="重新載入 / 同步" aria-label="重新載入">
@@ -265,10 +265,10 @@
 
       <!-- 導航列（在 content-area 內，用 absolute） -->
       <div class="slide-nav" id="slideNav">
-        <button id="prevBtn">
+        <button id="prevBtn" aria-label="上一頁">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-prev"/></svg>
         </button>
-        <button id="nextBtn">
+        <button id="nextBtn" aria-label="下一頁">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-next"/></svg>
         </button>
       </div>
