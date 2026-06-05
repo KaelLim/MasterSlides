@@ -32,7 +32,7 @@
 }
 
 .hamburger-btn.active {
-  z-index: 10001;
+  z-index: var(--z-sidebar-toggle);
 }
 
 .hamburger-btn span {

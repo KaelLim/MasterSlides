@@ -4,7 +4,7 @@
 .context-menu {
   display: none;
   position: fixed;
-  z-index: 10000;
+  z-index: var(--z-context-menu);
   min-width: 300px;
   background: rgba(20, 20, 40, 0.88);
   backdrop-filter: blur(20px);

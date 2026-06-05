@@ -12,6 +12,20 @@
   --font-scale: 1;
   --mode-scale: 1.6;  /* 直式 +60% */
   --left-panel-width: 100px;
+
+  /* Z-index scale — single source of truth for layering.
+     Add 1-2 to a base when an element must sit just above its sibling
+     (e.g. --z-sidebar-toggle keeps the close-X above the drawer body). */
+  --z-nav:              100;   /* in-content navigation bar (lowest interactive) */
+  --z-spotlight-blur:   200;   /* laser.js: backdrop-filter blur layer */
+  --z-spotlight:        210;   /* laser.js: dark cutout canvas (above blur) */
+  --z-sidebar-overlay:  300;   /* dim layer behind the settings drawer */
+  --z-sidebar:          400;   /* settings drawer panel */
+  --z-sidebar-toggle:   410;   /* hamburger button stays above its own drawer */
+  --z-context-menu:     500;   /* right-click / long-press popup */
+  --z-lightbox:         600;   /* image zoom overlay */
+  --z-search:           700;   /* search bar (above lightbox so Cmd+F works during zoom) */
+  --z-modal:            800;   /* help / goto / remote (top-level dialogs) */
 }
 
 body.horizontal-mode {

@@ -32,7 +32,7 @@ function createCanvas() {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 499;
+    z-index: var(--z-spotlight-blur);
     pointer-events: none;
     display: none;
     backdrop-filter: blur(${BLUR_PX}px);
@@ -48,7 +48,7 @@ function createCanvas() {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 500;
+    z-index: var(--z-spotlight);
     pointer-events: none;
     display: none;
   `;
