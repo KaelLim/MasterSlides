@@ -87,12 +87,14 @@ export function openSidebar() {
   dom.sidebar.classList.add('open');
   dom.sidebarOverlay.classList.add('visible');
   dom.hamburgerBtn.classList.add('active');
+  dom.hamburgerBtn.setAttribute('aria-expanded', 'true');
 }
 
 export function closeSidebar() {
   dom.sidebar.classList.remove('open');
   dom.sidebarOverlay.classList.remove('visible');
   dom.hamburgerBtn.classList.remove('active');
+  dom.hamburgerBtn.setAttribute('aria-expanded', 'false');
 }
 
 export function toggleSidebar() {
@@ -121,9 +123,11 @@ export function updateFullscreenButton() {
   if (document.fullscreenElement) {
     btn.classList.add('active');
     btn.dataset.tooltip = '退出全螢幕';
+    btn.setAttribute('aria-label', '退出全螢幕');
   } else {
     btn.classList.remove('active');
     btn.dataset.tooltip = '全螢幕';
+    btn.setAttribute('aria-label', '全螢幕');
   }
 }
 
@@ -147,16 +151,20 @@ export function resetNavHideTimer() {
 
 export function toggleNavVisibility() {
   state.navPermanentlyHidden = !state.navPermanentlyHidden;
+  const useEl = document.getElementById('toggleNavIcon');
+  const btnEl = document.getElementById('toggleNavBtn');
 
   if (state.navPermanentlyHidden) {
     dom.slideNav.style.display = 'none';
-    document.getElementById('toggleNavIcon').setAttribute('href', '#icon-eye-closed');
-    document.getElementById('toggleNavBtn').dataset.tooltip = '顯示導航列';
+    useEl.setAttribute('href', '#icon-eye-closed');
+    btnEl.dataset.tooltip = '顯示導航列';
+    btnEl.setAttribute('aria-label', '顯示導航列');
     localStorage.setItem(STORAGE_KEYS.navHidden, 'true');
   } else {
     dom.slideNav.style.display = 'flex';
-    document.getElementById('toggleNavIcon').setAttribute('href', '#icon-eye-open');
-    document.getElementById('toggleNavBtn').dataset.tooltip = '隱藏導航列';
+    useEl.setAttribute('href', '#icon-eye-open');
+    btnEl.dataset.tooltip = '隱藏導航列';
+    btnEl.setAttribute('aria-label', '隱藏導航列');
     localStorage.setItem(STORAGE_KEYS.navHidden, 'false');
   }
 }
@@ -192,6 +200,8 @@ export function loadSettings() {
     state.navPermanentlyHidden = true;
     dom.slideNav.style.display = 'none';
     document.getElementById('toggleNavIcon').setAttribute('href', '#icon-eye-closed');
-    document.getElementById('toggleNavBtn').dataset.tooltip = '顯示導航列';
+    const btnEl = document.getElementById('toggleNavBtn');
+    btnEl.dataset.tooltip = '顯示導航列';
+    btnEl.setAttribute('aria-label', '顯示導航列');
   }
 }
