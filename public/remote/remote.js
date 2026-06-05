@@ -1,4 +1,4 @@
-    import { connectRoom } from '/js/drust-broadcast.js'
+    import { connectRoom } from '/slides/js/drust-broadcast.js'
 
     // ── Drust Broadcast Remote Control ──
     // Module-level state. `room` is the connectRoom() handle. `closeStreak`
