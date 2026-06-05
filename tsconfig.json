@@ -9,5 +9,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["server/**/*.ts", "functions/**/*.ts", "public/js/**/*.ts"]
+  "include": ["server/**/*.ts", "functions/**/*.ts", "public/slides/js/**/*.ts"]
 }

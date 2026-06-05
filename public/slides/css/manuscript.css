@@ -19,9 +19,7 @@
 .manuscript {
   width: 100cqw;
   height: 100cqh;
-  column-width: 100cqw;
-  column-gap: 0;
-  column-fill: auto;
+  overflow: hidden;
 
   /* 預設直書 */
   writing-mode: vertical-rl;
@@ -63,7 +61,6 @@ h1, h2, h3, h4 {
   letter-spacing: 0.15em;
   line-height: 1.6;
   margin: 0;
-  break-after: avoid;
 }
 
 h1 {
@@ -71,14 +68,12 @@ h1 {
   color: var(--color-primary);
   font-weight: 700;
   margin-right: 1.5rem;
-  break-before: column;
 }
 
 h2 {
   font-size: calc(clamp(42px, 7cqi, 90px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-primary);
   font-weight: 600;
-  break-before: column;
 }
 
 h3 {
@@ -136,11 +131,12 @@ img {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   margin-inline: auto;
-  break-inside: avoid;
 }
 
 /* ===========================
    分頁線（hr = page break）
+   paginator.ts treats <hr> as a page boundary by element type;
+   no CSS break-* hint needed.
    =========================== */
 hr {
   border: none;
@@ -148,6 +144,27 @@ hr {
   padding: 0;
   height: 0;
   visibility: hidden;
-  break-after: column;
+}
+
+/* ===========================
+   Slide page container
+   paginator.ts builds one .slide-page per visible page inside .manuscript.
+   Each page is a fully-sized box that clips overflow; per-page image
+   sizing overrides the manuscript-level 80cqw/cqh defaults so an image
+   alone on its page can fill the slide-page rather than the container.
+   =========================== */
+.slide-page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.slide-page img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
