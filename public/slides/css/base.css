@@ -63,3 +63,24 @@ body {
   background-repeat: no-repeat;
 }
 
+/* ===========================
+   Reduced motion
+   Users who opt into the OS-level "reduce motion" setting (vestibular
+   sensitivity, low-spec hardware, etc.) get near-instant transitions
+   and animations across the whole viewer — the sidebar/lightbox/modal
+   fades, the refresh button's continuous spin, the search-bar slide,
+   etc. The values 0.01ms (not 0ms) preserve the JS-detectable
+   transitionend / animationend events for any handlers that depend on
+   them. Per the W3C MQ-5 recommendation.
+   =========================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
