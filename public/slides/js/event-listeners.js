@@ -84,14 +84,37 @@ export function initEventListeners() {
     }, 200);
   });
 
+  // Touch input on iPad / phone. Two responsibilities:
+  //  1. Every touch wakes the auto-hiding nav. mousemove doesn't fire on
+  //     touch-only devices, so without this iPad users get stranded once
+  //     the 3-second timer elapses and the nav has hidden itself.
+  //  2. Horizontal swipe > 50px flips pages — but only when no modal /
+  //     sidebar / lightbox is open. Those have their own gesture handlers
+  //     and a document-level swipe would otherwise steal taps inside them.
+  function isModalActive() {
+    return (
+      dom.sidebar?.classList.contains('open') ||
+      dom.lightbox?.classList.contains('active') ||
+      dom.helpModal?.classList.contains('active') ||
+      dom.gotoModal?.classList.contains('active') ||
+      dom.remoteModal?.classList.contains('active')
+    );
+  }
   let touchStartX = 0;
+  let touchStartY = 0;
   document.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    showNav();
   }, { passive: true });
   document.addEventListener('touchend', (e) => {
-    const diff = touchStartX - e.changedTouches[0].screenX;
-    if (Math.abs(diff) > 50) {
-      diff > 0 ? prevPage() : nextPage();
+    if (isModalActive()) return;
+    const diffX = touchStartX - e.changedTouches[0].screenX;
+    const diffY = Math.abs(touchStartY - e.changedTouches[0].screenY);
+    // Horizontal dominance: |Δy| < |Δx| / 2. Without it a long vertical
+    // scroll with any rightward drift phantom-flips the page.
+    if (Math.abs(diffX) > 50 && diffY < Math.abs(diffX) / 2) {
+      diffX > 0 ? prevPage() : nextPage();
       syncRemoteState();
     }
   }, { passive: true });

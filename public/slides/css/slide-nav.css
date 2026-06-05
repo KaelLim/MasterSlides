@@ -233,3 +233,14 @@
   visibility: visible;
 }
 
+/* Touch devices (no mouse hover) — suppress the tooltip pseudo-element
+ * entirely. Without this, a tap on iPad/iOS leaves the button in a
+ * sticky :hover state and the tooltip floats on screen until the next
+ * unrelated tap dismisses it. */
+@media (hover: none) {
+  .icon-btn::after,
+  .icon-btn:hover::after {
+    display: none;
+  }
+}
+
