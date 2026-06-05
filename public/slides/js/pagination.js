@@ -12,6 +12,20 @@ export function setWritingMode(mode) {
   state.currentWritingMode = mode;
   if (mode === 'horizontal-tb') document.body.classList.add('horizontal-mode');
   else document.body.classList.remove('horizontal-mode');
+  // Keep the orientation toggle buttons (.active + aria-pressed) in sync with
+  // the writing mode for EVERY caller — click handlers, context menu, the `O`
+  // hotkey, and remote-control commands all flow through here. Centralizing
+  // this avoids the previous bug where only the click handlers updated ARIA
+  // while other paths left the buttons' pressed state stale.
+  const verticalBtn = document.getElementById('verticalBtn');
+  const horizontalBtn = document.getElementById('horizontalBtn');
+  if (verticalBtn && horizontalBtn) {
+    const vertical = mode === 'vertical-rl';
+    verticalBtn.classList.toggle('active', vertical);
+    verticalBtn.setAttribute('aria-pressed', vertical ? 'true' : 'false');
+    horizontalBtn.classList.toggle('active', !vertical);
+    horizontalBtn.setAttribute('aria-pressed', vertical ? 'false' : 'true');
+  }
 }
 
 export function updatePageCount() {

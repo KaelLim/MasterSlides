@@ -46,10 +46,8 @@ const ACTIONS = {
   fullscreen: toggleFullscreen,
   sidebar: toggleSidebar,
   orientation: () => {
-    const wasVertical = isVerticalMode();
-    setWritingMode(wasVertical ? 'horizontal-tb' : 'vertical-rl');
-    document.getElementById(wasVertical ? 'horizontalBtn' : 'verticalBtn').classList.add('active');
-    document.getElementById(wasVertical ? 'verticalBtn' : 'horizontalBtn').classList.remove('active');
+    // setWritingMode() handles the toggle buttons' .active + aria-pressed sync.
+    setWritingMode(isVerticalMode() ? 'horizontal-tb' : 'vertical-rl');
     state.currentPage = 0;
     repaginate();
   },

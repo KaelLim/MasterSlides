@@ -165,7 +165,9 @@ export function toggleLaser() {
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'none';
     blurOverlay.style.display = 'block';
-    document.getElementById('laserBtn')?.classList.add('active');
+    const laserBtn = document.getElementById('laserBtn');
+    laserBtn?.classList.add('active');
+    laserBtn?.setAttribute('aria-pressed', 'true');
     // Draw initial state (full dark until mouse moves)
     if (mouseX < 0) {
       mouseX = canvas.width / 2;
@@ -178,7 +180,9 @@ export function toggleLaser() {
     canvas.style.cursor = '';
     blurOverlay.style.display = 'none';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('laserBtn')?.classList.remove('active');
+    const laserBtn = document.getElementById('laserBtn');
+    laserBtn?.classList.remove('active');
+    laserBtn?.setAttribute('aria-pressed', 'false');
   }
 }
 

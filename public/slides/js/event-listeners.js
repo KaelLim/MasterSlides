@@ -25,17 +25,16 @@ export function initEventListeners() {
   dom.sidebarOverlay.onclick = closeSidebar;
   document.getElementById('fontDecrease').onclick = decreaseFontSize;
   document.getElementById('fontIncrease').onclick = increaseFontSize;
-  document.getElementById('verticalBtn').onclick = () => {
+  const verticalBtn = document.getElementById('verticalBtn');
+  const horizontalBtn = document.getElementById('horizontalBtn');
+  verticalBtn.onclick = () => {
+    // setWritingMode() syncs the toggle buttons' .active + aria-pressed.
     setWritingMode('vertical-rl');
-    document.getElementById('verticalBtn').classList.add('active');
-    document.getElementById('horizontalBtn').classList.remove('active');
     state.currentPage = 0;
     repaginate();
   };
-  document.getElementById('horizontalBtn').onclick = () => {
+  horizontalBtn.onclick = () => {
     setWritingMode('horizontal-tb');
-    document.getElementById('horizontalBtn').classList.add('active');
-    document.getElementById('verticalBtn').classList.remove('active');
     state.currentPage = 0;
     repaginate();
   };

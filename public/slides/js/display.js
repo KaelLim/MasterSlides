@@ -1,5 +1,6 @@
 import { state, dom, FONT_SCALES, FONT_SCALE_MIN, FONT_SCALE_MAX, STORAGE_KEYS } from './state.js';
 import { updatePageCount, goToPage } from './navigation.js';
+import { setWritingMode } from './pagination.js';
 
 // ===========================
 // Font Size
@@ -57,9 +58,8 @@ export function applyFont(fontFamily, save = true) {
 // Orientation
 // ===========================
 export function setVerticalMode() {
-  document.body.classList.remove('horizontal-mode');
-  document.getElementById('verticalBtn').classList.add('active');
-  document.getElementById('horizontalBtn').classList.remove('active');
+  // setWritingMode() handles the body class + toggle buttons' .active + aria-pressed.
+  setWritingMode('vertical-rl');
   localStorage.setItem(STORAGE_KEYS.orientation, 'vertical');
   dom.manuscript.style.transform = '';
   state.currentPage = 0;
@@ -70,9 +70,7 @@ export function setVerticalMode() {
 }
 
 export function setHorizontalMode() {
-  document.body.classList.add('horizontal-mode');
-  document.getElementById('horizontalBtn').classList.add('active');
-  document.getElementById('verticalBtn').classList.remove('active');
+  setWritingMode('horizontal-tb');
   localStorage.setItem(STORAGE_KEYS.orientation, 'horizontal');
   dom.manuscript.style.transform = '';
   state.currentPage = 0;
@@ -179,9 +177,8 @@ export function loadSettings() {
 
   const savedOrientation = localStorage.getItem(STORAGE_KEYS.orientation);
   if (savedOrientation === 'horizontal') {
-    document.body.classList.add('horizontal-mode');
-    document.getElementById('horizontalBtn').classList.add('active');
-    document.getElementById('verticalBtn').classList.remove('active');
+    // setWritingMode() sets the body class + toggle buttons' .active + aria-pressed.
+    setWritingMode('horizontal-tb');
   }
 
   const savedFont = localStorage.getItem(STORAGE_KEYS.fontFamily);

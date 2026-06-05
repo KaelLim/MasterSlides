@@ -18,12 +18,9 @@ const CTX_ICONS = {
 };
 
 function toggleOrientation() {
-  // Capture the pre-flip mode — after setWritingMode(), isVerticalMode()
-  // returns the NEW value, so we'd flip the buttons backwards.
-  const wasVertical = isVerticalMode();
-  setWritingMode(wasVertical ? 'horizontal-tb' : 'vertical-rl');
-  document.getElementById(wasVertical ? 'horizontalBtn' : 'verticalBtn').classList.add('active');
-  document.getElementById(wasVertical ? 'verticalBtn' : 'horizontalBtn').classList.remove('active');
+  // setWritingMode() now syncs the toggle buttons' .active + aria-pressed,
+  // so callers only need to flip the mode and repaginate.
+  setWritingMode(isVerticalMode() ? 'horizontal-tb' : 'vertical-rl');
   state.currentPage = 0;
   repaginate();
 }
