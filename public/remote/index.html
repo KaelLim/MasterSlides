@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="/remote/remote.css">
 </head>
 <body>
+  <!-- Icon sprite — see slides/index.html for the same pattern. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </symbol>
+    <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="9 18 15 12 9 6"/>
+    </symbol>
+  </svg>
 
   <div id="mainControls">
     <!-- 頂部列 -->
@@ -27,11 +37,11 @@
     <!-- 動作按鈕 -->
     <div class="action-row">
       <button class="action-btn" id="toolSearch">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-search"/></svg>
         搜尋
       </button>
       <button class="action-btn" id="toolGoto">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-chevron-right"/></svg>
         跳頁
       </button>
     </div>
@@ -44,9 +54,9 @@
       </div>
       <div class="panel-nav" id="searchPanelNav" style="display: none;">
         <span class="panel-nav-count" id="remoteSearchCount">0 / 0</span>
-        <button class="panel-nav-btn" id="remoteSearchPrev">▲</button>
-        <button class="panel-nav-btn" id="remoteSearchNext">▼</button>
-        <button class="panel-close-btn" id="remoteSearchClose">✕</button>
+        <button class="panel-nav-btn" id="remoteSearchPrev" aria-label="上一個結果">▲</button>
+        <button class="panel-nav-btn" id="remoteSearchNext" aria-label="下一個結果">▼</button>
+        <button class="panel-close-btn" id="remoteSearchClose" aria-label="關閉搜尋">✕</button>
       </div>
     </div>
 
@@ -69,9 +79,9 @@
     <!-- 縮放控制（Lightbox 時顯示）: 左邊按鈕列 + 右邊搖桿 -->
     <div class="zoom-controls" id="zoomControls">
       <div class="zoom-btn-col">
-        <button class="zoom-btn" id="zoomInBtn">+</button>
-        <button class="zoom-btn" id="zoomOutBtn">−</button>
-        <button class="zoom-btn" id="zoomResetBtn">⟲</button>
+        <button class="zoom-btn" id="zoomInBtn" aria-label="放大">+</button>
+        <button class="zoom-btn" id="zoomOutBtn" aria-label="縮小">−</button>
+        <button class="zoom-btn" id="zoomResetBtn" aria-label="重設縮放">⟲</button>
         <span class="zoom-level" id="zoomLevel">100%</span>
       </div>
       <div class="joystick-area">
@@ -84,8 +94,8 @@
 
   <!-- 底部固定導航 -->
   <div class="bottom-nav">
-    <button id="prevBtn">‹</button>
-    <button id="nextBtn">›</button>
+    <button id="prevBtn" aria-label="上一頁">‹</button>
+    <button id="nextBtn" aria-label="下一頁">›</button>
   </div>
 
   <script type="module" src="/remote/remote.js"></script>
