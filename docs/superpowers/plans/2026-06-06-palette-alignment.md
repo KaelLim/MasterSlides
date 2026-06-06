@@ -4,7 +4,7 @@
 
 **Goal:** Apply the 4-color regulation palette from Master slide 101 feedback (`#00FDFF` / `#D9D9D9` / `#D7D992` / `#FFFF00`) by updating `:root` tokens, eliminating 13 hardcoded duplicates across modal CSS, and adopting the new `--color-highlight` in the search bar.
 
-**Architecture:** Pure CSS refactor. Token values change in `base.css`; three modal CSS files swap literal hex for `var()`; `search.css` swaps two leftover rgba colors for regulation rgba + `var()`. No JS, no markup, no build config touched. Split into two atomic commits — Task 1 = palette propagation, Task 2 = search highlight regulation adoption.
+**Architecture:** Pure CSS refactor. Token values change in `base.css`; three modal CSS files swap literal hex for `var()`; `search.css` swaps two leftover rgba colors for regulation rgba + `var()`. No JS, no markup, no build config touched. Split into three atomic commits — Task 1 = palette propagation, Task 2 = search highlight regulation adoption, Task 3 = rgba derivatives → `color-mix()` on tokens (added mid-execution after spec review surfaced that 8 rgba calls had encoded regulation colors in disguise, bypassing the hex grep).
 
 **Tech Stack:** CSS custom properties, vanilla rgba.
 
@@ -247,6 +247,82 @@ Open http://localhost:3000 and walk through:
 | Search (`Cmd+F`) | Soft yellow match tint; arrow through matches; current match = solid yellow + cyan ring |
 
 If anything looks off, report back with the surface and the issue.
+
+---
+
+### Task 3: Replace rgba derivatives of regulation colors with `color-mix()` on tokens
+
+**Why added (post-hoc):** Tasks 1+2 moved every literal regulation `#hex` into `:root` tokens and confirmed the grep was clean. But spec review surfaced — and a follow-up sweep confirmed — that 8 rgba calls had been encoding the same regulation colors in disguise:
+
+- 5 in `modals-goto.css` as `rgba(95, 207, 195, X)` = old `#5FCFC3` cyan with alpha
+- 2 in `context-menu.css` as `rgba(95, 207, 195, X)` = same disguise
+- 1 in `search.css` as `rgba(255, 255, 0, 0.35)` = new regulation yellow as a literal rgba (created by Task 2)
+
+Both forms — old hex in rgba syntax, and new hex in rgba syntax — fail the "regulation = single source of truth" goal: if the token ever changes, these derived tints stay frozen at the old value. The user approved extending scope to fix all 8 in one commit.
+
+**Why `color-mix()` and not `rgba(0, 253, 255, X)`?** Substituting one literal for another only swaps which value is duplicated. `color-mix(in srgb, var(--token) N%, transparent)` produces the same alpha-blended result but ties the tint directly to the token — change the token, every tint follows. Browser support is universal across our 2026 target (Chrome 111+, Safari 16.2+, Firefox 113+).
+
+**Files:**
+- Modify: `public/slides/css/modals-goto.css` (5 spots)
+- Modify: `public/slides/css/context-menu.css` (2 spots)
+- Modify: `public/slides/css/search.css` (1 spot)
+
+- [x] **Step 1: Replace 5 rgba(95,207,195,…) sites in `modals-goto.css`**
+
+| Line | Old (suffix) | New |
+|------|--------------|-----|
+| 71 | `box-shadow: 0 0 0 3px rgba(95,207,195,0.2);` | `box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);` |
+| 116 | `background: rgba(95,207,195,0.15);` | `background: color-mix(in srgb, var(--color-primary) 15%, transparent);` |
+| 170 | `background: rgba(95,207,195,0.2);` | `background: color-mix(in srgb, var(--color-primary) 20%, transparent);` |
+| 219 | `border-color: rgba(95,207,195,0.5);` | `border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);` |
+| 224 | `box-shadow: 0 0 0 2px rgba(95,207,195,0.3);` | `box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);` |
+
+- [x] **Step 2: Replace 2 rgba(95, 207, 195, …) sites in `context-menu.css`**
+
+Note the spaced form (`95, 207, 195` with spaces) vs the compact form in `modals-goto.css`.
+
+| Line | Old | New |
+|------|-----|-----|
+| 38 | `background: rgba(95, 207, 195, 0.15);` | `background: color-mix(in srgb, var(--color-primary) 15%, transparent);` |
+| 42 | `background: rgba(95, 207, 195, 0.25);` | `background: color-mix(in srgb, var(--color-primary) 25%, transparent);` |
+
+- [x] **Step 3: Replace the 1 rgba(255, 255, 0, …) site in `search.css`**
+
+| Line | Old | New |
+|------|-----|-----|
+| 85 | `background: rgba(255, 255, 0, 0.35);` | `background: color-mix(in srgb, var(--color-highlight) 35%, transparent);` |
+
+- [x] **Step 4: Static check — rgba derivatives of regulation colors are gone globally**
+
+Run: `grep -rn 'rgba(95' public/slides/css/`
+Expected: empty (no surviving old-primary-in-rgba anywhere).
+
+Run: `grep -rn 'rgba(255, 255, 0' public/slides/css/`
+Expected: empty (no surviving new-yellow-as-literal-rgba anywhere).
+
+- [x] **Step 5: Static check — color-mix() correctly wires through tokens**
+
+Run: `grep -rn 'color-mix(in srgb, var(--color-primary)' public/slides/css/`
+Expected: 7 matches total (5 in `modals-goto.css` + 2 in `context-menu.css`).
+
+Run: `grep -rn 'color-mix(in srgb, var(--color-highlight)' public/slides/css/`
+Expected: 1 match in `search.css`.
+
+- [x] **Step 6: Build check**
+
+Run: `bun run build`
+Expected: completes successfully.
+
+- [x] **Step 7: Commit**
+
+```bash
+git add public/slides/css/modals-goto.css \
+        public/slides/css/context-menu.css \
+        public/slides/css/search.css
+git commit -m "refactor(palette): replace rgba derivatives with color-mix on tokens"
+```
+
+Landed as commit `ab81ef7`. Full commit body documents the 5+2+1 breakdown and browser support rationale.
 
 ---
 
