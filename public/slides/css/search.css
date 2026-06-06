@@ -78,15 +78,17 @@
   color: white;
 }
 
-/* Search Highlights */
+/* Search Highlights — regulation yellow (#FFFF00); current match gets
+   a cyan ring (--color-primary) for visual lock-on. Yellow + cyan are
+   complements, so the active match pops out unambiguously. */
 .search-highlight {
-  background: rgba(255, 215, 0, 0.4);
+  background: rgba(255, 255, 0, 0.35);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
 }
 .search-highlight.current {
-  background: rgba(255, 140, 0, 0.8);
-  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.4);
+  background: var(--color-highlight);
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
