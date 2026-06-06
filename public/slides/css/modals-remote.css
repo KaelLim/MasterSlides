@@ -41,7 +41,7 @@
 }
 
 .remote-modal h2 {
-  color: #5FCFC3;
+  color: var(--color-primary);
   font-size: 24px;
   margin-bottom: 20px;
 }
@@ -65,7 +65,7 @@
   border-radius: 8px;
   font-family: monospace;
   font-size: 14px;
-  color: #5FCFC3;
+  color: var(--color-primary);
   word-break: break-all;
   max-width: 90%;
   text-align: center;

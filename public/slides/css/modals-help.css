@@ -47,7 +47,7 @@
 }
 
 .help-content h2 {
-  color: #5FCFC3;
+  color: var(--color-primary);
   font-size: 28px;
   margin-bottom: 30px;
   text-align: center;
@@ -66,7 +66,7 @@
 }
 
 .help-column h3 {
-  color: #FFD700;
+  color: var(--color-secondary);
   font-size: 16px;
   margin-bottom: 15px;
   padding-bottom: 8px;
@@ -78,7 +78,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  color: #E8E8E8;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
