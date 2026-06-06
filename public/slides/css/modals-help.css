@@ -99,3 +99,21 @@ kbd {
   margin: 0 2px;
 }
 
+/* Font attribution (CC BY-ND 3.0 TW compliance for 教育部標準楷書) */
+.help-footer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  writing-mode: horizontal-tb;
+}
+.help-footer a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.help-footer a:hover {
+  text-decoration: underline;
+}
+

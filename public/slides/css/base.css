@@ -1,4 +1,17 @@
 /* ===========================
+   Web fonts
+   教育部標準楷書 v5.1 — CC BY-ND 3.0 TW，© 中華民國教育部
+   授權詳情：public/fonts/LICENSE.txt
+   =========================== */
+@font-face {
+  font-family: 'MOEStandardKaiti';
+  src: url('/fonts/edukai-5.1.ttf') format('truetype');
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+/* ===========================
    CSS Variables
    =========================== */
 :root {
@@ -11,7 +24,7 @@
   /* Highlight: regulation yellow — adopted by .search-highlight */
   --color-highlight: #FFFF00;
   --color-bg-base: #1a1a2e;
-  --font-family-body: "DFKai-SB", "BiauKai", "標楷體", serif;
+  --font-family-body: "MOEStandardKaiti", "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", "楷體-繁", "STKaiti", serif;
   --font-scale: 1;
   --mode-scale: 1.6;  /* 直式 +60% */
   --left-panel-width: 100px;
