@@ -175,7 +175,7 @@
 }
 
 .font-select option {
-  background: #1a1a2e;
+  background: var(--color-bg-base);
   color: white;
   padding: 10px;
 }

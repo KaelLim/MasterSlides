@@ -75,7 +75,7 @@
   border: none;
   border-radius: 8px;
   background: var(--color-primary);
-  color: #1a1a2e;
+  color: var(--color-bg-base);
   font-size: 20px;
   font-weight: 700;
   cursor: pointer;
@@ -241,7 +241,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: #1a1a2e;
+  background-color: var(--color-bg-base);
   padding: 60px 80px;
   box-sizing: border-box;
 }

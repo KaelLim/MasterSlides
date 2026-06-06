@@ -3,13 +3,14 @@
    =========================== */
 :root {
   --color-primary: #00FDFF;
-  --color-primary-light: #7EDDD3;
+  /* primary-light derives from primary so future palette changes flow through */
+  --color-primary-light: color-mix(in srgb, var(--color-primary) 70%, white);
   --color-secondary: #D7D992;
-  --color-accent: #FF8C00;
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #D9D9D9;
-  /* Highlight: regulation yellow — adopted by .search-highlight in Task 2 */
+  /* Highlight: regulation yellow — adopted by .search-highlight */
   --color-highlight: #FFFF00;
+  --color-bg-base: #1a1a2e;
   --font-family-body: "DFKai-SB", "BiauKai", "標楷體", serif;
   --font-scale: 1;
   --mode-scale: 1.6;  /* 直式 +60% */
@@ -49,7 +50,7 @@ html, body {
 body {
   font-family: var(--font-family-body);
   color: var(--color-text-primary);
-  background: #1a1a2e;
+  background: var(--color-bg-base);
 }
 
 /* ===========================

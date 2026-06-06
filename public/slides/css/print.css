@@ -22,7 +22,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: #1a1a2e;
+  background-color: var(--color-bg-base);
   padding: 60px 80px;
 }
 

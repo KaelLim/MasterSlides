@@ -71,7 +71,7 @@
   }
   .video-embed .video-fallback {
     display: inline-block;
-    color: #1a1a2e;
+    color: var(--color-bg-base);
     word-break: break-all;
     text-decoration: underline;
   }
