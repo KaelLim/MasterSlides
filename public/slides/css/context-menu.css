@@ -35,11 +35,11 @@
 }
 
 .context-menu-item:hover {
-  background: rgba(95, 207, 195, 0.15);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 .context-menu-item:active {
-  background: rgba(95, 207, 195, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 
 .context-menu-icon {

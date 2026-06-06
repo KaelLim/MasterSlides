@@ -82,7 +82,7 @@
    a cyan ring (--color-primary) for visual lock-on. Yellow + cyan are
    complements, so the active match pops out unambiguously. */
 .search-highlight {
-  background: rgba(255, 255, 0, 0.35);
+  background: color-mix(in srgb, var(--color-highlight) 35%, transparent);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;

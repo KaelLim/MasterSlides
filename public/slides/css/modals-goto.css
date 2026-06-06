@@ -68,7 +68,7 @@
   text-align: center;
 }
 .goto-input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
-.goto-input-wrap input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(95,207,195,0.2); }
+.goto-input-wrap input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent); }
 .goto-input-wrap button {
   height: 56px;
   padding: 0 24px;
@@ -113,7 +113,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(95,207,195,0.15);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   color: var(--color-primary);
   border-radius: 8px;
   font-size: 18px;
@@ -167,7 +167,7 @@
   color: rgba(255,255,255,0.8);
 }
 .goto-tab.active {
-  background: rgba(95,207,195,0.2);
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
   color: var(--color-primary);
 }
 
@@ -216,12 +216,12 @@
   background: rgba(0,0,0,0.4);
 }
 .goto-grid-item:hover {
-  border-color: rgba(95,207,195,0.5);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   transform: scale(1.03);
 }
 .goto-grid-item.current {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(95,207,195,0.3);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 .goto-grid-preview {
   position: absolute;
