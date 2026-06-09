@@ -246,9 +246,16 @@ hr {
 .first-slide-reporters {
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  text-align: center;
   letter-spacing: 0.15em;
   line-height: 1.6;
+}
+
+/* Title and reporters get inline-axis centering; date intentionally
+   does NOT — it sits at its natural block-start so the calendar string
+   reads from the top of the column. */
+.first-slide-title,
+.first-slide-reporters {
+  text-align: center;
 }
 
 .first-slide-date {
@@ -267,17 +274,14 @@ hr {
   color: var(--color-text-primary);
 }
 
-.first-slide-reporters ol {
-  list-style-position: inside;
-  padding: 0;
-  margin: 0;
+/* composeFirstSlide emits one <div> per reporter, no <ol>/<li>. In the
+   parent's vertical-rl flow each child becomes its own column going
+   right-to-left, giving each name a dedicated vertical line. */
+.first-slide-reporters > div {
+  margin-inline-start: 1rem;
 }
 
-.first-slide-reporters li {
-  margin-bottom: 0.6rem;
-}
-
-.first-slide-reporters li::marker {
-  color: var(--color-primary);
+.first-slide-reporters > div:first-child {
+  margin-inline-start: 0;
 }
 

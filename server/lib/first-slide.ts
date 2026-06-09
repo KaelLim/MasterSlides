@@ -10,7 +10,7 @@ export interface FirstSlideMetadata {
 }
 
 const DIGIT_MAP: Record<string, string> = {
-  "0": "O", // Latin uppercase O per spec — not the typographic 〇.
+  "0": "〇", // U+3007 IDEOGRAPHIC NUMBER ZERO — the proper Chinese zero.
   "1": "一",
   "2": "二",
   "3": "三",
@@ -77,13 +77,13 @@ export function composeFirstSlide(meta: FirstSlideMetadata): string {
   const dateText = dateToChinese(meta.presentation_date);
   const title = escapeHtml(meta.title);
   const reporters = meta.unit_report
-    .map((r) => `<li>${escapeHtml(r)}</li>`)
+    .map((r) => `<div>${escapeHtml(r)}</div>`)
     .join("");
   return (
     `<div class="first-slide">\n` +
     `  <div class="first-slide-date">${dateText}</div>\n` +
     `  <div class="first-slide-title">${title}</div>\n` +
-    `  <div class="first-slide-reporters"><ol>${reporters}</ol></div>\n` +
+    `  <div class="first-slide-reporters">${reporters}</div>\n` +
     `</div>\n` +
     `<hr>`
   );
