@@ -176,7 +176,10 @@ function openNewDocModal() {
         return;
       }
       close();
-      await refresh();
+      // Force metadata entry — every newly imported doc passes through the edit
+      // page before it appears on the slides surface. body.doc_id is the
+      // canonical id (extracted server-side from the pasted URL).
+      location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
     } catch (err) {
       errEl.textContent = `網路錯誤：${err.message}`;
       submitBtn.disabled = false;
