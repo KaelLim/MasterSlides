@@ -276,12 +276,23 @@ hr {
 
 /* composeFirstSlide emits one <div> per reporter, no <ol>/<li>. In the
    parent's vertical-rl flow each child becomes its own column going
-   right-to-left, giving each name a dedicated vertical line. */
-.first-slide-reporters > div {
+   right-to-left, giving each name a dedicated vertical line.
+   The <ol>/<li> selectors are backwards-compat for HTML rendered by the
+   pre-2026-06-09 compose function — re-saving the doc through /edit/
+   regenerates the markup as plain divs. */
+.first-slide-reporters > div,
+.first-slide-reporters > ol > li {
   margin-inline-start: 1rem;
 }
 
-.first-slide-reporters > div:first-child {
+.first-slide-reporters > div:first-child,
+.first-slide-reporters > ol > li:first-child {
   margin-inline-start: 0;
+}
+
+.first-slide-reporters > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
