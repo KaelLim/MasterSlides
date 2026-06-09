@@ -5,6 +5,7 @@ import { join } from "path";
 import { handleFetchDoc, handleDocs } from "./routes/docs.ts";
 import { handlePublish, handleConfig } from "./routes/publish.ts";
 import { handleAdminRoute } from "./routes/admin/index.ts";
+import { handleGetEdit, handlePostEdit, type EditPayload } from "./routes/edit.ts";
 
 const PORT = parseInt(process.env.PORT || "3000");
 const PUBLIC_DIR = join(import.meta.dir, "../public");
@@ -133,6 +134,18 @@ const server = Bun.serve({
     // API: POST /api/fetch-doc
     if (pathname === "/api/fetch-doc" && req.method === "POST") {
       return handleFetchDoc(req);
+    }
+
+    // API: GET/POST /api/edit/:id
+    if (pathname === "/api/edit/" || pathname.startsWith("/api/edit/")) {
+      const id = pathname.replace(/^\/api\/edit\//, "").replace(/\/$/, "");
+      if (!id) return new Response("Bad Request", { status: 400 });
+      if (req.method === "GET") return handleGetEdit(id);
+      if (req.method === "POST") {
+        const payload = (await req.json()) as EditPayload;
+        return handlePostEdit(id, payload);
+      }
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
     // API: GET /api/docs or /api/docs/:id
