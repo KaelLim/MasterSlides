@@ -11,6 +11,8 @@ export interface UpsertDocInput {
   title: string | null;
   html: string;
   image_ids: string[];
+  presentation_date?: string | null;
+  unit_report?: string[] | null;
 }
 
 export async function upsertDoc(input: UpsertDocInput): Promise<DocRecord> {
@@ -29,6 +31,8 @@ export async function upsertDoc(input: UpsertDocInput): Promise<DocRecord> {
       title: input.title,
       html: input.html,
       image_ids: input.image_ids,
+      presentation_date: input.presentation_date,
+      unit_report: input.unit_report,
     });
     // Re-fetch to return the updated record (PATCH returns no body in our wrapper).
     const refreshed = await findDocByDocId(input.doc_id);

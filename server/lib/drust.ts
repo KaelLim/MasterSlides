@@ -43,6 +43,8 @@ export interface DocRecord {
   title: string | null;
   html: string | null;
   image_ids: string[] | null;
+  presentation_date: string | null;  // NEW — ISO YYYY-MM-DD
+  unit_report: string[] | null;       // NEW — JSON array of strings
   is_public: number;  // 0 = draft (URL-only), 1 = listed
   created_at: string;
   updated_at: string;
@@ -53,6 +55,8 @@ export interface DocFields {
   title: string | null;
   html: string;
   image_ids: string[];
+  presentation_date?: string | null;  // NEW
+  unit_report?: string[] | null;       // NEW
   is_public?: number;
 }
 
@@ -72,7 +76,15 @@ function normalizeRecord(raw: any): DocRecord {
       image_ids = raw.image_ids;
     }
   }
-  return { ...raw, image_ids };
+  let unit_report: string[] | null = null;
+  if (raw.unit_report != null) {
+    if (typeof raw.unit_report === "string") {
+      try { unit_report = JSON.parse(raw.unit_report); } catch { unit_report = []; }
+    } else if (Array.isArray(raw.unit_report)) {
+      unit_report = raw.unit_report;
+    }
+  }
+  return { ...raw, image_ids, unit_report };
 }
 
 export async function findDocByDocId(docId: string): Promise<DocRecord | null> {
@@ -89,25 +101,49 @@ export async function findDocByDocId(docId: string): Promise<DocRecord | null> {
 }
 
 export async function insertDoc(data: DocFields): Promise<DocRecord> {
+  const payload: Record<string, unknown> = {
+    doc_id: data.doc_id,
+    title: data.title,
+    html: data.html,
+    image_ids: data.image_ids,
+    is_public: data.is_public ?? 0,
+  };
+  if (data.presentation_date !== undefined) {
+    payload.presentation_date = data.presentation_date;
+  }
+  if (data.unit_report !== undefined) {
+    payload.unit_report =
+      data.unit_report === null ? null : JSON.stringify(data.unit_report);
+  }
   const res = await drustJson<{ id: number; record: DocRecord }>(
     `/records/docs`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data }),
-    }
+      body: JSON.stringify({ data: payload }),
+    },
   );
   return normalizeRecord(res.record);
 }
 
 export async function updateDoc(
   id: number,
-  data: Partial<Pick<DocFields, "title" | "html" | "image_ids" | "is_public">>
+  data: Partial<Pick<DocFields, "title" | "html" | "image_ids" | "presentation_date" | "unit_report" | "is_public">>,
 ): Promise<void> {
+  const patch: Record<string, unknown> = {};
+  if (data.title !== undefined) patch.title = data.title;
+  if (data.html !== undefined) patch.html = data.html;
+  if (data.image_ids !== undefined) patch.image_ids = data.image_ids;
+  if (data.presentation_date !== undefined) patch.presentation_date = data.presentation_date;
+  if (data.unit_report !== undefined) {
+    patch.unit_report =
+      data.unit_report === null ? null : JSON.stringify(data.unit_report);
+  }
+  if (data.is_public !== undefined) patch.is_public = data.is_public;
   await drustFetch(`/records/docs/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify({ data: patch }),
   });
 }
 

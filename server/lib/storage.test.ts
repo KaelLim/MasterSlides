@@ -79,3 +79,35 @@ test("upsertDoc: same doc_id overwrites and reclaims orphaned image_ids", async 
     if (final) await deleteDoc(final.id);
   }
 });
+
+test("upsertDoc: round-trips presentation_date and unit_report", async () => {
+  const docId = `__upsert_meta_${Date.now()}`;
+  try {
+    await upsertDoc({
+      doc_id: docId,
+      title: "T",
+      html: "<article class=\"slide-content\"></article>",
+      image_ids: [],
+      presentation_date: "2026-06-09",
+      unit_report: ["陳老師", "林老師"],
+    });
+    const stored = await findDocByDocId(docId);
+    expect(stored?.presentation_date).toBe("2026-06-09");
+    expect(stored?.unit_report).toEqual(["陳老師", "林老師"]);
+
+    await upsertDoc({
+      doc_id: docId,
+      title: "T2",
+      html: "<article class=\"slide-content\"></article>",
+      image_ids: [],
+      presentation_date: "2026-07-01",
+      unit_report: ["A"],
+    });
+    const updated = await findDocByDocId(docId);
+    expect(updated?.presentation_date).toBe("2026-07-01");
+    expect(updated?.unit_report).toEqual(["A"]);
+  } finally {
+    const final = await findDocByDocId(docId);
+    if (final) await deleteDoc(final.id);
+  }
+});
