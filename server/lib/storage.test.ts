@@ -38,7 +38,12 @@ test("upsertDoc inserts on first call, updates and cleans old images on second",
   } finally {
     // Cleanup is idempotent (deleteImage tolerates 404, deleteDoc only runs if record exists).
     const final = await findDocByDocId(docId);
-    if (final) await deleteDoc(final.id);
+    if (final) {
+      if (final.html_file_id) {
+        try { await deleteImage(final.html_file_id); } catch {}
+      }
+      await deleteDoc(final.id);
+    }
     await deleteImage(img1.id);
     await deleteImage(img2.id);
   }
@@ -62,6 +67,9 @@ test("upsertDoc: same doc_id overwrites and reclaims orphaned image_ids", async 
     });
     const v1 = await findDocByDocId(docId);
     expect(v1?.image_ids).toEqual(["__test_img_a", "__test_img_b"]);
+    // html now lives in a Drust file, not the row — assert via getDocHtml.
+    expect(await getDocHtml(docId)).toBe("<p>v1</p>");
+    expect(v1?.html_file_id).toBeTruthy();
 
     // V2 keeps b, drops a, adds c
     await upsertDoc({
@@ -72,11 +80,19 @@ test("upsertDoc: same doc_id overwrites and reclaims orphaned image_ids", async 
     });
     const v2 = await findDocByDocId(docId);
     expect(v2?.image_ids).toEqual(["__test_img_b", "__test_img_c"]);
-    expect(v2?.html).toBe("<p>v2</p>");
+    expect(await getDocHtml(docId)).toBe("<p>v2</p>");
     expect(v2?.title).toBe("v2");
+    // V2 should have a fresh html_file_id (old one reclaimed).
+    expect(v2?.html_file_id).toBeTruthy();
+    expect(v2?.html_file_id).not.toBe(v1?.html_file_id);
   } finally {
     const final = await findDocByDocId(docId);
-    if (final) await deleteDoc(final.id);
+    if (final) {
+      if (final.html_file_id) {
+        try { await deleteImage(final.html_file_id); } catch {}
+      }
+      await deleteDoc(final.id);
+    }
   }
 });
 
@@ -108,6 +124,11 @@ test("upsertDoc: round-trips presentation_date and unit_report", async () => {
     expect(updated?.unit_report).toEqual(["A"]);
   } finally {
     const final = await findDocByDocId(docId);
-    if (final) await deleteDoc(final.id);
+    if (final) {
+      if (final.html_file_id) {
+        try { await deleteImage(final.html_file_id); } catch {}
+      }
+      await deleteDoc(final.id);
+    }
   }
 });
