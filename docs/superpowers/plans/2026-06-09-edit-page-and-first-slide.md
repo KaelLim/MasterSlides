@@ -255,62 +255,189 @@ EOF
 
 ---
 
-## Task 2: extend `storage.ts` with metadata fields
+## Task 2: extend Drust + storage layers with metadata fields
 
-`upsertDoc` currently writes `{doc_id, title, html, image_ids}`. Add `presentation_date` and `unit_report`. Both nullable so legacy callers still work.
+The fields flow through two files: `drust.ts` owns the wire shape (`DocFields` for writes, `DocRecord` for reads, `normalizeRecord` for parsing), and `storage.ts` adds them to `UpsertDocInput` and threads them into the insert/update calls.
 
 **Files:**
+- Modify: `server/lib/drust.ts`
 - Modify: `server/lib/storage.ts`
-- Modify test: `server/lib/storage.test.ts`
+- Modify: `server/lib/storage.test.ts`
 
-- [ ] **Step 1: Read current storage.ts and its test for the existing surface**
+- [ ] **Step 1: Baseline**
 
 ```bash
 bun test server/lib/storage.test.ts
 ```
 
-Expected: PASS (baseline).
+Expected: PASS (existing 3 tests).
 
-- [ ] **Step 2: Write failing round-trip test**
+- [ ] **Step 2: Write the failing round-trip test**
 
-Add to `server/lib/storage.test.ts`:
+Append to `server/lib/storage.test.ts`:
 
 ```ts
 test("upsertDoc: round-trips presentation_date and unit_report", async () => {
-  const doc_id = `__upsert_meta_${Date.now()}`;
-  await upsertDoc({
-    doc_id,
-    title: "T",
-    html: "<article class=\"slide-content\"></article>",
-    image_ids: [],
-    presentation_date: "2026-06-09",
-    unit_report: ["陳老師", "林老師"],
-  });
-  const stored = await getDoc(doc_id);
-  expect(stored?.presentation_date).toBe("2026-06-09");
-  expect(stored?.unit_report).toEqual(["陳老師", "林老師"]);
-  await deleteDoc(doc_id);
+  const docId = `__upsert_meta_${Date.now()}`;
+  try {
+    await upsertDoc({
+      doc_id: docId,
+      title: "T",
+      html: "<article class=\"slide-content\"></article>",
+      image_ids: [],
+      presentation_date: "2026-06-09",
+      unit_report: ["陳老師", "林老師"],
+    });
+    const stored = await findDocByDocId(docId);
+    expect(stored?.presentation_date).toBe("2026-06-09");
+    expect(stored?.unit_report).toEqual(["陳老師", "林老師"]);
+
+    await upsertDoc({
+      doc_id: docId,
+      title: "T2",
+      html: "<article class=\"slide-content\"></article>",
+      image_ids: [],
+      presentation_date: "2026-07-01",
+      unit_report: ["A"],
+    });
+    const updated = await findDocByDocId(docId);
+    expect(updated?.presentation_date).toBe("2026-07-01");
+    expect(updated?.unit_report).toEqual(["A"]);
+  } finally {
+    const final = await findDocByDocId(docId);
+    if (final) await deleteDoc(final.id);
+  }
 });
 ```
 
-(Use the existing test helpers `getDoc` / `deleteDoc`; if they don't exist, mirror what the existing round-trip test uses.)
-
-- [ ] **Step 3: Run the test, confirm failure mode**
+- [ ] **Step 3: Confirm failure**
 
 ```bash
 bun test server/lib/storage.test.ts
 ```
 
-Expected: FAIL — `presentation_date` / `unit_report` are not on the type or not persisted.
+Expected: FAIL — fields aren't sent to Drust and/or aren't parsed back.
 
-- [ ] **Step 4: Extend `UpsertDocInput` and the Drust payload**
+- [ ] **Step 4: Extend `drust.ts` types and round-trip**
 
-In `server/lib/storage.ts`, add optional fields:
+In `server/lib/drust.ts`:
+
+```ts
+// In DocRecord (add to the existing interface):
+export interface DocRecord {
+  id: number;
+  doc_id: string;
+  title: string | null;
+  html: string | null;
+  image_ids: string[] | null;
+  presentation_date: string | null;  // NEW — ISO YYYY-MM-DD
+  unit_report: string[] | null;       // NEW — JSON array of strings
+  is_public: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// In DocFields (add to the existing interface):
+export interface DocFields {
+  doc_id: string;
+  title: string | null;
+  html: string;
+  image_ids: string[];
+  presentation_date?: string | null;  // NEW
+  unit_report?: string[] | null;       // NEW
+  is_public?: number;
+}
+```
+
+Extend `normalizeRecord` to JSON-parse `unit_report` the same way it parses `image_ids`:
+
+```ts
+function normalizeRecord(raw: any): DocRecord {
+  let image_ids: string[] | null = null;
+  if (raw.image_ids != null) {
+    if (typeof raw.image_ids === "string") {
+      try { image_ids = JSON.parse(raw.image_ids); } catch { image_ids = []; }
+    } else if (Array.isArray(raw.image_ids)) {
+      image_ids = raw.image_ids;
+    }
+  }
+  let unit_report: string[] | null = null;
+  if (raw.unit_report != null) {
+    if (typeof raw.unit_report === "string") {
+      try { unit_report = JSON.parse(raw.unit_report); } catch { unit_report = []; }
+    } else if (Array.isArray(raw.unit_report)) {
+      unit_report = raw.unit_report;
+    }
+  }
+  return { ...raw, image_ids, unit_report };
+}
+```
+
+Extend `insertDoc` so it sends `unit_report` as a JSON string (Drust stores TEXT/JSON columns this way, mirroring how `playlists.doc_ids` is serialized):
+
+```ts
+export async function insertDoc(data: DocFields): Promise<DocRecord> {
+  const payload: Record<string, unknown> = {
+    doc_id: data.doc_id,
+    title: data.title,
+    html: data.html,
+    image_ids: data.image_ids,
+    is_public: data.is_public ?? 0,
+  };
+  if (data.presentation_date !== undefined) {
+    payload.presentation_date = data.presentation_date;
+  }
+  if (data.unit_report !== undefined) {
+    payload.unit_report =
+      data.unit_report === null ? null : JSON.stringify(data.unit_report);
+  }
+  const res = await drustJson<{ id: number; record: DocRecord }>(
+    `/records/docs`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: payload }),
+    },
+  );
+  return normalizeRecord(res.record);
+}
+```
+
+(Check at runtime whether Drust accepts `image_ids` as a JS array directly or also needs `JSON.stringify`. The current insertDoc passes it as an array — if the existing tests pass, that's fine. If the new test fails on the `unit_report` shape, switch both to stringify for safety.)
+
+Extend `updateDoc` to allow patching the new fields:
+
+```ts
+export async function updateDoc(
+  id: number,
+  data: Partial<Pick<DocFields, "title" | "html" | "image_ids" | "presentation_date" | "unit_report" | "is_public">>,
+): Promise<void> {
+  const patch: Record<string, unknown> = {};
+  if (data.title !== undefined) patch.title = data.title;
+  if (data.html !== undefined) patch.html = data.html;
+  if (data.image_ids !== undefined) patch.image_ids = data.image_ids;
+  if (data.presentation_date !== undefined) patch.presentation_date = data.presentation_date;
+  if (data.unit_report !== undefined) {
+    patch.unit_report =
+      data.unit_report === null ? null : JSON.stringify(data.unit_report);
+  }
+  if (data.is_public !== undefined) patch.is_public = data.is_public;
+  await drustFetch(`/records/docs/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: patch }),
+  });
+}
+```
+
+- [ ] **Step 5: Extend `storage.ts`**
+
+In `server/lib/storage.ts`:
 
 ```ts
 export interface UpsertDocInput {
   doc_id: string;
-  title: string;
+  title: string | null;
   html: string;
   image_ids: string[];
   presentation_date?: string | null;
@@ -318,20 +445,30 @@ export interface UpsertDocInput {
 }
 ```
 
-In the body that's sent to Drust upsert, include these fields. Read-path (`getDoc` / equivalent) must also surface them; if the read code already spreads the row, no change needed beyond the type.
+In `upsertDoc`, pass the two new fields to both `insertDoc(input)` (already spreads through) and `updateDoc(existing.id, { …, presentation_date, unit_report })`:
 
-- [ ] **Step 5: Run tests, confirm green**
+```ts
+await updateDoc(existing.id, {
+  title: input.title,
+  html: input.html,
+  image_ids: input.image_ids,
+  presentation_date: input.presentation_date,
+  unit_report: input.unit_report,
+});
+```
+
+- [ ] **Step 6: Run tests, confirm green**
 
 ```bash
 bun test server/lib/storage.test.ts
 ```
 
-Expected: PASS — including the new round-trip.
+Expected: PASS — all 4 tests (3 existing + 1 new round-trip).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add server/lib/storage.ts server/lib/storage.test.ts
+git add server/lib/drust.ts server/lib/storage.ts server/lib/storage.test.ts
 git commit -m "$(cat <<'EOF'
 feat(storage): persist presentation_date and unit_report on docs
 
@@ -428,7 +565,8 @@ Create `server/routes/edit.ts`:
 import { fetchMarkdown } from "../lib/google-docs";
 import { convertDocument, extractTitle } from "../lib/convert";
 import { composeFirstSlide } from "../lib/first-slide";
-import { upsertDoc, getDoc } from "../lib/storage";
+import { upsertDoc } from "../lib/storage";
+import { findDocByDocId } from "../lib/drust";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -456,7 +594,7 @@ function todayIsoUtc(): string {
 }
 
 export async function handleGetEdit(doc_id: string): Promise<Response> {
-  const stored = await getDoc(doc_id);
+  const stored = await findDocByDocId(doc_id);
   if (stored) {
     const body: SeedResponse = {
       doc_id,
@@ -974,24 +1112,25 @@ Mirror the Bun handlers behind a Pages Function so production has parity.
 
 - [ ] **Step 1: Write the adapter**
 
-Create `functions/api/edit/[id].ts`:
+Create `functions/api/edit/[id].ts` mirroring the `functions/api/fetch-doc.ts` shape (env-shim + dispatch):
 
 ```ts
+import { shimProcessEnv, type Env } from "../../_lib/env-shim";
 import { handleGetEdit, handlePostEdit } from "../../../server/routes/edit";
 
-export const onRequestGet: PagesFunction = async (ctx) => {
-  const id = String(ctx.params.id);
+export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {
+  shimProcessEnv(env);
+  const id = String(params.id);
   return handleGetEdit(id);
 };
 
-export const onRequestPost: PagesFunction = async (ctx) => {
-  const id = String(ctx.params.id);
-  const payload = await ctx.request.json();
-  return handlePostEdit(id, payload);
+export const onRequestPost: PagesFunction<Env> = async ({ env, params, request }) => {
+  shimProcessEnv(env);
+  const id = String(params.id);
+  const payload = await request.json();
+  return handlePostEdit(id, payload as never);
 };
 ```
-
-(If the existing Pages function pattern imports lib modules differently — check `functions/api/playlists/[[path]].ts` or whichever adapter exists — match its import style.)
 
 - [ ] **Step 2: Verify build still bundles**
 
@@ -1024,19 +1163,33 @@ When `POST /api/fetch-doc` succeeds in the admin UI, redirect to the edit page (
 
 - [ ] **Step 1: Locate the success handler**
 
-```bash
-grep -rn "fetch-doc\|/slides/?src" public/admin/
+The new-doc modal's submit handler lives in `public/admin/js/dashboard.js` around line 153-186. On `body.success` it currently calls `close(); await refresh();` (stays on admin). It needs to navigate to the edit page so the user fills metadata before the doc is published.
+
+- [ ] **Step 2: Change the success path**
+
+In `public/admin/js/dashboard.js`, replace the success branch:
+
+```js
+if (!res.ok || !body.success) {
+  errEl.textContent = body.error || `匯入失敗（HTTP ${res.status}）`;
+  submitBtn.disabled = false;
+  submitBtn.textContent = "匯入";
+  return;
+}
+close();
+// Force metadata entry — every newly imported doc passes through the edit
+// page before it appears on the slides surface. body.doc_id is the
+// canonical id (extracted server-side from the pasted URL).
+location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
 ```
-
-Expected: a single redirect target after fetch-doc resolves.
-
-- [ ] **Step 2: Change the redirect target**
-
-Replace `/slides/?src=...` with `/edit/?src=...` in that handler. If the admin currently navigates to slides on success, change it to navigate to edit.
 
 - [ ] **Step 3: Smoke**
 
-Hit `http://localhost:3000/admin/`, upload a known-good Google Doc URL, confirm the post-success navigation lands on `/edit/?src=...`.
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/admin/
+```
+
+Expected: `200`. Then in the dev tools, the modal submit should navigate to `/edit/?src=<id>` on a successful import. (User verifies in browser; we can't smoke the full modal flow here.)
 
 - [ ] **Step 4: Commit**
 
