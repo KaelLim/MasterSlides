@@ -44,7 +44,7 @@ body.horizontal-mode .lightbox-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* 無 caption 時圖片可擴展 */
