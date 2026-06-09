@@ -5,8 +5,6 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  /* padding 放在這裡，container 在內層 */
-  padding: 60px 80px;
 }
 
 .manuscript-container {
