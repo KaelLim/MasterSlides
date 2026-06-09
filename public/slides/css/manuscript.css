@@ -222,3 +222,62 @@ hr {
   object-fit: contain;
 }
 
+/* ===========================
+   首頁（server-side composed in server/lib/first-slide.ts）
+   Three vertical panels — DOM order [date, title, reporters];
+   row-reverse flips them visually to [reporters, title, date]
+   left-to-right, matching the user spec (rightmost = date, leftmost = reporters)
+   and Chinese vertical reading order (right→left = first→last read).
+   =========================== */
+.first-slide {
+  writing-mode: horizontal-tb;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-around;
+  padding: 4cqi;
+  box-sizing: border-box;
+}
+
+.first-slide-date,
+.first-slide-title,
+.first-slide-reporters {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  text-align: center;
+  letter-spacing: 0.15em;
+  line-height: 1.6;
+}
+
+.first-slide-date {
+  font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
+  color: var(--color-secondary);
+}
+
+.first-slide-title {
+  font-size: calc(clamp(48px, 9cqi, 120px) * var(--font-scale) * var(--mode-scale));
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.first-slide-reporters {
+  font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
+  color: var(--color-text-primary);
+}
+
+.first-slide-reporters ol {
+  list-style-position: inside;
+  padding: 0;
+  margin: 0;
+}
+
+.first-slide-reporters li {
+  margin-bottom: 0.6rem;
+}
+
+.first-slide-reporters li::marker {
+  color: var(--color-primary);
+}
+
