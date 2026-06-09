@@ -123,12 +123,12 @@ const server = Bun.serve({
     }
 
     // Pasted Google Docs URL (e.g. localhost:3000/document/d/<id>/edit) →
-    // redirect to the clean short form /slides/?src=<doc_id>. The frontend's
-    // loadDocument auto-syncs from Google on cache miss, so first-time visits
-    // still work; subsequent visits read from Drust cache.
+    // redirect to the editor at /edit/?src=<doc_id>, so every imported doc
+    // passes through the metadata-entry step before it appears on the
+    // slides surface.
     const docMatch = pathname.match(/^\/document\/d\/([a-zA-Z0-9_-]+)/);
     if (docMatch) {
-      return Response.redirect(`/slides/?src=${docMatch[1]}`, 302);
+      return Response.redirect(`/edit/?src=${encodeURIComponent(docMatch[1])}`, 302);
     }
 
     // API: POST /api/fetch-doc

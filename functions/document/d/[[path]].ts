@@ -1,5 +1,6 @@
 // Redirect helper: pasted Google Docs URLs land here. /document/d/<id>(/...)
-// becomes /slides/?src=<id>.
+// becomes /edit/?src=<id> so every imported doc passes through the
+// metadata-entry step before it shows up on the slides surface.
 //
 // We had this as a _redirects rule, but CF Pages doesn't expand
 // :placeholder substitutions when the source matched a query string or
@@ -18,6 +19,6 @@ export const onRequest: PagesFunction<unknown, "path"> = ({ params }) => {
   // the response so we don't have to reconstruct the origin.
   return new Response(null, {
     status: 302,
-    headers: { Location: `/slides/?src=${encodeURIComponent(id)}` },
+    headers: { Location: `/edit/?src=${encodeURIComponent(id)}` },
   });
 };
