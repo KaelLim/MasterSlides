@@ -137,12 +137,21 @@ const server = Bun.serve({
     }
 
     // API: GET/POST /api/edit/:id
+    // Match the charset enforced by extractDocId / handleGetDoc so a
+    // malformed path can't be string-interpolated into upstream URLs.
     if (pathname === "/api/edit/" || pathname.startsWith("/api/edit/")) {
       const id = pathname.replace(/^\/api\/edit\//, "").replace(/\/$/, "");
-      if (!id) return new Response("Bad Request", { status: 400 });
+      if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+        return Response.json({ error: "invalid_doc_id" }, { status: 400 });
+      }
       if (req.method === "GET") return handleGetEdit(id);
       if (req.method === "POST") {
-        const payload = (await req.json()) as EditPayload;
+        let payload: EditPayload;
+        try {
+          payload = (await req.json()) as EditPayload;
+        } catch {
+          return Response.json({ error: "bad-json" }, { status: 400 });
+        }
         return handlePostEdit(id, payload);
       }
       return new Response("Method Not Allowed", { status: 405 });

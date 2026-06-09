@@ -30,34 +30,39 @@ function todayIsoUtc(): string {
 }
 
 export async function handleGetEdit(doc_id: string): Promise<Response> {
-  const stored = await findDocByDocId(doc_id);
-  if (stored) {
+  try {
+    const stored = await findDocByDocId(doc_id);
+    if (stored) {
+      const body: SeedResponse = {
+        doc_id,
+        title: stored.title ?? "",
+        presentation_date: stored.presentation_date ?? todayIsoUtc(),
+        unit_report: stored.unit_report ?? [],
+        source: "stored",
+      };
+      return Response.json(body);
+    }
+    // No stored record — fetch the Google Doc just to seed the title.
+    // If Google fetch fails, fall back to empty title; the user can fill it in.
+    let title = "";
+    try {
+      const markdown = await fetchMarkdown(doc_id);
+      title = extractTitle(markdown) ?? "";
+    } catch {
+      title = "";
+    }
     const body: SeedResponse = {
       doc_id,
-      title: stored.title ?? "",
-      presentation_date: stored.presentation_date ?? todayIsoUtc(),
-      unit_report: stored.unit_report ?? [],
-      source: "stored",
+      title,
+      presentation_date: todayIsoUtc(),
+      unit_report: [],
+      source: "fresh",
     };
     return Response.json(body);
+  } catch (err: any) {
+    console.error("edit GET error:", err);
+    return Response.json({ success: false, error: err.message }, { status: 500 });
   }
-  // No stored record — fetch the Google Doc just to seed the title.
-  // If Google fetch fails, fall back to empty title; the user can fill it in.
-  let title = "";
-  try {
-    const markdown = await fetchMarkdown(doc_id);
-    title = extractTitle(markdown) ?? "";
-  } catch {
-    title = "";
-  }
-  const body: SeedResponse = {
-    doc_id,
-    title,
-    presentation_date: todayIsoUtc(),
-    unit_report: [],
-    source: "fresh",
-  };
-  return Response.json(body);
 }
 
 function validate(payload: EditPayload): string | null {
@@ -66,6 +71,19 @@ function validate(payload: EditPayload): string | null {
   }
   const d = new Date(`${payload.presentation_date}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return "presentation_date_invalid";
+  // Round-trip check: rejects calendar-invalid dates like 2026-02-30 or
+  // 2026-13-01 that the Date ctor silently normalises (→ 2026-03-02 /
+  // 2027-01-01). first-slide.ts already enforces this — keeping the check
+  // here too means we return a clean 422 instead of bubbling a 500 out
+  // of composeFirstSlide.
+  const [yStr, mStr, dStr] = payload.presentation_date.split("-");
+  if (
+    d.getUTCFullYear() !== Number(yStr) ||
+    d.getUTCMonth() + 1 !== Number(mStr) ||
+    d.getUTCDate() !== Number(dStr)
+  ) {
+    return "presentation_date_invalid";
+  }
   if (typeof payload.title !== "string" || payload.title.trim().length === 0) {
     return "title_required";
   }
@@ -89,23 +107,37 @@ export async function handlePostEdit(
   const title = payload.title.trim();
   const presentation_date = payload.presentation_date;
 
-  const markdown = await fetchMarkdown(doc_id);
-  const { html: bodyHtml, imageIds } = await convertDocument(markdown);
-  const firstSlide = composeFirstSlide({ presentation_date, title, unit_report });
-  // Insert first-slide HTML inside the article wrapper so paginator iterates it.
-  const finalHtml = bodyHtml.replace(
-    /^<article class="slide-content">\n?/,
-    (m) => `${m}${firstSlide}\n`,
-  );
+  try {
+    const markdown = await fetchMarkdown(doc_id);
+    const { html: bodyHtml, imageIds } = await convertDocument(markdown);
+    const firstSlide = composeFirstSlide({ presentation_date, title, unit_report });
+    // Insert first-slide HTML inside the article wrapper so paginator iterates it.
+    // Assert the replacement actually happened — if convertDocument's wrapper
+    // ever changes shape, we'd silently drop the first slide otherwise.
+    let injected = false;
+    const finalHtml = bodyHtml.replace(
+      /^<article class="slide-content">\n?/,
+      (m) => {
+        injected = true;
+        return `${m}${firstSlide}\n`;
+      },
+    );
+    if (!injected) {
+      throw new Error("first_slide_injection_failed");
+    }
 
-  await upsertDoc({
-    doc_id,
-    title,
-    html: finalHtml,
-    image_ids: imageIds,
-    presentation_date,
-    unit_report,
-  });
+    await upsertDoc({
+      doc_id,
+      title,
+      html: finalHtml,
+      image_ids: imageIds,
+      presentation_date,
+      unit_report,
+    });
 
-  return Response.json({ ok: true });
+    return Response.json({ ok: true });
+  } catch (e: any) {
+    console.error("edit POST error:", e);
+    return Response.json({ success: false, error: e.message }, { status: 500 });
+  }
 }
