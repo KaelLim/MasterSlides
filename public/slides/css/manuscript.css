@@ -148,10 +148,16 @@ img {
    =========================== */
 .heading-table {
   writing-mode: horizontal-tb;
+  /* 填滿 slide-page，否則 wrapper 寬度只跟著內容、table 會跑出右界 */
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
+  gap: 1.2rem;
+  padding: 2cqi 2cqi;
+  box-sizing: border-box;
 }
 
 .heading-table h1,
@@ -163,21 +169,51 @@ img {
   text-align: center;
   letter-spacing: 0.1em;
   margin: 0;
+  font-weight: 700;
+  /* 重新計算字級：群組強制橫書，不能套用直書的 --mode-scale (1.6)；
+     不然 h1 會被放大到 160px。改成只乘 --font-scale，跟 body p 同尺度。 */
+}
+
+.heading-table h1 {
+  font-size: calc(clamp(36px, 5cqi, 72px) * var(--font-scale));
+  color: var(--color-primary);
+}
+
+.heading-table h2 {
+  font-size: calc(clamp(32px, 4.5cqi, 64px) * var(--font-scale));
+  color: var(--color-primary);
+}
+
+.heading-table h3 {
+  font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
+  color: var(--color-secondary);
+}
+
+.heading-table h4 {
+  font-size: calc(clamp(24px, 3.5cqi, 48px) * var(--font-scale));
+  color: var(--color-primary-light);
 }
 
 .heading-table table {
   border-collapse: collapse;
   color: var(--color-text-primary);
-  font-size: calc(clamp(18px, 3cqi, 38px) * var(--font-scale) * var(--mode-scale));
-  line-height: 1.6;
+  /* 跟 body p 同字級基準（clamp(28,5cqi,60)）但稍小，畢竟 cell padding 也占空間 */
+  font-size: calc(clamp(20px, 3cqi, 44px) * var(--font-scale));
+  line-height: 1.5;
+  /* width 100% + auto layout + word-break 讓欄寬自然分配但不會撐爆 */
+  width: 100%;
   max-width: 100%;
+  table-layout: auto;
 }
 
 .heading-table th,
 .heading-table td {
   border: 1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 0.8rem;
   text-align: center;
+  /* 中文長字串強制斷行，避免單一儲存格把欄寬撐爆 */
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .heading-table th {
