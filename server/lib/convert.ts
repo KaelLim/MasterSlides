@@ -108,6 +108,22 @@ export function extractDriveId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+// A heading immediately followed by a <table> is the user's signal that the
+// two should travel together as a horizontally-laid-out group (centered
+// heading on top, table below) — even when the rest of the document is
+// vertical. We wrap them in a single .heading-table div so:
+//   1. paginator.ts naturally treats the wrapper as an atomic block (it's
+//      not list/text, so the split strategies skip it — overflow forces a
+//      page break before the whole group).
+//   2. manuscript.css can flip just this group to horizontal-tb and stack
+//      heading + table vertically.
+export function wrapHeadingTablePairs(html: string): string {
+  return html.replace(
+    /(<h([1-4])(?:\s[^>]*)?>[\s\S]*?<\/h\2>)\s*(<table(?:\s[^>]*)?>[\s\S]*?<\/table>)/g,
+    '<div class="heading-table">$1$3</div>',
+  );
+}
+
 // Replace `<p><a href="…">…</a></p>` where the <a> is the paragraph's only
 // content. Inline links (text + link + more text) are left alone.
 export function transformVideoEmbeds(html: string): string {
@@ -148,7 +164,8 @@ export async function convertDocument(markdown: string): Promise<ConvertResult> 
 
   marked.setOptions({ breaks: true, gfm: true });
   const rawHtml = marked.parse(processed) as string;
-  const withVideos = transformVideoEmbeds(rawHtml);
+  const wrapped = wrapHeadingTablePairs(rawHtml);
+  const withVideos = transformVideoEmbeds(wrapped);
   const cleanHtml = cleanImageStyles(withVideos);
   const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
 

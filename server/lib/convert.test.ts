@@ -5,6 +5,7 @@ import {
   extractTitle,
   extractYouTubeId,
   transformVideoEmbeds,
+  wrapHeadingTablePairs,
 } from "./convert";
 
 test("extractTitle: takes the first H1", () => {
@@ -114,6 +115,33 @@ test("transformVideoEmbeds: paragraph with <br> after link is left alone", () =>
 test("transformVideoEmbeds: unrelated link stays as link", () => {
   const html = '<p><a href="https://example.com/article">read more</a></p>';
   expect(transformVideoEmbeds(html)).toBe(html);
+});
+
+// ── wrapHeadingTablePairs: heading + table → atomic horizontal group ────
+
+test("wrapHeadingTablePairs: h2 immediately before table is wrapped", () => {
+  const html = "<h2>名單</h2>\n<table><tr><td>a</td></tr></table>";
+  const out = wrapHeadingTablePairs(html);
+  expect(out).toBe(
+    '<div class="heading-table"><h2>名單</h2><table><tr><td>a</td></tr></table></div>',
+  );
+});
+
+test("wrapHeadingTablePairs: works for h1–h4", () => {
+  for (const level of [1, 2, 3, 4]) {
+    const html = `<h${level}>T</h${level}>\n<table></table>`;
+    expect(wrapHeadingTablePairs(html)).toContain('class="heading-table"');
+  }
+});
+
+test("wrapHeadingTablePairs: paragraph between heading and table breaks the pair", () => {
+  const html = "<h2>T</h2>\n<p>說明</p>\n<table></table>";
+  expect(wrapHeadingTablePairs(html)).toBe(html);
+});
+
+test("wrapHeadingTablePairs: standalone table is left alone", () => {
+  const html = "<p>before</p><table><tr><td>x</td></tr></table>";
+  expect(wrapHeadingTablePairs(html)).toBe(html);
 });
 
 test("convertDocument end-to-end: YouTube paragraph becomes iframe", async () => {

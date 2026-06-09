@@ -141,6 +141,53 @@ img {
 }
 
 /* ===========================
+   Heading + Table 群組
+   convert.ts 把 h? 緊鄰 <table> 包成 .heading-table；
+   即使文件其他部分是直書，這個 group 強制橫書，
+   heading 置中在上、table 在下，整組由 paginator 視為不可切割區塊。
+   =========================== */
+.heading-table {
+  writing-mode: horizontal-tb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.heading-table h1,
+.heading-table h2,
+.heading-table h3,
+.heading-table h4 {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  text-align: center;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.heading-table table {
+  border-collapse: collapse;
+  color: var(--color-text-primary);
+  font-size: calc(clamp(18px, 3cqi, 38px) * var(--font-scale) * var(--mode-scale));
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+.heading-table th,
+.heading-table td {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+  padding: 0.6rem 1.2rem;
+  text-align: center;
+}
+
+.heading-table th {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* ===========================
    分頁線（hr = page break）
    paginator.ts treats <hr> as a page boundary by element type;
    no CSS break-* hint needed.
