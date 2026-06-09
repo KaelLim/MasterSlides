@@ -66,6 +66,13 @@ export async function handleGetEdit(doc_id: string): Promise<Response> {
 }
 
 function validate(payload: EditPayload): string | null {
+  // req.json() happily returns null / arrays / primitives for valid-but-non-object
+  // JSON bodies; the bad-json catch in server/index.ts does not cover those, so
+  // dereferencing payload.* below would throw a TypeError outside this function's
+  // caller try/catch and bubble out as an opaque 500. Guard up front instead.
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return "invalid_payload";
+  }
   if (typeof payload.presentation_date !== "string" || !DATE_RE.test(payload.presentation_date)) {
     return "presentation_date_invalid";
   }

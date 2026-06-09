@@ -102,3 +102,24 @@ test("handlePostEdit: rejects non-string title", async () => {
   expect(res.status).toBe(422);
   expect((await res.json()).error).toBe("title_required");
 });
+
+test("handlePostEdit: rejects null payload with structured error", async () => {
+  // req.json() returns null for a literal `null` body; that bypasses the
+  // bad-json catch in server/index.ts and used to crash validate() with a
+  // TypeError, leaking an opaque 500. Must surface 422 + invalid_payload.
+  const res = await handlePostEdit("__fake_id", null as never);
+  expect(res.status).toBe(422);
+  expect((await res.json()).error).toBe("invalid_payload");
+});
+
+test("handlePostEdit: rejects array payload with structured error", async () => {
+  const res = await handlePostEdit("__fake_id", [] as never);
+  expect(res.status).toBe(422);
+  expect((await res.json()).error).toBe("invalid_payload");
+});
+
+test("handlePostEdit: rejects primitive payload with structured error", async () => {
+  const res = await handlePostEdit("__fake_id", "x" as never);
+  expect(res.status).toBe(422);
+  expect((await res.json()).error).toBe("invalid_payload");
+});
