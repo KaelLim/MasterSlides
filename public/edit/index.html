@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編輯簡報</title>
+    <link rel="stylesheet" href="/theme/default/index.css">
+    <link rel="stylesheet" href="edit.css">
+  </head>
+  <body>
+    <main class="edit-shell">
+      <h1>編輯簡報</h1>
+
+      <div id="status" class="status" hidden></div>
+
+      <form id="edit-form" hidden>
+        <label class="field">
+          <span class="field-label">簡報日期 <em>*</em></span>
+          <input type="date" id="presentation-date" required>
+        </label>
+
+        <label class="field">
+          <span class="field-label">簡報標題 <em>*</em></span>
+          <input type="text" id="title" required maxlength="200">
+        </label>
+
+        <fieldset class="field">
+          <legend class="field-label">單位報告 <em>*</em></legend>
+          <ol id="reporter-list"></ol>
+          <button type="button" id="add-reporter" class="ghost-btn">＋ 新增</button>
+        </fieldset>
+
+        <div class="actions">
+          <a href="/admin/" class="ghost-btn">取消</a>
+          <button type="submit" id="save-btn" class="primary-btn" disabled>儲存並預覽</button>
+        </div>
+      </form>
+    </main>
+    <script type="module" src="edit.js"></script>
+  </body>
+</html>
