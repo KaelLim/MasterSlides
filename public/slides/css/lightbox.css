@@ -91,6 +91,11 @@ body.horizontal-mode .lightbox-caption {
   bottom: 20px;
   display: flex;
   gap: 10px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 999px;
 }
 
 .lightbox-controls button {
