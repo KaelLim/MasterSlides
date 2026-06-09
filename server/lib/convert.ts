@@ -158,6 +158,20 @@ export function transformVideoEmbeds(html: string): string {
   );
 }
 
+// Strip whitespace that lives strictly BETWEEN tags. Whitespace that's
+// adjacent to text content (e.g. " " inside `<p>foo <strong>bar</strong></p>`)
+// is not matched because the regex requires `>` immediately before the
+// whitespace and `<` immediately after. Whitespace inside `<pre>`/`<code>`
+// is text content too, so it's preserved automatically.
+//
+// Used as the last step before persisting HTML to Drust. Marked emits one
+// newline between every block element, which compounds into KB of useless
+// payload on multi-page presentations and contributes to Drust's body-
+// size ceiling on /records/docs PATCH.
+export function minifyHtml(html: string): string {
+  return html.replace(/>\s+</g, "><");
+}
+
 export async function convertDocument(markdown: string): Promise<ConvertResult> {
   const title = extractTitle(markdown);
   const { markdown: processed, imageCount, imageIds } = await processImages(markdown);
@@ -167,7 +181,7 @@ export async function convertDocument(markdown: string): Promise<ConvertResult> 
   const wrapped = wrapHeadingTablePairs(rawHtml);
   const withVideos = transformVideoEmbeds(wrapped);
   const cleanHtml = cleanImageStyles(withVideos);
-  const html = `<article class="slide-content">\n${cleanHtml}\n</article>`;
+  const html = minifyHtml(`<article class="slide-content">\n${cleanHtml}\n</article>`);
 
   return { html, imageCount, imageIds, title };
 }

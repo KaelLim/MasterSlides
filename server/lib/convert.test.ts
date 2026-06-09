@@ -4,6 +4,7 @@ import {
   extractDriveId,
   extractTitle,
   extractYouTubeId,
+  minifyHtml,
   transformVideoEmbeds,
   wrapHeadingTablePairs,
 } from "./convert";
@@ -142,6 +143,37 @@ test("wrapHeadingTablePairs: paragraph between heading and table breaks the pair
 test("wrapHeadingTablePairs: standalone table is left alone", () => {
   const html = "<p>before</p><table><tr><td>x</td></tr></table>";
   expect(wrapHeadingTablePairs(html)).toBe(html);
+});
+
+// ── minifyHtml: collapse between-tag whitespace, preserve content ──────
+
+test("minifyHtml: collapses newlines between block tags", () => {
+  expect(minifyHtml("<p>a</p>\n<p>b</p>")).toBe("<p>a</p><p>b</p>");
+  expect(minifyHtml("<ul>\n<li>a</li>\n<li>b</li>\n</ul>")).toBe(
+    "<ul><li>a</li><li>b</li></ul>",
+  );
+});
+
+test("minifyHtml: preserves whitespace inside text content", () => {
+  // The space after "hello" lives between a text char and `<`, not between `>` and `<`.
+  expect(minifyHtml("<p>hello <strong>world</strong></p>")).toBe(
+    "<p>hello <strong>world</strong></p>",
+  );
+  expect(minifyHtml("<p>foo bar baz</p>")).toBe("<p>foo bar baz</p>");
+});
+
+test("minifyHtml: preserves whitespace inside <pre>/<code> bodies", () => {
+  // Newlines inside the code body are text content; the regex never sees them
+  // as `>\s+<` because `foo` and `bar` sit between the tags.
+  const code = "<pre><code>foo\n  bar\n  baz\n</code></pre>";
+  expect(minifyHtml(code)).toBe(code);
+});
+
+test("minifyHtml: end-to-end shrinks marked output", async () => {
+  const md = "# T\n\nFirst paragraph.\n\nSecond paragraph.\n\n- one\n- two\n- three\n";
+  const { html } = await convertDocument(md);
+  // No `>\n<` sequences should survive minification.
+  expect(html).not.toMatch(/>\s+</);
 });
 
 test("convertDocument end-to-end: YouTube paragraph becomes iframe", async () => {
