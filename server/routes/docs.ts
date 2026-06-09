@@ -1,6 +1,8 @@
 import { extractDocId, fetchMarkdown } from "../lib/google-docs.ts";
 import { convertDocument } from "../lib/convert.ts";
+import { composeFirstSlide } from "../lib/first-slide.ts";
 import { upsertDoc, getDocHtml } from "../lib/storage.ts";
+import { findDocByDocId } from "../lib/drust.ts";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -22,17 +24,53 @@ export async function handleFetchDoc(req: Request): Promise<Response> {
       return json({ success: false, error: "無效的 Google Docs URL" }, 400);
     }
 
+    // Look up existing metadata BEFORE writing — the viewer's refresh
+    // button reuses this endpoint, and we must preserve presentation_date
+    // + unit_report (and re-inject the first slide) instead of silently
+    // wiping them.
+    const existing = await findDocByDocId(docId);
+
     const markdown = await fetchMarkdown(docId);
-    const { html, imageCount, imageIds, title: extractedTitle } = await convertDocument(markdown);
+    const { html: bodyHtml, imageCount, imageIds, title: extractedTitle } = await convertDocument(markdown);
+
+    // Effective title resolution: explicit request body wins; then the
+    // user-edited title from a prior /api/edit save; then the markdown
+    // H1; final fallback is the bare doc_id.
+    const effectiveTitle = title ?? existing?.title ?? extractedTitle ?? docId;
+
+    // Re-inject the synthesized first slide IF the doc has previously been
+    // saved through the edit page (i.e. has both metadata fields). Without
+    // this, a refresh would overwrite the stored html with body-only.
+    let finalHtml = bodyHtml;
+    const reporters = existing?.unit_report?.filter((s) => s.trim().length > 0) ?? [];
+    if (existing?.presentation_date && reporters.length > 0) {
+      const firstSlide = composeFirstSlide({
+        presentation_date: existing.presentation_date,
+        title: effectiveTitle,
+        unit_report: reporters,
+      });
+      let injected = false;
+      finalHtml = bodyHtml.replace(
+        /^<article class="slide-content">\n?/,
+        (m) => {
+          injected = true;
+          return `${m}${firstSlide}\n`;
+        },
+      );
+      if (!injected) {
+        // Shape mismatch — bail loudly instead of silently dropping the
+        // first slide. convert.ts owns this prefix; anything else is a bug.
+        throw new Error("first_slide_injection_failed");
+      }
+    }
 
     await upsertDoc({
       doc_id: docId,
-      // Explicit `title` in the request wins. Otherwise use the first H1 we
-      // extracted from the markdown; final fallback is the bare doc_id so
-      // dashboards still have something to show.
-      title: title ?? extractedTitle ?? docId,
-      html,
+      title: effectiveTitle,
+      html: finalHtml,
       image_ids: imageIds,
+      presentation_date: existing?.presentation_date ?? null,
+      unit_report: existing?.unit_report ?? null,
     });
 
     return json({ success: true, doc_id: docId, images: imageCount });
