@@ -25,6 +25,28 @@ function escapeHTML(s) {
 
 let docs = [];
 let page = 0;
+// docId → number of playlists that reference it. Populated in refresh() so
+// renderTable() can show the 在 N 個 playlist badge without re-fetching.
+let playlistCountByDocId = new Map();
+
+async function fetchPlaylistCounts() {
+  // Best-effort: a failure here just leaves the counts empty so the column
+  // falls back to 未使用 rather than blocking the whole dashboard.
+  try {
+    const res = await fetch("/api/admin/playlists", { credentials: "same-origin" });
+    if (!res.ok) { playlistCountByDocId = new Map(); return; }
+    const { playlists } = await res.json();
+    const map = new Map();
+    for (const p of (playlists || [])) {
+      for (const id of (p.doc_ids || [])) {
+        map.set(id, (map.get(id) || 0) + 1);
+      }
+    }
+    playlistCountByDocId = map;
+  } catch {
+    playlistCountByDocId = new Map();
+  }
+}
 
 async function refresh() {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
@@ -41,6 +63,9 @@ async function refresh() {
     return;
   }
   docs = (await res.json()).docs;
+  // Run after docs so a slow playlist fetch doesn't delay the first paint of
+  // the table; we re-render once counts arrive.
+  await fetchPlaylistCounts();
   page = 0;
   renderTable();
 }
@@ -61,17 +86,21 @@ function renderTable() {
 
   const rows = visible.map((d) => {
     const stateBadge = d.is_public
-      ? `<span class="state-badge state-badge--public">公開</span>`
-      : `<span class="state-badge state-badge--draft">草稿</span>`;
-    // In-playlist count is a TODO — requires intersecting all playlists' doc_ids
-    // with the docs list. Placeholder kept so the column reads as designed.
-    const playlistCount = `<span class="state-meta">在 — 個 playlist</span>`;
+      ? `<span class="ds-badge ds-badge--public">公開</span>`
+      : `<span class="ds-badge ds-badge--draft">草稿</span>`;
+    // In-playlist count computed at refresh() from /api/admin/playlists.
+    // 未使用 reads softer (no border, italicised, ink-dim) so it doesn't
+    // compete with the primary 公開/草稿 badge for attention.
+    const n = playlistCountByDocId.get(d.doc_id) || 0;
+    const playlistBadge = n > 0
+      ? `<span class="ds-badge ds-badge--in-use">在 ${n} 個 playlist</span>`
+      : `<span class="ds-badge ds-badge--unused">未使用</span>`;
     return `
     <tr data-doc-id="${escapeHTML(d.doc_id)}">
       <td class="col-title">
         <span class="link" data-action="view">${escapeHTML(d.title || d.doc_id)}</span>
       </td>
-      <td class="col-state">${stateBadge} ${playlistCount}</td>
+      <td class="col-state">${stateBadge}${playlistBadge}</td>
       <td class="col-date">${fmtDate(d.created_at)}</td>
       <td>
         <label class="toggle">
@@ -202,7 +231,12 @@ async function onRowAction(e) {
       return;
     }
     docs = docs.filter((x) => x.doc_id !== docId);
+    // Cascade-delete on the server may have shrunk other playlists' doc_ids.
+    // Re-fetch counts so the table reflects the new intersection. Background
+    // refresh — render immediately so the deleted row disappears without
+    // waiting on the network.
     renderTable();
+    fetchPlaylistCounts().then(() => renderTable());
   }
 }
 

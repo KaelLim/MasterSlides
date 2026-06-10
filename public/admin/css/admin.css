@@ -102,24 +102,48 @@ a.primary:focus-visible {
   cursor: pointer;
 }
 .docs-table .col-title .link:hover { color: #2a87a8; text-decoration: underline; }
-.docs-table .col-state { font-size: 12px; color: #6b5e50; white-space: nowrap; }
-.docs-table .col-state .state-badge {
-  display: inline-block;
+.docs-table .col-state {
+  font-size: 12px;
+  color: #6b5e50;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/* Legacy state-badge selectors kept in case anything outside dashboard.js
+   still emits them; new code uses .ds-badge. */
+.docs-table .col-state .state-badge,
+.docs-table .col-state .ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.4px;
-  margin-right: 6px;
+  white-space: nowrap;
   vertical-align: middle;
 }
-.docs-table .col-state .state-badge--public {
+.docs-table .col-state .state-badge { font-weight: 600; margin-right: 6px; }
+.docs-table .col-state .state-badge--public,
+.docs-table .col-state .ds-badge--public {
   background: #2c6cb5;
   color: white;
 }
-.docs-table .col-state .state-badge--draft {
+.docs-table .col-state .state-badge--draft,
+.docs-table .col-state .ds-badge--draft {
   background: #d2c6ab;
   color: #4d4339;
+}
+.docs-table .col-state .ds-badge--in-use {
+  background: transparent;
+  border: 1px solid #2c6cb5;
+  color: #2c6cb5;
+}
+.docs-table .col-state .ds-badge--unused {
+  color: #8a7e6f;
+  font-style: italic;
 }
 .docs-table .col-state .state-meta { color: #8a7e6f; }
 .docs-table .col-date { color: #6b5e50; font-size: 13px; white-space: nowrap; }
@@ -659,6 +683,49 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   color: #b8a785;
   display: block;
   margin: 0 auto 10px;
+}
+
+/* ── Panel banner (e.g. private-doc warning) ─────────────────────
+   Sits at the top of a .panel-body (inside the scroll region, above the
+   item list). Caution amber matches the notify.js warning palette so the
+   tone reads as consistent across surfaces. */
+.ds-panel-banner {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid;
+  border-radius: 8px;
+  margin: 8px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ds-panel-banner .material-symbols-rounded {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ds-panel-banner strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+.ds-panel-banner p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.ds-panel-banner--warning {
+  background: #f4e0b8;
+  border-color: #cfa86a;
+  color: #6a4d12;
+}
+.ds-row-missing-icon {
+  font-size: 16px;
+  color: #6a4d12;
+  margin-right: 4px;
+  display: inline-flex;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* ── Selected panel: drag-to-reorder + recent-add pulse ──────────── */

@@ -158,20 +158,38 @@ function renderSelected() {
     </div>`;
     return;
   }
+  // Panel-level warning banner — fires once when any selected items are missing
+  // (i.e. set to private at the doc level). Lifts what used to be an 11px inline
+  // red span on each missing row up to a single recognition signal at the top
+  // of the panel body. Individual rows keep a small lock icon next to the index
+  // badge so the user can still spot which entries are affected.
+  const missingCount = selected.reduce((n, d) => (d.missing ? n + 1 : n), 0);
+  const banner = missingCount > 0
+    ? `<div class="ds-panel-banner ds-panel-banner--warning" role="status">
+         <span class="material-symbols-rounded">warning</span>
+         <div>
+           <strong>${missingCount} 份文件已設為私有</strong>
+           <p>它們不會在播放時顯示。請改回公開、或從清單移除。</p>
+         </div>
+       </div>`
+    : "";
   if (q && visibleCount === 0) {
-    selectedEl.innerHTML = `<div class="empty">
+    selectedEl.innerHTML = `${banner}<div class="empty">
       <span class="material-symbols-rounded">search_off</span>
       目前 filter 沒有 match
     </div>`;
     return;
   }
-  selectedEl.innerHTML = selected.map((d, i) => {
+  selectedEl.innerHTML = banner + selected.map((d, i) => {
     const hidden = q && !matchesSelectedFilter(d, q);
+    const missingIcon = d.missing
+      ? '<span class="ds-row-missing-icon material-symbols-rounded" aria-label="已私有" title="已設為私有">lock</span>'
+      : "";
     return `
     <div class="item" data-doc-id="${escapeHTML(d.doc_id)}" data-index="${i}" draggable="true"${hidden ? ' style="display:none"' : ""}>
-      <span class="index">${i + 1}</span>
+      ${missingIcon}<span class="index">${i + 1}</span>
       <div class="title">
-        <span class="title-text">${escapeHTML(d.title || d.doc_id)}${d.missing ? ' <span style="color:#c54a35;font-size:11px">(已設為私有，請改回公開或移除)</span>' : ""}</span>
+        <span class="title-text">${escapeHTML(d.title || d.doc_id)}</span>
         <div class="doc-meta">
           <span class="doc-id">${escapeHTML(d.doc_id.slice(0, 22))}…</span>
           ${d.created_at ? `<span class="doc-date">${fmtDate(d.created_at)}</span>` : ""}
