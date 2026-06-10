@@ -157,13 +157,13 @@ function renderTable() {
   if (highlightedIndex >= visible.length) highlightedIndex = visible.length - 1;
 
   const rows = visible.map((d, i) => {
-    const stateBadge = d.is_public
-      ? `<span class="ds-badge ds-badge--public">公開</span>`
-      : `<span class="ds-badge ds-badge--draft">草稿</span>`;
+    const stateLabel = d.is_public
+      ? `<span class="state state--public">公開</span>`
+      : `<span class="state state--draft">草稿</span>`;
     const n = playlistCountByDocId.get(d.doc_id) || 0;
-    const playlistBadge = n > 0
-      ? `<span class="ds-badge ds-badge--in-use">在 ${n} 個 playlist</span>`
-      : `<span class="ds-badge ds-badge--unused">未使用</span>`;
+    const stateMeta = n > 0
+      ? `<span class="state-sep">·</span><span class="state-meta">在 ${n} 個 playlist</span>`
+      : `<span class="state-sep">·</span><span class="state-meta state-meta--unused">未使用</span>`;
     const isSel = selectedDocIds.has(d.doc_id);
     const isHi = i === highlightedIndex;
     return `
@@ -177,7 +177,7 @@ function renderTable() {
       <td class="col-title">
         <span class="link" data-action="view">${escapeHTML(d.title || d.doc_id)}</span>
       </td>
-      <td class="col-state">${stateBadge}${playlistBadge}</td>
+      <td class="col-state">${stateLabel}${stateMeta}</td>
       <td class="col-date">${fmtDate(d.created_at)}</td>
       <td>
         <label class="toggle">

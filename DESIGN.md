@@ -1,24 +1,30 @@
 ---
 name: MasterSlides Admin
-description: Internal admin console for the Tzu Chi Google Docs → presentation pipeline (current baseline; pre-rebrand snapshot)
+description: Clean-white admin console for the Tzu Chi internal Google Docs → presentation pipeline
 colors:
-  console-base: "#f6f1e6"
-  console-deep: "#ece5d4"
-  console-rail: "#e1d8c3"
-  console-surface: "#fbf8f0"
-  console-surface-hover: "#eee5d0"
-  console-stroke: "#d2c6ab"
-  console-stroke-strong: "#b8a785"
-  ink-primary: "#312922"
-  ink-secondary: "#4d4339"
-  ink-muted: "#6b5e50"
-  ink-dim: "#8a7e6f"
-  process-blue: "#2c6cb5"
-  process-blue-deep: "#1f5598"
-  hint-cyan: "#2a87a8"
-  danger-red: "#c54a35"
-  danger-red-deep: "#9a3324"
-  danger-red-bed: "#f5dbcf"
+  bg: "#ffffff"
+  surface: "#ffffff"
+  surface-inset: "#f8fafc"
+  surface-rail: "#f8fafc"
+  surface-hover: "#f1f5f9"
+  stroke: "#e5e7eb"
+  stroke-strong: "#cbd5e1"
+  ink: "#0f172a"
+  ink-2: "#334155"
+  ink-muted: "#64748b"
+  ink-dim: "#94a3b8"
+  brand: "#2c6cb5"
+  brand-deep: "#1f5598"
+  brand-tint: "rgba(44, 108, 181, 0.08)"
+  success: "#15803d"
+  success-bg: "#dcfce7"
+  success-border: "#86efac"
+  warning: "#92400e"
+  warning-bg: "#fef3c7"
+  warning-border: "#fde68a"
+  danger: "#dc2626"
+  danger-deep: "#b91c1c"
+  danger-bg: "#fee2e2"
 typography:
   body:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans CNS', sans-serif"
@@ -27,17 +33,17 @@ typography:
     lineHeight: 1.5
     letterSpacing: "normal"
   headline:
-    fontFamily: "'MOEStandardKaiti', 'DFKai-SB', 'BiauKai', '標楷體', 'Kaiti TC', '楷體-繁', 'STKaiti', serif"
-    fontSize: "22px"
-    fontWeight: 500
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif"
+    fontSize: "24px"
+    fontWeight: 600
     lineHeight: 1.3
-    letterSpacing: "0.5px"
+    letterSpacing: "-0.01em"
   title:
-    fontFamily: "'MOEStandardKaiti', 'DFKai-SB', 'BiauKai', '標楷體', 'Kaiti TC', '楷體-繁', 'STKaiti', serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif"
     fontSize: "18px"
-    fontWeight: 500
+    fontWeight: 600
     lineHeight: 1.3
-    letterSpacing: "normal"
+    letterSpacing: "-0.005em"
   label:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "12px"
@@ -71,56 +77,51 @@ spacing:
   5xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.process-blue}"
+    backgroundColor: "{colors.brand}"
     textColor: "#ffffff"
     rounded: "{rounded.sm}"
     padding: "9px 18px"
   button-primary-hover:
-    backgroundColor: "{colors.process-blue-deep}"
+    backgroundColor: "{colors.brand-deep}"
     textColor: "#ffffff"
     rounded: "{rounded.sm}"
     padding: "9px 18px"
   button-secondary:
     backgroundColor: "transparent"
-    textColor: "{colors.ink-secondary}"
+    textColor: "{colors.ink-2}"
     rounded: "{rounded.sm}"
     padding: "9px 16px"
   icon-button:
     backgroundColor: "transparent"
-    textColor: "{colors.ink-secondary}"
+    textColor: "{colors.ink-2}"
     rounded: "{rounded.md}"
     size: "34px"
   icon-button-hover:
-    backgroundColor: "{colors.console-stroke}"
-    textColor: "{colors.hint-cyan}"
-    rounded: "{rounded.md}"
-    size: "34px"
-  icon-button-danger-hover:
-    backgroundColor: "{colors.danger-red-bed}"
-    textColor: "{colors.danger-red-deep}"
+    backgroundColor: "{colors.surface-hover}"
+    textColor: "{colors.brand}"
     rounded: "{rounded.md}"
     size: "34px"
   table-surface:
-    backgroundColor: "{colors.console-surface}"
-    textColor: "{colors.ink-primary}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.md}"
   modal-surface:
-    backgroundColor: "{colors.console-surface}"
-    textColor: "{colors.ink-primary}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.md-plus}"
     padding: "24px"
   input-field:
-    backgroundColor: "{colors.console-deep}"
-    textColor: "{colors.ink-primary}"
+    backgroundColor: "{colors.surface-inset}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.sm}"
     padding: "10px 12px"
   toggle-track-off:
-    backgroundColor: "{colors.console-stroke}"
+    backgroundColor: "{colors.stroke}"
     rounded: "{rounded.pill}"
     width: "36px"
     height: "20px"
   toggle-track-on:
-    backgroundColor: "{colors.process-blue}"
+    backgroundColor: "{colors.brand}"
     rounded: "{rounded.pill}"
     width: "36px"
     height: "20px"
@@ -128,361 +129,360 @@ components:
 
 # Design System: MasterSlides Admin
 
-> **Pre-rebrand baseline.** This file documents the current state of the admin
-> surface (the `dark-slate engineering placeholder` PRODUCT.md calls
-> transitional). It exists so the next pass — Tzu Chi blue + cream + 標楷體 —
-> has an honest "before" snapshot to diff against. Do not treat any colour or
-> rule here as the brand. The brand commitments live in PRODUCT.md.
-
 ## 1. Overview
 
-**Creative North Star: "The Maintenance Console"**
+**Creative North Star: "The Quiet Roster"**
 
-This is the work surface a developer reaches for when the admin needs another
-button — not a brand artefact. The whole system reads as "engineer sitting at
-a dark navy console after hours, adding what's needed and shipping it". It is
-not posed, not aestheticised, not aspirational. Density is moderate, palette
-is monochromatic with a single utility accent, and typography defaults to the
-operating-system stack so a fresh install on any laptop still reads correctly.
+A clean-white roster you can read at a glance. Tzu Chi blue is the one
+voice in the system — it lands on the primary action, the toggle's
+on-state, the current page in the pager, the active nav link. Everything
+else is a calibrated slate-grey ramp: near-white surfaces, hairline
+dividers, body type that doesn't shout. Structure is made by spacing
+and weight, not by colored panels or display fonts.
 
-What it explicitly rejects: corporate-tech hero gradients (PRODUCT.md
-anti-reference), Notion/Linear-clone whitespace-and-Inter monoculture
-(PRODUCT.md anti-reference), and any decorative element that postpones the
-underlying task. There is no character font, no display headline scale, no
-floating particles, no scroll-driven choreography. The page is the table.
-
-A planned successor system — the Tzu Chi blue / cream / 標楷體 identity in
-PRODUCT.md — will replace this one. Until then, this baseline ships because
-it is legible, accessible, and honest about its own provenance.
+The system explicitly rejects every direction that has tempted the
+project before: corporate-tech hero gradients, antique-government
+portal scaffolding, overt Buddhist iconography, Notion/Linear-clone
+whitespace-and-Inter monoculture (PRODUCT.md anti-references), and
+the cream/wood baseline an earlier pass produced and the user rejected
+as 「整體顏色很奇怪」. There is no display font; 標楷體 is forbidden in
+admin chrome because it reads as ceremonial, not operational. The
+single accent + slate ramp is what carries the 端莊 (dignified) /
+克制 (restrained) / 人本 (humane) brand personality PRODUCT.md commits
+to — the dignity lives in restraint, not in decoration.
 
 **Key Characteristics:**
-- Single-tenant dark surface (`#f6f1e6` console base) with a four-step tonal
-  ramp climbing toward `#b8a785` strokes.
-- One accent (`Process Blue #2c6cb5`) carries every primary action and the
-  on-state of toggles. Used on ≤5% of any given screen.
-- Tables are the dominant pattern; cards exist only inside the playlist
-  picker, where two-column comparison demands them.
-- System font stack with Noto Sans TC fallback for Traditional Chinese; no
-  webfont request for body or headings. Material Symbols Rounded is the only
-  third-party font, loaded for icon glyphs.
-- Motion is `120ms ease` on background / colour / border — feedback only, no
-  choreography.
+- Body surface is true white (`#ffffff`). Surfaces sit on a four-step
+  cool-slate ramp: `#ffffff` → `#f8fafc` → `#f1f5f9` → `#e5e7eb`.
+- One accent — **Tzu Chi Blue** (`#2c6cb5`) — appears on ≤5% of any
+  screen: primary CTA, toggle-on, current-page pager button, active
+  nav link, public-state text in the docs table.
+- Tables are the dominant pattern. Row alignment is normative: every
+  cell sits on one baseline. State is single-line text (公開 · 在 N
+  個 playlist), never two-stacked badges.
+- All text uses the OS sans stack — `-apple-system / SF Pro / Segoe UI
+  / Roboto` with `Noto Sans TC` / `PingFang TC` for Traditional Chinese.
+  Material Symbols Rounded is the only webfont, loaded for icon glyphs.
+- Motion is `120ms ease` on background / colour / border — feedback
+  only, no choreography. Reduced-motion override clamps to ~0.
 
 ## 2. Colors
 
-A monochromatic dark-slate surface ramp paired with one saturated utility
-accent and a strict danger red.
+A near-monochrome cool-slate surface ramp with one saturated brand
+accent and standard semantic tones for success / warning / danger.
 
 ### Primary
-- **Process Blue** (`#2c6cb5`): Primary action surface — `Save`, `Add new doc`,
-  toggle-on state, the active page in the pager. Borrowed from Tailwind's
-  `blue-600`; honest about its origin.
-- **Process Blue Deep** (`#1f5598`): Hover state for Process Blue surfaces;
-  never used standalone.
-
-### Secondary
-- **Hint Cyan** (`#2a87a8`): Link hover and icon-button hover ink. Reserved
-  for "this is interactive" affordance feedback; never a fill.
+- **Tzu Chi Blue** (`#2c6cb5`): The system's only saturated colour.
+  Primary CTA fill, toggle-on track, current-page pager fill, active
+  nav link colour, public-state label, link hover, focus rings.
+- **Tzu Chi Blue Deep** (`#1f5598`): Hover state for Tzu Chi Blue
+  surfaces; never used standalone.
+- **Tzu Chi Blue Tint** (`rgba(44, 108, 181, 0.08)`): Background for
+  active nav, selected rows, just-added pulse origin.
 
 ### Neutral (the surface ramp)
-- **Console Base** (`#f6f1e6`): Document background. The far floor of the
-  ramp.
-- **Console Deep** (`#ece5d4`): Inset surfaces — input fields, modals'
-  embedded fields. Sits half a step below the surface to read as recessed.
-- **Console Rail** (`#e1d8c3`): Table headers, panel headers in the playlist
-  picker. The "structural" tier — content above it should feel like the
-  active surface.
-- **Console Surface** (`#fbf8f0`): The default raised surface — top bar,
-  table body, modal body, panel body.
-- **Console Surface Hover** (`#eee5d0`): Row hover; one notch warmer than
-  Surface to read without being loud.
-- **Console Stroke** (`#d2c6ab`): 1px dividers, button borders, table
-  borders, toggle off-track.
-- **Console Stroke Strong** (`#b8a785`): Icon-button border at rest; the
-  outer edge of the system.
+- **Bg** (`#ffffff`): Body background. Table body. Modal body. The
+  default surface.
+- **Surface Inset** (`#f8fafc`): Input fields, kbd glyphs, modal field
+  bgs, help-note callouts. Sits half a step below white to read as
+  recessed.
+- **Surface Rail** (`#f8fafc`): Table header row, panel-head bg in the
+  playlist picker, picker panel-foot.
+- **Surface Hover** (`#f1f5f9`): Row hover, nav-link hover.
+- **Stroke** (`#e5e7eb`): 1px dividers, table borders, modal borders,
+  panel borders.
+- **Stroke Strong** (`#cbd5e1`): Icon-button rest border, kbd box-
+  shadow underline, table state separator.
 
 ### Neutral (the ink ramp)
-- **Ink Primary** (`#312922`): Body text, table titles, modal headers.
-  Roughly 92% lightness — softened off-white that doesn't glare on the dark
-  surface ramp.
-- **Ink Secondary** (`#4d4339`): Secondary text — secondary button labels,
-  table sub-content.
-- **Ink Muted** (`#6b5e50`): Helper text, table column labels, doc_id
-  monospace, navigation when inactive.
-- **Ink Dim** (`#8a7e6f`): Empty-state copy, panel meta lines, the muted
-  edges of the system.
+- **Ink** (`#0f172a`): Body text, primary headings, table titles. Slate
+  near-black with a cool undertone — matches the surface ramp.
+- **Ink Secondary** (`#334155`): Secondary text — button labels, nav
+  hover.
+- **Ink Muted** (`#64748b`): Helper text, table column labels, doc_id
+  mono, navigation when inactive, draft-state label.
+- **Ink Dim** (`#94a3b8`): Empty-state copy, panel meta, unused-state
+  label, placeholder.
 
-### Tertiary (danger)
-- **Danger Red** (`#c54a35`): Inline warning copy in playlist picker
-  (`已設為私有，請改回公開或移除`), modal error states.
-- **Danger Red Deep** (`#9a3324`): Danger icon-button hover border.
-- **Danger Red Bed** (`#f5dbcf`): Danger icon-button hover surface.
+### Tertiary (semantic)
+- **Success** (`#15803d` text / `#dcfce7` bg / `#86efac` border):
+  Notify success toast tone.
+- **Warning** (`#92400e` text / `#fef3c7` bg / `#fde68a` border): Notify
+  caution toast, private-doc panel banner.
+- **Danger** (`#dc2626`): Modal danger button bg, icon-btn danger hover
+  border, error toast border.
+- **Danger Deep** (`#b91c1c`): Hover state.
+- **Danger Bg** (`#fee2e2`): Error toast bg, danger icon-btn hover bg.
 
 ### Named Rules
 
-**The One Accent Rule.** Process Blue is the only saturated colour on any
-screen. The pager's current page, the primary CTA, and the toggle-on state
-are the three places it appears. If a fourth would land on the page, find
-something to remove first.
+**The One Accent Rule.** Tzu Chi Blue is the only saturated colour on
+any screen. If a fifth surface wants the accent treatment, find one of
+the existing four to demote first. Semantic tones (success / warning
+/ danger) are not accents — they're meaning-bearing context, used only
+inside toasts and banners.
 
-**The Four-Tier Surface Rule.** Every surface above the document floor is
-exactly one of four tiers: Base / Rail / Surface / Surface-hover. New
+**The Four-Tier Surface Rule.** Every surface above the document floor
+is exactly one of four tiers: Bg / Inset / Hover / Stroke-bordered. New
 surfaces do not invent a fifth; they pick the tier that matches their
 function and reuse the token.
 
+**The No-Stripe Rule.** `border-left` and `border-right` greater than
+1px as coloured accents on banners, cards, callouts, or list items are
+forbidden. Use full 1px borders, background tints, leading icons, or
+nothing. (Side stripes are an AI-slop tell and were stripped from
+help-note and ds-first-run during this pass.)
+
 ## 3. Typography
 
-**Display Font:** 標楷體 stack — `MOEStandardKaiti`, `DFKai-SB`, `BiauKai`,
-`標楷體`, `Kaiti TC`, `楷體-繁`, `STKaiti`, falling back to `serif`. Mirrored
-from the viewer (`public/slides/css/base.css`) so the admin carries the same
-Tzu Chi voice on its section markers.
-**Body Font:** System UI stack — `-apple-system`, `BlinkMacSystemFont`,
-`Segoe UI`, `Roboto`, then `Noto Sans TC`, `PingFang TC`, `Hiragino Sans CNS`,
-falling back to `sans-serif`.
-**Label/Mono Font:** `ui-monospace`, `SF Mono`, `Menlo`, then `monospace`.
-Used only for `doc_id` cells and inline code-like values.
+**Display Font:** none. The admin has no display tier. Earlier passes
+used 標楷體 for headings; that was reverted because 標楷體 reads as
+ceremonial and out of place on an operational workbench.
 
-**Character:** A deliberate display-tier addition — 標楷體 lands on H1 / H2 / H3
-to carry the single Tzu Chi voice on section markers; body and meta stay
-OS-native so Chinese body text renders with the OS's own engine. On macOS
-that's `PingFang TC`, on Windows `Microsoft JhengHei`, on iOS/iPadOS
-`PingFang TC` — three real body renderings paired with one shared display
-voice, instead of one Inter-shaped fake one.
+**Body / Heading Font:** System UI stack — `-apple-system`,
+`BlinkMacSystemFont`, `Segoe UI`, `Roboto`, then `Noto Sans TC`,
+`PingFang TC`, `Hiragino Sans CNS`, falling back to `sans-serif`. One
+family throughout; hierarchy is carried by weight + size + letter-
+spacing, not by family.
+
+**Mono Font:** `ui-monospace`, `SF Mono`, `Menlo`, then `monospace`.
+Used only for `doc_id` cells, inline code-like values, and `<kbd>` keys
+in the help modal.
+
+**Character:** Quiet, professional, OS-native. The page renders with the
+user's own system font — three real Chinese renderings (macOS PingFang,
+Windows Microsoft JhengHei, iOS PingFang) instead of one webfont-shaped
+average. No font request, no FOUT, no opinion that doesn't belong here.
 
 ### Hierarchy
-- **Headline** (`600`, `22px`, line-height `1.3`, letter-spacing `0.5px`):
-  Page H2 (`<h2>文件</h2>`). One per page.
-- **Title** (`600`, `18px`, line-height `1.3`): Modal and `<h3>` headers.
-- **Body** (`400`, `14px`, line-height `1.5`): Default — table cells, panel
-  copy, button labels.
-- **Subtle** (`400`, `13px`, line-height `1.5`): Secondary table content,
-  status text under the footer bar, modal description.
-- **Label** (`600`, `12px`, `letter-spacing 0.6px`, uppercase, `color: ink-muted`):
-  Form-field labels, panel header eyebrows (`可選文件`, `已加入（順序）`),
-  empty-state secondary copy. The single uppercase tier of the system.
-- **Mono** (`400`, `12px`): `doc_id` slugs, monospace meta.
+- **Headline** (`600`, `24px`, line-height `1.3`, letter-spacing
+  `-0.01em`): Page H2 (`<h2>文件</h2>`). One per page. Tightened
+  letter-spacing distinguishes it from body without needing a different
+  family.
+- **Title** (`600`, `18px`, line-height `1.3`, letter-spacing
+  `-0.005em`): Modal and `<h3>` headers, auth-card titles.
+- **Body** (`400`, `14px`, line-height `1.5`): Default — table cells,
+  panel copy, button labels.
+- **Subtle** (`400`, `13px`, line-height `1.5`): Secondary table
+  content, status text under the footer bar, modal description.
+- **Label** (`600`, `12px`, `letter-spacing 0.6px`, uppercase, ink
+  muted): Form-field labels, table column headers, panel-head titles
+  in the picker, meta-row labels. The single uppercase tier.
+- **Mono** (`400`, `12px`): `doc_id` slugs, `<kbd>` keys.
 
 ### Named Rules
 
-**The One Uppercase Tier Rule.** Uppercase + letter-spacing appears at
-exactly one size (the Label tier). It marks system-defined meta — labels,
-panel-head eyebrows — not section dividers and not button labels. If a
-second uppercase tier wants in, it joins the Label tier or doesn't ship.
+**The One Family Rule.** Body and headings share the OS sans stack.
+Hierarchy via weight (400 → 600), size (12 → 24px), and letter-spacing
+(0 → ±0.01em). Adding a display family — 標楷體, serif, anything — is
+forbidden in admin chrome.
 
-**The OS-Native Type Rule.** Body text uses the operating system's own
-default sans-serif and the operating system's own Chinese rendering. The
-admin reads with the user's own system on the tiers that matter for
-legibility. Exception: the display tier (headline, title) opts into 標楷體
-to carry the Tzu Chi voice on section markers. Body, subtle, label, mono
-remain OS-native.
+**The One Uppercase Tier Rule.** Uppercase + letter-spacing appears at
+exactly one size (the Label tier). It marks system-defined meta — form
+labels, table column headers, panel-head eyebrows — not section
+dividers and not button labels.
 
 ## 4. Elevation
 
-Flat by default. Depth is conveyed entirely through the four-tier surface
-ramp (Base → Rail → Surface → Surface-hover); there are no `box-shadow`
-declarations anywhere in the admin CSS, and the modal does not float on a
-drop shadow — it sits on a `rgba(0,0,0,0.6)` backdrop that darkens the
-underlying surface instead.
+Flat by default. Depth comes from the surface ramp + 1px hairline
+borders. There are no `box-shadow` declarations on resting surfaces.
+Modal dialogs darken the page behind them with a `rgba(0,0,0,0.6)`
+backdrop, and toasts get a soft `0 6px 18px rgba(15, 23, 42, 0.12)` to
+lift them off the canvas — that's the only shadow vocabulary.
 
 ### Named Rules
 
-**The No-Shadow Rule.** Depth comes from the surface ramp and the backdrop
-overlay. `box-shadow` is forbidden in admin CSS. If a surface needs to
-"lift," promote it to the next tier of the ramp — don't paint a shadow.
+**The No-Shadow Rule (Resting State).** Surfaces are flat at rest.
+`box-shadow` is reserved for ephemeral overlays (toasts) and the
+sticky selection bar. New components inherit the No-Shadow default;
+shadow exceptions need a written reason.
 
-**The Backdrop-Over-Float Rule.** Modal dialogs darken the page behind them
-(`rgba(0,0,0,0.6)`) rather than floating on a shadow. The backdrop is the
-elevation cue.
+**The Backdrop-Over-Float Rule.** Modal dialogs sit on a
+`rgba(0,0,0,0.6)` backdrop rather than floating on a drop shadow. The
+backdrop IS the elevation cue.
 
 ## 5. Components
 
 ### Buttons
-- **Shape:** All buttons are gently rounded (`6px` radius).
-- **Primary:** Process Blue fill, white ink, `9px 18px` padding, weight 500.
-  Hover: Process Blue Deep. Primary buttons appear in two places — section
-  headers (`新增文件`, `新增 Playlist`) and the modal action bar (`匯入`,
-  `儲存`). Pair with a Material Symbols Rounded icon at `18px` when the
-  action takes a noun (`add` before `新增文件`).
-- **Secondary:** Transparent fill, 1px Console Stroke Strong border, Ink
-  Secondary ink, `9px 16px` padding. Hover: Console Stroke fill. Used for
-  `取消` in modals and forms.
-- **Icon-Button:** Transparent fill with 1px Console Stroke Strong border,
-  Ink Secondary ink, `34px` square, `8px` radius. Hover surface is Console
-  Stroke; hover ink shifts to Hint Cyan. Danger variant flips to Danger Red
-  Bed background, Danger Red Deep border, white ink on hover. Icon-buttons
-  carry one Material Symbols Rounded glyph at `20px`; the button width is
-  not negotiable across the row.
+- **Shape:** 6px radius, transitioning to 8px for icon-buttons.
+- **Primary:** Tzu Chi Blue fill, white ink, `9px 18px` padding, weight
+  500. Hover: Tzu Chi Blue Deep. Pairs with a Material Symbols Rounded
+  glyph at `18px` when the action takes a noun (`add` before `新增
+  文件`).
+- **Secondary:** Transparent fill, 1px stroke-strong border, ink-2 ink,
+  `9px 16px` padding. Hover: surface-hover fill. Used for `取消` in
+  modals and the footer-bar.
+- **Icon-Button:** Transparent fill, 1px stroke-strong border, ink-2
+  ink, `34px` square, `8px` radius. Hover surface flips to surface-
+  hover; hover ink shifts to brand blue. Danger variant flips to
+  danger-bg fill, danger border, danger ink on hover. Carries one
+  Material Symbols glyph at `20px`.
+
+### Top Bar / Nav
+- **Container:** White bg, 1px stroke bottom border, `14px 28px`
+  padding, flex with `28px` gap. No logo image; the brand mark is
+  the H1 `簡報後台` at 16px / weight 600 / `-0.01em` letter-spacing.
+- **Nav links:** Ink muted at `14px`, `7px 12px` padding, `6px`
+  radius. Hover: ink primary + surface-hover bg. **Active: Tzu Chi
+  Blue text on Tzu Chi Blue Tint bg** — the one accent moment on
+  the chrome.
 
 ### Tables (the dominant pattern)
-- **Container:** Console Surface background, 1px Console Stroke border, `8px`
-  radius, `overflow: hidden` so the corner radius clips the top row.
-- **Header:** Console Rail background, Ink Muted uppercase labels at the
-  Label type tier (`12px`, weight 600, letter-spacing `0.6px`), `12px 16px`
-  padding, 1px Console Stroke bottom border.
-- **Row:** `14px 16px` cell padding, 1px Console Stroke bottom border,
-  vertical-align middle, body type tier. Last row's bottom border is
-  removed by the container border.
-- **Row hover:** Surface flips to Console Surface Hover (`#eee5d0`).
-- **Title cell:** Ink Primary ink, weight 500, `max-width: 360px`, clickable
-  via a `.link` span. `.link:hover` flips ink to Hint Cyan and underlines.
-- **Doc-ID cell:** Mono type tier, Ink Muted, truncated at 16 chars + `…`.
-- **Date cell:** Body type tier at `13px`, Ink Muted, `white-space: nowrap`.
+- **Container:** White bg, 1px stroke border, `8px` radius, `overflow:
+  hidden` so the corner radius clips the top row.
+- **Header:** Surface-rail bg (`#f8fafc`), ink-muted uppercase labels
+  at the Label type tier, `12px 16px` padding, 1px stroke bottom border.
+- **Row:** `14px 16px` cell padding, 1px stroke bottom border, vertical-
+  align middle, body type tier. Last row's bottom border is removed by
+  the container border.
+- **Row hover:** Surface flips to surface-hover (`#f1f5f9`).
+- **Title cell:** Ink primary, weight 500, `max-width: 360px`, clickable
+  via a `.link` span. `.link:hover` flips ink to brand and underlines.
+- **Status cell:** Single line of typography — no pills. The state word
+  (`公開` Tzu Chi Blue / `草稿` ink-dim, both weight 600 at 13px), a
+  hairline `·` separator (stroke-strong), then the playlist count as
+  muted meta (`在 1 個 playlist` ink-muted, or `未使用` ink-dim italic).
+  The whole cell shares a single baseline with title / date / actions.
+- **Date cell:** Body type tier at `13px`, ink muted, `white-space:
+  nowrap`.
 - **Actions cell:** Right-aligned, `white-space: nowrap`, holds the
   icon-button row.
 
-### Toggle (the public-state switch)
-- **Track:** `36×20px`, fully pilled (`999px` radius). Off: Console Stroke
-  fill. On: Process Blue fill.
-- **Thumb:** `16×16px` white circle, `2px` inset, translates `16px` on the
-  X-axis when checked.
-- **Transition:** `background 120ms ease` on track, `transform 120ms ease`
-  on thumb.
+### Status Cell — signature pattern
+
+Where the previous workflow stacked two pills in a `flex column`, this
+system writes a single-line sentence:
+
+```
+公開 · 在 1 個 playlist
+草稿 · 未使用
+```
+
+Implementation:
+```html
+<td class="col-state">
+  <span class="state state--public">公開</span>
+  <span class="state-sep">·</span>
+  <span class="state-meta">在 1 個 playlist</span>
+</td>
+```
+
+Why: row baselines stay aligned (cell heights stop drifting with badge
+count), the cell reads as a sentence not as a UI metadata strip, and
+the accent appears as ink colour — the one-accent rule scales without
+hex-fill paint.
+
+### Toggle
+- **Track:** `36×20px`, pill radius. Off: stroke fill. On: Tzu Chi Blue.
+- **Thumb:** `16×16px` white circle, `2px` inset, translates `16px`
+  when checked. Transition `120ms ease`.
+- **Inflight state:** `.is-toggling` dims to 0.6 opacity + disables
+  pointer events during the PATCH.
+
+### Toast (notify.js)
+- **Stack:** Fixed top-right, `380px` max width, `10px` gap between
+  toasts.
+- **Surface:** Tone-tinted bg (success / caution / danger), 1px tone
+  border, `10px` radius, `12px 16px` padding, `0 6px 18px
+  rgba(15,23,42,0.12)` lift shadow.
+- **Tones:** Success uses `#dcfce7 / #15803d / #86efac`. Caution uses
+  `#fef3c7 / #92400e / #fde68a`. Danger uses `#fee2e2 / #b91c1c /
+  #dc2626`. Error tone is sticky (no auto-dismiss) and supports a
+  `重試` button.
 
 ### Modal
 - **Backdrop:** `position: fixed; inset: 0`, `rgba(0,0,0,0.6)`, centred
-  flex layout, `z-index: 100`.
-- **Surface:** Console Surface background, 1px Console Stroke border,
-  `10px` radius, `24px` internal padding, `460px` max width.
-- **Header (`<h3>`):** Title type tier, `0 0 8px` margin.
-- **Description:** Subtle type tier, Ink Muted, `0 0 18px` bottom margin.
-- **Field label:** Label type tier, `12px 0 6px` margin block, Ink Muted.
-- **Field input:** Console Deep background, 1px Console Stroke border,
-  `6px` radius, `10px 12px` padding, Ink Primary text. Focus border flips
-  to Process Blue (`#2c6cb5`), no glow.
-- **Action bar:** Right-aligned flex with `8px` gap, `22px` top margin.
+  flex, z-index 100.
+- **Surface:** White, 1px stroke border, `10px` radius, `24px` padding,
+  `460px` max width (`640px` for help modal).
+- **Header (`<h3>`):** Title tier — 18px / 600 / `-0.005em` letter-
+  spacing / ink.
+- **Field input:** Surface-inset bg, 1px stroke border, `6px` radius,
+  `10px 12px` padding. Focus flips border + 2px outline to Tzu Chi
+  Blue.
 
 ### Pager
-- **Container:** Centred flex with `6px` gap, `18px` top margin from the
-  table.
-- **Buttons:** Console Surface fill, 1px Console Stroke border, `34px`
-  square (or `34px` tall with `10px` horizontal padding for the numbered
-  buttons), `8px` radius, body type at `13px`. Hover: Console Stroke fill
-  with Console Stroke Strong border. Disabled: 35% opacity, `not-allowed`
-  cursor.
-- **Current page:** Process Blue fill, white ink, Process Blue border. The
-  one accent moment in the strip.
-- **Ellipsis (`…`):** Ink Dim, no surface.
-- **Summary line:** Ink Muted at `12px`, `12px` right margin. Reads
-  `第 X–Y 筆，共 N 筆` so the user always sees both the slice and the total.
+- **Container:** Centred flex, `6px` gap, `18px` top margin.
+- **Buttons:** White fill, 1px stroke border, `34px` square (or 34px
+  tall + `10px` horizontal padding for numbered buttons), `8px`
+  radius. Hover: surface-hover + stroke-strong border. Current: Tzu
+  Chi Blue fill, white ink.
+- **Summary:** Ink muted at `12px` (`第 X–Y 筆，共 N 筆`).
 
 ### Playlist Picker (signature component)
-Styles live in `public/admin/css/admin.css` under the `Playlist Editor`
-section as of the Distill phase. The picker's selectors are scoped under
-`.picker` so they cannot collide with the table, modal, or pager rules
-elsewhere in admin.css.
+Two-panel grid (`1fr 1fr`, `20px` gap, `480px` min-height) for
+composing playlists. Panel structure: white surface, 1px stroke border,
+`10px` radius, three rows (head / body / foot). Panel head bg is
+surface-rail; foot mirrors. Items: 12px x 16px padding, hover surface-
+hover. Selected panel rows are draggable with `cursor: grab`; reorder
+via HTML5 DnD with ↑↓ keyboard fallback. Newly added rows pulse with a
+Tzu Chi Blue tint for 1500ms.
 
-A two-panel grid (`1fr 1fr`, `20px` gap, `480px` minimum height) used to
-compose a playlist by moving docs from `可選文件` to `已加入（順序）`. The
-panels share a structure:
-- **Panel container:** Console Surface fill, 1px Console Stroke border,
-  `10px` radius, `display: flex; flex-direction: column; overflow: hidden`.
-- **Panel head:** Console Rail background, 1px Console Stroke bottom
-  border, `14px 18px` padding, holds (a) a Label-tier title with a Hint Cyan
-  Material Symbols icon at `18px`, and (b) either a search-filter input
-  (left panel) or a "N 份" count pill (right panel).
-- **Filter input:** Console Deep fill, 1px Console Stroke border, `6px`
-  radius, `8px 10px 8px 34px` padding so the inline `search` icon at `10px`
-  from the left has room. Focus shifts the border to Process Blue.
-- **Count pill:** Console Stroke fill, Ink Secondary text, `3px 10px`
-  padding, `10px` radius. Hidden when the right panel is empty.
-- **Panel body:** Scrollable, `4px 0` padding.
-- **Item row:** `12px 16px` padding, `12px` gap between elements, 1px
-  Console Stroke bottom border. Row hover surface: Console Surface Hover.
-- **Item title:** Body tier, truncated with ellipsis; below it sits a
-  doc-meta row at `11px`, Ink Dim, showing the truncated `doc_id` and
-  `created_at` separated by a bullet.
-- **Index badge (selected panel only):** `26×26px` Process Blue disc, `13px`
-  radius, white `12px` weight-600 numeral. The badge is the system's only
-  use of Process Blue as a fill outside primary buttons and toggles.
-- **Item actions:** `30×30px` icon buttons, `6px` radius. Add-button uses
-  the Primary variant (Process Blue fill); reorder buttons (`↑`, `↓`) use
-  the default icon-button variant; remove button uses the danger variant.
-- **Panel foot:** Console Rail background, 1px Console Stroke top border,
-  `10px 12px` padding, holds the pager for the available panel.
-- **Empty state:** Centred Ink Dim copy, prefaced by a `32px` Material
-  Symbols glyph (`lock` / `search_off` / `add_circle`) that names the
-  failure mode.
-
-### Top Bar / Navigation
-- **Container:** Console Surface background, 1px Console Stroke bottom
-  border, `14px 28px` padding, flex with `28px` gap.
-- **Brand mark:** `<h1>簡報後台</h1>` at `18px`, weight 600, letter-spacing
-  `0.5px`. Single line of text; no logo image.
-- **Nav links:** Ink Muted at `14px`, `6px 12px` padding, `6px` radius. The
-  active link gets Console Stroke fill and Ink Primary ink; hover gets
-  Console Stroke fill and Ink Secondary ink.
-
-### Inputs
-- **Surface:** Console Deep fill, 1px Console Stroke border, `6px` radius,
-  `10px 12px` padding, Ink Primary text.
-- **Focus:** Border colour flips to Process Blue. No glow, no outline-ring,
-  no shadow — the colour change is the entire focus treatment.
-- **Error:** No dedicated error border. Errors appear as Danger Red text
-  beneath the field with a `min-height: 18px` reserved slot so layout
-  doesn't jump.
-
-### Material Symbols
-- **Variant:** Material Symbols Rounded only. `axes: opsz 20..24, wght 400, FILL 0, GRAD 0`.
-- **Loading strategy:** `display=block` on the Google Fonts URL so the
-  variable axes don't FOUT.
-- **Sizing:** `20px` inside `icon-btn`, `18px` inside primary buttons and
-  panel-head titles, `32px` in empty states.
-- **Vertical alignment:** `vertical-align: middle` set on the base class so
-  glyphs sit on the text baseline inside flex rows.
+### Selection bar
+Sticky-top white card (`12px 16px` padding, 1px stroke border, `8px`
+radius, soft slate shadow). Shows `已選 N 份` + bulk action buttons
+(public / draft / delete / clear).
 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** use Process Blue on ≤5% of any screen — primary CTA, toggle-on,
-  current-page pager button. The One Accent Rule (Colors) is normative.
-- **Do** use the four-tier surface ramp (Base / Rail / Surface / Surface-hover)
-  for every elevation choice. The Four-Tier Surface Rule (Colors) is normative.
-- **Do** carry every column-header label, panel-head eyebrow, and form-field
-  label in the Label tier (12px / 600 / letter-spacing 0.6px / uppercase /
-  Ink Muted). The One Uppercase Tier Rule (Typography) is normative.
-- **Do** lead destructive actions with a confirm dialog that names the
-  collateral effect. The deletion confirm in `dashboard.js:122` reads
-  `確定要刪除「X」嗎？此操作無法復原，且會同步從所有 Playlist 移除` — that
-  pattern is the floor.
-- **Do** show pagination summary in both directions (`第 X–Y 筆，共 N 筆`),
-  never just `Page 1 of 10`. The user needs the total to decide whether to
-  page or filter.
-- **Do** reserve a `min-height: 18px` slot for inline errors so the form
-  layout does not jump when validation fires.
-- **Do** use `display=block` on the Material Symbols stylesheet URL so the
-  variable axes do not FOUT.
+- **Do** use Tzu Chi Blue on ≤5% of any screen — primary CTA, toggle
+  on, current-page pager button, active nav link, public-state label.
+  The One Accent Rule is normative.
+- **Do** use the four-tier surface ramp (Bg / Inset / Hover / Stroke).
+  The Four-Tier Surface Rule is normative.
+- **Do** carry table column headers, panel-head labels in the picker,
+  and form-field labels in the Label tier (12px / 600 / `0.6px` /
+  uppercase / ink-muted). The One Uppercase Tier Rule is normative.
+- **Do** render row state as one line of typography — `公開 · 在 N 個
+  playlist`. Single baseline, no pills.
+- **Do** lead destructive actions with a confirm-modal that names the
+  collateral effect (e.g. `會同步從所有 Playlist 移除`).
+- **Do** classify HTTP errors into Chinese-readable categories before
+  showing them. `HTTP 500` is engineering noise, not user copy.
+- **Do** keep the OS sans stack throughout. Body and headings share one
+  family — hierarchy via weight + size + letter-spacing.
 
 ### Don't:
-- **Don't** ship corporate-tech hero gradients, scroll-driven choreography,
-  or hero metric tiles in the admin. (PRODUCT.md anti-reference:
-  "corporate-tech 藍黃漸層、炸開的網狀背景、scroll-driven 動畫".)
-- **Don't** add antique-government-portal scaffolding — heart icons, 3D
-  bevels, neon list rows, Comic Sans / 微軟正黑體粗體 headings. (PRODUCT.md
-  anti-reference: "古董政府網站".)
-- **Don't** drop Buddhist iconography into admin chrome — lotus watermarks,
-  Buddha silhouettes, sutra-script display fonts, gold/purple ceremonial
-  palettes. (PRODUCT.md anti-reference: "過度佛教元素".)
-- **Don't** clone the Notion / Linear all-white-and-Inter look. The admin
-  must read as Tzu Chi's tool, not a generic SaaS template. (PRODUCT.md
-  anti-reference: "Notion / Linear 風克隆".)
+- **Don't** use 標楷體 / DFKai-SB / any ceremonial display font in
+  admin chrome. 標楷體 reads as ceremonial and confuses the operational
+  register. (This system explicitly reverted the earlier pass that put
+  楷體 on headings.)
+- **Don't** ship cream / sand / paper / wood / earth-tone palettes in
+  admin. The user's feedback `「整體顏色很奇怪」` named that
+  experiment dead. Body bg is white; surfaces are cool slate.
+- **Don't** ship corporate-tech hero gradients, scroll-driven
+  choreography, or hero-metric tiles. (PRODUCT.md anti-reference:
+  `corporate-tech 藍黃漸層、炸開的網狀背景`.)
+- **Don't** add antique-government-portal scaffolding — heart icons,
+  3D bevels, neon list rows, Comic Sans / 微軟正黑體 粗體 headings.
+- **Don't** drop Buddhist iconography into admin chrome — lotus
+  watermarks, Buddha silhouettes, sutra-script fonts, gold/purple
+  ceremonial palettes.
+- **Don't** clone the Notion / Linear all-white-and-Inter look. The
+  admin must read as Tzu Chi's tool. Tzu Chi Blue on active nav, on
+  the public-state label, and on the primary CTA is what distinguishes
+  this from a generic SaaS template.
 - **Don't** use `border-left` or `border-right` greater than 1px as a
-  coloured stripe on table rows, callouts, or cards. Use a full 1px border
-  or background tint.
-- **Don't** introduce a fifth surface tier. Pick Base, Rail, Surface, or
-  Surface-hover. A fifth shade reads as drift, not depth.
+  coloured stripe on banners, callouts, list items, or cards. The
+  No-Stripe Rule is normative. (Two violations were stripped from
+  `help-note` and `ds-first-run` in this pass — don't reintroduce
+  them.)
+- **Don't** stack two badges in a status cell. State is one line of
+  typography. If a third meta needs to surface, demote one of the
+  existing two to a row-hover tooltip.
+- **Don't** introduce a fifth surface tier. Pick Bg, Inset, Hover, or
+  Stroke-bordered. A fifth shade reads as drift, not depth.
 - **Don't** introduce gradient text (`background-clip: text`), gradient
   fills, or glass / blur cards. Flat surfaces only.
 - **Don't** float modals on `box-shadow`. The backdrop overlay is the
-  elevation cue (The Backdrop-Over-Float Rule).
+  elevation cue. (Backdrop-Over-Float Rule.)
 - **Don't** add a second uppercase tier (section dividers, eyebrow
   kickers, numbered scaffolds `01 / 02 / 03`). Uppercase lives at the
   Label tier or nowhere.
-- **Don't** treat this baseline as the brand. PRODUCT.md commits to a Tzu
-  Chi blue / cream / 標楷體 identity the next pass will land. Until then,
-  prefer "could survive the rebrand" choices: tokenised surfaces, semantic
-  type tiers, OS-native body font. New work that hard-codes dark navy is
-  rework debt.
-- **Don't** use `outline: none` without replacing it with a visible focus
-  indicator. WCAG 2.1 SC 2.4.7 is normative; sighted keyboard users must
-  see where focus is. If a native browser outline is too loud, replace it
-  with a 2px Process Blue ring on `:focus-visible` — never remove it.
+- **Don't** show raw HTTP codes to users. Classify into network /
+  permission / not-found / server / unknown buckets via notify.js's
+  `classifyHttpError`. Engineering colleagues read the original status
+  via `console.error` or DevTools.
+- **Don't** use `outline: none` on inputs or buttons without replacing
+  with a visible focus indicator. WCAG 2.1 SC 2.4.7 is normative.
