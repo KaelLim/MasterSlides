@@ -10,3 +10,4 @@ secrets/
 .codegraph/
 aliswa/
 .wrangler/
+.impeccable/live/sessions/
