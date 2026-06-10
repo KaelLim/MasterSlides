@@ -118,8 +118,14 @@ export function extractDriveId(url: string): string | null {
 //   2. manuscript.css can flip just this group to horizontal-tb and stack
 //      heading + table vertically.
 export function wrapHeadingTablePairs(html: string): string {
+  // The heading body is restricted to *inline* content (no h*/p/ul/ol/table/
+  // hr/div/blockquote opens, and no </hN> closes other than its own). Without
+  // this guard the non-greedy [\s\S]*? would happily backtrack across the
+  // whole document until it found the next heading-then-table pair — so a doc
+  // with one "<h3>表</h3><table>" buried 20 sections down would have every
+  // section above swallowed into a single .heading-table wrapper.
   return html.replace(
-    /(<h([1-4])(?:\s[^>]*)?>[\s\S]*?<\/h\2>)\s*(<table(?:\s[^>]*)?>[\s\S]*?<\/table>)/g,
+    /(<h([1-4])(?:\s[^>]*)?>(?:(?!<\/h[1-6]>|<(?:h[1-6]|p|ul|ol|table|hr|div|blockquote)\b)[\s\S])*<\/h\2>)\s*(<table(?:\s[^>]*)?>[\s\S]*?<\/table>)/g,
     '<div class="heading-table">$1$3</div>',
   );
 }

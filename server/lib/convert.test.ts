@@ -145,6 +145,32 @@ test("wrapHeadingTablePairs: standalone table is left alone", () => {
   expect(wrapHeadingTablePairs(html)).toBe(html);
 });
 
+test("wrapHeadingTablePairs: heading-without-table does not swallow downstream headings", () => {
+  // Regression: non-greedy [\s\S]*? used to backtrack across the whole doc
+  // until it found the next heading-then-table, wrapping every section above
+  // it into one giant .heading-table. Each pair must be wrapped independently;
+  // unrelated headings in between must stay alone.
+  const html =
+    "<h2>專案</h2><p>內容</p>" +
+    "<h2>水災</h2><p>內容</p>" +
+    "<h3>建坪表</h3><table><tr><td>x</td></tr></table>" +
+    "<h2>預算</h2><table><tr><td>y</td></tr></table>";
+  expect(wrapHeadingTablePairs(html)).toBe(
+    "<h2>專案</h2><p>內容</p>" +
+      "<h2>水災</h2><p>內容</p>" +
+      '<div class="heading-table"><h3>建坪表</h3><table><tr><td>x</td></tr></table></div>' +
+      '<div class="heading-table"><h2>預算</h2><table><tr><td>y</td></tr></table></div>',
+  );
+});
+
+test("wrapHeadingTablePairs: inline tags inside heading are preserved", () => {
+  const html =
+    "<h2><strong>名單</strong></h2><table><tr><td>a</td></tr></table>";
+  expect(wrapHeadingTablePairs(html)).toBe(
+    '<div class="heading-table"><h2><strong>名單</strong></h2><table><tr><td>a</td></tr></table></div>',
+  );
+});
+
 // ── minifyHtml: collapse between-tag whitespace, preserve content ──────
 
 test("minifyHtml: collapses newlines between block tags", () => {
