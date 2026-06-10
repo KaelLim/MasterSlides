@@ -181,24 +181,36 @@ async function onRowAction(e) {
         return;
       }
     }
+    const toggleLabel = target.closest(".toggle");
     const togglePublic = async () => {
-      const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_public: next }),
-      });
-      if (!res.ok) {
-        const err = new Error(`HTTP ${res.status}`);
-        err.status = res.status;
-        throw err;
+      if (toggleLabel) toggleLabel.classList.add("is-toggling");
+      try {
+        const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
+          method: "PATCH",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_public: next }),
+        });
+        if (!res.ok) {
+          const err = new Error(`HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        const d = docs.find((x) => x.doc_id === docId);
+        if (d) d.is_public = next ? 1 : 0;
+        target.checked = next;
+      } finally {
+        if (toggleLabel) toggleLabel.classList.remove("is-toggling");
       }
-      const d = docs.find((x) => x.doc_id === docId);
-      if (d) d.is_public = next ? 1 : 0;
-      target.checked = next;
     };
     try {
       await togglePublic();
+      const d = docs.find((x) => x.doc_id === docId);
+      const title = d?.title || docId;
+      notify({
+        tone: "success",
+        body: next ? `「${title}」已公開` : `「${title}」已改為草稿`,
+      });
     } catch (err) {
       // Revert the optimistic checkbox state; the toast offers a retry.
       target.checked = !next;
@@ -230,12 +242,14 @@ async function onRowAction(e) {
       notify({ tone: "error", title: "刪除失敗", body: message });
       return;
     }
+    const deletedTitle = d?.title || docId;
     docs = docs.filter((x) => x.doc_id !== docId);
     // Cascade-delete on the server may have shrunk other playlists' doc_ids.
     // Re-fetch counts so the table reflects the new intersection. Background
     // refresh — render immediately so the deleted row disappears without
     // waiting on the network.
     renderTable();
+    notify({ tone: "success", body: `「${deletedTitle}」已刪除`, durationMs: 3000 });
     fetchPlaylistCounts().then(() => renderTable());
   }
 }
@@ -288,10 +302,16 @@ function openNewDocModal() {
         return;
       }
       close();
+      const importedTitle = body.title;
+      notify({ tone: "success", body: `「${importedTitle ?? '文件'}」已匯入` });
       // Force metadata entry — every newly imported doc passes through the edit
       // page before it appears on the slides surface. body.doc_id is the
       // canonical id (extracted server-side from the pasted URL).
-      location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
+      // Delay navigation 800ms so the success toast renders visibly before
+      // the page unloads.
+      setTimeout(() => {
+        location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
+      }, 800);
     } catch (err) {
       errEl.textContent = `網路錯誤：${err.message}`;
       submitBtn.disabled = false;

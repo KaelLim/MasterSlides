@@ -188,6 +188,30 @@ a.primary:focus-visible {
 }
 .toggle input:checked + .track { background: #2c6cb5; }
 .toggle input:checked + .track::after { transform: translateX(16px); }
+/* Inflight state during the PATCH — dims the track and blocks repeat
+   clicks so the optimistic UI doesn't appear silent on a slow network. */
+.toggle.is-toggling { opacity: 0.6; pointer-events: none; }
+
+/* Inline spinner for primary buttons in a loading state (e.g. save).
+   Reuses the ds-spin keyframe defined alongside .loading-state above. */
+button.primary.is-loading::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: ds-spin 800ms linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+@media (prefers-reduced-motion: reduce) {
+  button.primary.is-loading::before {
+    animation: none;
+    opacity: 0.6;
+  }
+}
 
 /* ── Material Symbols baseline ──────────────────────── */
 .material-symbols-rounded {

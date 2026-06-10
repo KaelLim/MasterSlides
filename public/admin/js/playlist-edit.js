@@ -369,7 +369,10 @@ saveBtn.addEventListener("click", async () => {
   }
 
   saveBtn.disabled = true;
-  saveBtn.textContent = "儲存中…";
+  saveBtn.classList.add("is-loading");
+  const saveLabel = saveBtn.querySelector(".save-btn-label");
+  if (saveLabel) saveLabel.textContent = "儲存中…";
+  else saveBtn.textContent = "儲存中…";
   statusEl.textContent = "";
 
   const body = {
@@ -398,11 +401,28 @@ saveBtn.addEventListener("click", async () => {
     // is for the user whose focus has drifted up the page.
     notify({ tone: "error", title: "儲存失敗", body: detail });
     saveBtn.disabled = false;
-    saveBtn.textContent = "儲存";
+    saveBtn.classList.remove("is-loading");
+    if (saveLabel) saveLabel.textContent = "儲存";
+    else saveBtn.textContent = "儲存";
     return;
   }
   isDirty = false;
-  window.location.href = "/admin/playlists";
+  notify({ tone: "success", body: `「${title}」已儲存` });
+  // Delay navigation 800ms so the success toast renders visibly before the
+  // page unloads to /admin/playlists.
+  setTimeout(() => {
+    window.location.href = "/admin/playlists";
+  }, 800);
+});
+
+// Tab-refocus reminder: when the user comes back to a dirty playlist
+// editor, surface a caution toast. The 法會 setup workflow often involves
+// stepping away to double-check a Google Doc, then forgetting that the
+// editor is mid-edit.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && isDirty) {
+    notify({ tone: "caution", body: "你還有未儲存的變更。", durationMs: 4000 });
+  }
 });
 
 // ── boot ─────────────────────────────────────────────────────────

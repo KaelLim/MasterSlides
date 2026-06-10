@@ -142,23 +142,34 @@ async function onAction(e) {
         return;
       }
     }
+    const toggleLabel = t.closest(".toggle");
     const togglePublic = async () => {
-      const res = await fetch(`/api/admin/playlists/${id}`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_public: next }),
-      });
-      if (!res.ok) {
-        const err = new Error(`HTTP ${res.status}`);
-        err.status = res.status;
-        throw err;
+      if (toggleLabel) toggleLabel.classList.add("is-toggling");
+      try {
+        const res = await fetch(`/api/admin/playlists/${id}`, {
+          method: "PATCH",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_public: next }),
+        });
+        if (!res.ok) {
+          const err = new Error(`HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        if (p) p.is_public = next ? 1 : 0;
+        t.checked = next;
+      } finally {
+        if (toggleLabel) toggleLabel.classList.remove("is-toggling");
       }
-      if (p) p.is_public = next ? 1 : 0;
-      t.checked = next;
     };
     try {
       await togglePublic();
+      const title = p?.title || `Playlist ${id}`;
+      notify({
+        tone: "success",
+        body: next ? `「${title}」已公開` : `「${title}」已改為草稿`,
+      });
     } catch (err) {
       t.checked = !next;
       const { message } = classifyHttpError(err.status || 0);
@@ -188,8 +199,10 @@ async function onAction(e) {
       notify({ tone: "error", title: "刪除失敗", body: message });
       return;
     }
+    const deletedTitle = p?.title || `Playlist ${id}`;
     playlists = playlists.filter((x) => x.id !== id);
     render();
+    notify({ tone: "success", body: `「${deletedTitle}」已刪除`, durationMs: 3000 });
   }
 }
 
