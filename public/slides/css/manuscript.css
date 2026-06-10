@@ -33,7 +33,6 @@ body.horizontal-mode .manuscript {
 
 body.horizontal-mode h1,
 body.horizontal-mode h2,
-body.horizontal-mode h3,
 body.horizontal-mode h4,
 body.horizontal-mode p,
 body.horizontal-mode ul,
@@ -53,8 +52,11 @@ body.horizontal-mode li {
 
 /* ===========================
    標題樣式
+   h3 intentionally has no rules — falls back to UA defaults so it
+   reads as body-weight prose, letting <strong> inside it carry the
+   only highlight in that line.
    =========================== */
-h1, h2, h3, h4 {
+h1, h2, h4 {
   font-family: var(--font-family-body);
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -73,12 +75,6 @@ h1 {
 h2 {
   font-size: calc(clamp(42px, 7cqi, 90px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-primary);
-  font-weight: 600;
-}
-
-h3 {
-  font-size: calc(clamp(36px, 6cqi, 80px) * var(--font-scale) * var(--mode-scale));
-  color: var(--color-secondary);
   font-weight: 600;
 }
 
@@ -123,6 +119,9 @@ li::marker {
 
 /* ===========================
    重點（粗體）
+   Global rule — applies to <strong>/<b> anywhere in slide content
+   (paragraphs, list items, headings, table cells). No more-specific
+   selector should reintroduce a color for these elements.
    =========================== */
 strong, b {
   color: var(--color-highlight);
@@ -162,7 +161,6 @@ img {
 
 .heading-table h1,
 .heading-table h2,
-.heading-table h3,
 .heading-table h4 {
   writing-mode: horizontal-tb;
   text-orientation: mixed;
@@ -182,11 +180,6 @@ img {
 .heading-table h2 {
   font-size: calc(clamp(32px, 4.5cqi, 64px) * var(--font-scale));
   color: var(--color-primary);
-}
-
-.heading-table h3 {
-  font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
-  color: var(--color-secondary);
 }
 
 .heading-table h4 {
