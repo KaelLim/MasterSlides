@@ -126,23 +126,97 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .toggle input:checked + .track { background: #2563eb; }
 .toggle input:checked + .track::after { transform: translateX(16px); }
 
+/* ── Material Symbols baseline ──────────────────────── */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+  vertical-align: middle;
+}
+
 /* ── Action buttons (icon) ──────────────────────────── */
 .icon-btn {
   background: transparent;
   border: 1px solid #3a4a62;
   color: #cdd6e2;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   cursor: pointer;
-  margin-left: 4px;
+  margin-left: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
-.icon-btn:hover { background: #2a3a52; }
-.icon-btn.danger:hover { background: #7f1d1d; border-color: #b91c1c; }
+.icon-btn .material-symbols-rounded { font-size: 20px; }
+.icon-btn:hover { background: #2a3a52; color: #66d9ef; border-color: #3d5170; }
+.icon-btn.danger:hover { background: #7f1d1d; border-color: #b91c1c; color: white; }
+
+/* Primary button can carry an icon next to its label */
+button.primary, a.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
+  font-size: 18px;
+}
+
+/* ── Pagination ─────────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+  user-select: none;
+}
+.pager button {
+  background: #1a2332;
+  border: 1px solid #2a3a52;
+  color: #cdd6e2;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.pager button .material-symbols-rounded { font-size: 18px; }
+.pager button:hover:not(:disabled) { background: #2a3a52; border-color: #3d5170; }
+.pager button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager button.is-current {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+.pager .ellipsis {
+  color: #6b7c8f;
+  padding: 0 4px;
+  font-size: 14px;
+  align-self: center;
+}
+.pager .summary {
+  color: #8a9aae;
+  font-size: 12px;
+  margin-right: 12px;
+}
 
 /* ── Login / Setup forms ────────────────────────────── */
 .auth-page {

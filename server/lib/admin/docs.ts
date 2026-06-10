@@ -3,7 +3,9 @@ import {
   deleteImage,
   findDocByDocId,
   listAllDocs,
+  listAllPlaylists,
   updateDoc,
+  updatePlaylist,
 } from "../drust";
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -55,6 +57,9 @@ export async function handleDocPatch(
 }
 
 // DELETE /api/admin/docs/:doc_id → 204, reclaims all associated images
+// and removes this doc_id from every playlist that references it. Playlists
+// are cleaned first so a doc-delete failure leaves the playlists in a
+// consistent state for the user's retry (idempotent on re-run).
 export async function handleDocDelete(
   docIdParam: string,
   _req: Request,
@@ -62,7 +67,17 @@ export async function handleDocDelete(
   const record = await findDocByDocId(docIdParam);
   if (!record) return jsonResponse({ error: "not-found" }, 404);
 
-  // Best-effort image reclaim. Tolerated if any single image is gone.
+  const playlists = await listAllPlaylists();
+  for (const pl of playlists) {
+    if (!pl.doc_ids.includes(docIdParam)) continue;
+    const next = pl.doc_ids.filter((id) => id !== docIdParam);
+    try {
+      await updatePlaylist(pl.id, { doc_ids: next });
+    } catch (err) {
+      console.warn(`[admin] failed to detach ${docIdParam} from playlist ${pl.id}:`, err);
+    }
+  }
+
   for (const imgId of record.image_ids ?? []) {
     try {
       await deleteImage(imgId);

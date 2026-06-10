@@ -1,4 +1,6 @@
 // /admin/playlists — list playlists + actions.
+import { renderPager, slice, totalPages } from "./pager.js";
+
 const contentEl = document.getElementById("content");
 const countEl = document.getElementById("count");
 
@@ -15,6 +17,7 @@ function escapeHTML(s) {
 }
 
 let playlists = [];
+let page = 0;
 
 async function refresh() {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
@@ -24,6 +27,7 @@ async function refresh() {
     return;
   }
   playlists = (await res.json()).playlists;
+  page = 0;
   render();
 }
 
@@ -32,12 +36,15 @@ function render() {
   if (playlists.length === 0) {
     contentEl.innerHTML = `<div class="empty-state">
       <h3>還沒有 Playlist</h3>
-      <p>點選右上「+ 新增 Playlist」建立第一筆。</p>
+      <p>點選右上「新增 Playlist」建立第一筆。</p>
     </div>`;
     return;
   }
+  const pages = totalPages(playlists.length);
+  if (page >= pages) page = pages - 1;
+  const visible = slice(playlists, page);
 
-  const rows = playlists.map((p) => `
+  const rows = visible.map((p) => `
     <tr data-id="${p.id}">
       <td class="col-title"><a class="link" href="/admin/playlist-edit?id=${p.id}">${escapeHTML(p.title)}</a></td>
       <td>${p.doc_ids.length} 份</td>
@@ -49,9 +56,15 @@ function render() {
         </label>
       </td>
       <td class="col-actions">
-        <button class="icon-btn" data-action="play" title="開始播放">▶</button>
-        <button class="icon-btn" data-action="edit" title="編輯">✎</button>
-        <button class="icon-btn danger" data-action="delete" title="刪除">✕</button>
+        <button class="icon-btn" data-action="play" title="開始播放">
+          <span class="material-symbols-rounded">play_arrow</span>
+        </button>
+        <button class="icon-btn" data-action="edit" title="編輯">
+          <span class="material-symbols-rounded">edit</span>
+        </button>
+        <button class="icon-btn danger" data-action="delete" title="刪除">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
       </td>
     </tr>
   `).join("");
@@ -64,14 +77,21 @@ function render() {
           <th style="width:100px">文件數</th>
           <th style="width:130px">建立日期</th>
           <th style="width:90px">公開</th>
-          <th style="width:160px"></th>
+          <th style="width:180px"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
+    <div class="pager" id="pager"></div>
   `;
   contentEl.querySelector("tbody").addEventListener("click", onAction);
   contentEl.querySelector("tbody").addEventListener("change", onAction);
+  renderPager({
+    targetEl: contentEl.querySelector("#pager"),
+    total: playlists.length,
+    page,
+    onChange: (next) => { page = next; render(); window.scrollTo({ top: 0, behavior: "smooth" }); },
+  });
 }
 
 async function onAction(e) {

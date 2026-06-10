@@ -1,4 +1,6 @@
 // /admin dashboard — docs list + actions.
+import { renderPager, slice, totalPages } from "./pager.js";
+
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
 
@@ -20,6 +22,7 @@ function escapeHTML(s) {
 }
 
 let docs = [];
+let page = 0;
 
 async function refresh() {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
@@ -32,6 +35,7 @@ async function refresh() {
     return;
   }
   docs = (await res.json()).docs;
+  page = 0;
   renderTable();
 }
 
@@ -40,12 +44,16 @@ function renderTable() {
   if (docs.length === 0) {
     contentEl.innerHTML = `<div class="empty-state">
       <h3>還沒有文件</h3>
-      <p>點選右上「+ 新增文件」貼入 Google Docs 網址，即可建立第一筆。</p>
+      <p>點選右上「新增文件」貼入 Google Docs 網址，即可建立第一筆。</p>
     </div>`;
     return;
   }
+  // Clamp page after a delete shrinks the list past the current page bounds.
+  const pages = totalPages(docs.length);
+  if (page >= pages) page = pages - 1;
+  const visible = slice(docs, page);
 
-  const rows = docs.map((d) => `
+  const rows = visible.map((d) => `
     <tr data-doc-id="${escapeHTML(d.doc_id)}">
       <td class="col-title">
         <span class="link" data-action="view">${escapeHTML(d.title || d.doc_id)}</span>
@@ -59,9 +67,15 @@ function renderTable() {
         </label>
       </td>
       <td class="col-actions">
-        <button class="icon-btn" data-action="view" title="預覽">👁</button>
-        <button class="icon-btn" data-action="edit" title="編輯標題 / 日期 / 單位報告">✎</button>
-        <button class="icon-btn danger" data-action="delete" title="刪除">✕</button>
+        <button class="icon-btn" data-action="view" title="預覽">
+          <span class="material-symbols-rounded">visibility</span>
+        </button>
+        <button class="icon-btn" data-action="edit" title="編輯標題 / 日期 / 單位報告">
+          <span class="material-symbols-rounded">edit</span>
+        </button>
+        <button class="icon-btn danger" data-action="delete" title="刪除">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
       </td>
     </tr>
   `).join("");
@@ -74,15 +88,22 @@ function renderTable() {
           <th style="width:200px">Doc ID</th>
           <th style="width:130px">建立日期</th>
           <th style="width:90px">公開</th>
-          <th style="width:170px"></th>
+          <th style="width:180px"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
+    <div class="pager" id="pager"></div>
   `;
 
   contentEl.querySelector("tbody").addEventListener("click", onRowAction);
   contentEl.querySelector("tbody").addEventListener("change", onRowAction);
+  renderPager({
+    targetEl: contentEl.querySelector("#pager"),
+    total: docs.length,
+    page,
+    onChange: (next) => { page = next; renderTable(); window.scrollTo({ top: 0, behavior: "smooth" }); },
+  });
 }
 
 async function onRowAction(e) {
@@ -119,7 +140,7 @@ async function onRowAction(e) {
   }
   if (action === "delete") {
     const d = docs.find((x) => x.doc_id === docId);
-    if (!confirm(`確定要刪除「${d?.title || docId}」嗎？此操作無法復原。`)) return;
+    if (!confirm(`確定要刪除「${d?.title || docId}」嗎？此操作無法復原，且會同步從所有 Playlist 移除。`)) return;
     const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
       method: "DELETE",
       credentials: "same-origin",
