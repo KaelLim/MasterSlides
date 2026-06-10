@@ -2,7 +2,13 @@ import { fetchMarkdown } from "../lib/google-docs";
 import { convertDocument, extractTitle } from "../lib/convert";
 import { composeFirstSlide } from "../lib/first-slide";
 import { upsertDoc } from "../lib/storage";
-import { findDocByDocId } from "../lib/drust";
+import {
+  findDocByDocId,
+  fetchPublicFile,
+  uploadHtmlFile,
+  deleteImage,
+  updateDoc,
+} from "../lib/drust";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -102,6 +108,29 @@ function validate(payload: EditPayload): string | null {
   return null;
 }
 
+// Inject (or replace) the first-slide block immediately after the article
+// opener. Throws if the opener is missing — that's a data-integrity bug
+// we want to fail loudly instead of silently dropping the first slide.
+function injectFirstSlide(html: string, firstSlide: string): string {
+  // Strip any existing first-slide block first. The unique anchor is the
+  // wrapper's closing </div> immediately followed by the <hr> page-break
+  // — inner divs (date / title / reporters) don't have <hr> after them.
+  const withoutOld = html.replace(
+    /<div class="first-slide">[\s\S]*?<\/div>\s*<hr>\s*/,
+    "",
+  );
+  let injected = false;
+  const result = withoutOld.replace(
+    /^<article class="slide-content">\n?/,
+    (m) => {
+      injected = true;
+      return `${m}${firstSlide}\n`;
+    },
+  );
+  if (!injected) throw new Error("first_slide_injection_failed");
+  return result;
+}
+
 export async function handlePostEdit(
   doc_id: string,
   payload: EditPayload,
@@ -115,23 +144,48 @@ export async function handlePostEdit(
   const presentation_date = payload.presentation_date;
 
   try {
+    const firstSlide = composeFirstSlide({ presentation_date, title, unit_report });
+    const existing = await findDocByDocId(doc_id);
+
+    // Fast path: the doc body is already stored as a Drust file. Just
+    // swap the first-slide block and re-upload — no Google fetch, no
+    // image churn, no /files DELETE storm on the old images. Subrequest
+    // count drops from O(N+M) to ~5, keeping Workers Free invocations
+    // well under the 50-subrequest cap.
+    if (existing?.html_file_id) {
+      const oldHtml = await fetchPublicFile(existing.html_file_id);
+      if (oldHtml !== null) {
+        const finalHtml = injectFirstSlide(oldHtml, firstSlide);
+        const uploaded = await uploadHtmlFile(finalHtml, doc_id);
+        // Best-effort delete of the old html file. Orphans are tolerated
+        // (logged, not thrown) — same policy as storage.upsertDoc.
+        try {
+          await deleteImage(existing.html_file_id);
+        } catch (e) {
+          console.warn(`[edit] failed to delete old html file ${existing.html_file_id}:`, e);
+        }
+        await updateDoc(existing.id, {
+          title,
+          html: null,
+          html_file_id: uploaded.id,
+          presentation_date,
+          unit_report,
+          // image_ids intentionally omitted — the stored body still
+          // references them via /img/<id>, so they must remain alive.
+        });
+        return Response.json({ ok: true });
+      }
+      // File missing from Drust — fall through to the full path so we
+      // regenerate the body from Google. Leaves the dangling
+      // html_file_id pointer in the row; upsertDoc will overwrite it.
+    }
+
+    // Slow path: no stored record (first /edit/ ever), or legacy
+    // record with no html_file_id, or the html file vanished. Pull
+    // markdown from Google + re-upload images.
     const markdown = await fetchMarkdown(doc_id);
     const { html: bodyHtml, imageIds } = await convertDocument(markdown);
-    const firstSlide = composeFirstSlide({ presentation_date, title, unit_report });
-    // Insert first-slide HTML inside the article wrapper so paginator iterates it.
-    // Assert the replacement actually happened — if convertDocument's wrapper
-    // ever changes shape, we'd silently drop the first slide otherwise.
-    let injected = false;
-    const finalHtml = bodyHtml.replace(
-      /^<article class="slide-content">\n?/,
-      (m) => {
-        injected = true;
-        return `${m}${firstSlide}\n`;
-      },
-    );
-    if (!injected) {
-      throw new Error("first_slide_injection_failed");
-    }
+    const finalHtml = injectFirstSlide(bodyHtml, firstSlide);
 
     await upsertDoc({
       doc_id,
