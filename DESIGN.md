@@ -366,6 +366,11 @@ elevation cue.
   `第 X–Y 筆，共 N 筆` so the user always sees both the slice and the total.
 
 ### Playlist Picker (signature component)
+Styles live in `public/admin/css/admin.css` under the `Playlist Editor`
+section as of the Distill phase. The picker's selectors are scoped under
+`.picker` so they cannot collide with the table, modal, or pager rules
+elsewhere in admin.css.
+
 A two-panel grid (`1fr 1fr`, `20px` gap, `480px` minimum height) used to
 compose a playlist by moving docs from `可選文件` to `已加入（順序）`. The
 panels share a structure:
