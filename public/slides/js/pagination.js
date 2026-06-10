@@ -44,29 +44,12 @@ export function goToPage(page) {
 }
 
 export function prevPage() {
-  if (state.currentPage <= 0 && state.playlistState) {
-    // Boundary jump handled by playlist.js; expose a hook via a callback
-    // registered at app entry to avoid pagination→playlist coupling.
-    if (pagination._onLeftBoundary) {
-      void pagination._onLeftBoundary();
-      return;
-    }
-  }
   goToPage(state.currentPage - 1);
 }
 
 export function nextPage() {
-  if (state.currentPage >= state.totalPages - 1 && state.playlistState) {
-    if (pagination._onRightBoundary) {
-      void pagination._onRightBoundary();
-      return;
-    }
-  }
   goToPage(state.currentPage + 1);
 }
-
-// Callback registry — playlist.js sets these at app entry.
-export const pagination = { _onLeftBoundary: null, _onRightBoundary: null };
 
 export function repaginate() {
   // Deep-clone canonical elements so paginate's in-place splits never touch

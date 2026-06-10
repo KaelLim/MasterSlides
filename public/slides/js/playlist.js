@@ -1,6 +1,30 @@
 import { state, dom } from './state.js';
-import { loadDocument } from './loader.js';
-import { goToPage, pagination } from './pagination.js';
+import { syncFromGoogle } from './loader.js';
+import { repaginate } from './pagination.js';
+import { convertTablesToImages } from './table-canvas.js';
+import { syncRemoteState } from './remote-control.js';
+import { loadSettings, resetNavHideTimer } from './display.js';
+import { updateModKeyDisplay } from './modals.js';
+
+const ARTICLE_OPEN = '<article class="slide-content">';
+const ARTICLE_CLOSE = '</article>';
+
+async function fetchDocBody(docId) {
+  let res = await fetch(`/api/docs/${docId}`);
+  if (!res.ok) {
+    // First-time load — sync from Google, then retry.
+    await syncFromGoogle(`https://docs.google.com/document/d/${docId}/edit`);
+    res = await fetch(`/api/docs/${docId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${docId}`);
+  }
+  const html = await res.text();
+  const start = html.indexOf(ARTICLE_OPEN);
+  const end = html.lastIndexOf(ARTICLE_CLOSE);
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error(`unexpected doc shape for ${docId}`);
+  }
+  return html.slice(start + ARTICLE_OPEN.length, end);
+}
 
 export async function loadPlaylist(id) {
   try {
@@ -14,10 +38,37 @@ export async function loadPlaylist(id) {
       dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">「${playlist.title}」沒有文件</p>`;
       return;
     }
-    state.playlistState = { id: playlist.id, title: playlist.title, doc_ids: playlist.doc_ids, index: 0 };
+    state.playlistState = { id: playlist.id, title: playlist.title, doc_ids: playlist.doc_ids };
     updatePlaylistBadge();
-    state.currentSrc = state.playlistState.doc_ids[0];
-    await loadDocument(state.currentSrc);
+
+    dom.manuscript.innerHTML = '<p class="loading-message">載入 playlist 中…</p>';
+
+    const bodies = await Promise.all(playlist.doc_ids.map(fetchDocBody));
+    // <hr> between consecutive docs so each doc's first-slide starts on a
+    // fresh page. The paginator splits top-level <hr> children of <article>.
+    const merged = ARTICLE_OPEN + bodies.join('<hr>') + ARTICLE_CLOSE;
+    dom.manuscript.innerHTML = merged;
+
+    loadSettings();
+    updateModKeyDisplay();
+    await document.fonts.ready;
+
+    const images = dom.manuscript.querySelectorAll('img');
+    if (images.length > 0) {
+      await Promise.all(Array.from(images).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+      ));
+    }
+    await convertTablesToImages();
+
+    const content = dom.manuscript.firstElementChild;
+    state.allPageElements = (content && content.tagName === 'ARTICLE')
+      ? Array.from(content.children)
+      : Array.from(dom.manuscript.children);
+
+    repaginate();
+    syncRemoteState();
+    resetNavHideTimer();
   } catch (err) {
     dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">Playlist 載入失敗: ${err.message}</p>`;
   }
@@ -36,24 +87,5 @@ function updatePlaylistBadge() {
       'pointer-events:none;font-family:-apple-system,sans-serif;';
     document.body.appendChild(badge);
   }
-  badge.textContent = `${state.playlistState.title} · ${state.playlistState.index + 1} / ${state.playlistState.doc_ids.length}`;
+  badge.textContent = `${state.playlistState.title} · ${state.playlistState.doc_ids.length} 份簡報`;
 }
-
-async function jumpToPlaylistDoc(delta) {
-  const pl = state.playlistState;
-  if (!pl) return false;
-  const next = pl.index + delta;
-  if (next < 0 || next >= pl.doc_ids.length) return false;
-  pl.index = next;
-  state.currentSrc = pl.doc_ids[next];
-  updatePlaylistBadge();
-  const landOnLast = delta < 0;
-  await loadDocument(state.currentSrc);
-  if (landOnLast) goToPage(state.totalPages - 1);
-  return true;
-}
-
-// Wire boundary callbacks so pagination.prevPage/nextPage cross between docs
-// without pagination needing to know about playlists.
-pagination._onLeftBoundary = () => jumpToPlaylistDoc(-1);
-pagination._onRightBoundary = () => jumpToPlaylistDoc(+1);
