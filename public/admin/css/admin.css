@@ -575,6 +575,21 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   margin: 0 auto 10px;
 }
 
+/* ── Selected panel: drag-to-reorder + recent-add pulse ──────────── */
+.picker .selected-panel .item { cursor: grab; }
+.picker .selected-panel .item.dragging { cursor: grabbing; opacity: 0.5; }
+
+@keyframes ds-just-added-pulse {
+  0% { background: var(--process-blue-tint, rgba(110, 156, 196, 0.3)); }
+  100% { background: transparent; }
+}
+.picker .selected-panel .item.just-added {
+  animation: ds-just-added-pulse 1500ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .picker .selected-panel .item.just-added { animation: none; }
+}
+
 .footer-bar {
   margin-top: 28px;
   display: flex;

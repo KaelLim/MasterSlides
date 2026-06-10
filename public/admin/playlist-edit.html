@@ -55,9 +55,13 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel selected-panel">
         <div class="panel-head">
           <h3><span class="material-symbols-rounded">queue_music</span>已加入（順序）</h3>
+          <div class="filter-wrap">
+            <span class="material-symbols-rounded">search</span>
+            <input class="filter" id="selectedFilter" type="text" placeholder="搜尋標題或 doc_id">
+          </div>
           <span class="count-pill" id="selectedCount" style="display:none"></span>
         </div>
         <div class="panel-body" id="selected">
