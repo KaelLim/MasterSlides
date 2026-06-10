@@ -128,8 +128,24 @@ li::marker {
    Global rule — applies to <strong>/<b> anywhere in slide content
    (paragraphs, list items, headings, table cells). No more-specific
    selector should reintroduce a color for these elements.
+
+   The [style*="font-weight:…"] siblings catch the case where Google
+   Docs export emits bold as `<span style="font-weight:700">…</span>`
+   instead of `**…**` — marked passes that span through verbatim,
+   so the strong/b selectors would otherwise miss it. Covers 600–900
+   weights with or without the colon-space.
    =========================== */
-strong, b {
+strong, b,
+[style*="font-weight:bold"],
+[style*="font-weight: bold"],
+[style*="font-weight:600"],
+[style*="font-weight: 600"],
+[style*="font-weight:700"],
+[style*="font-weight: 700"],
+[style*="font-weight:800"],
+[style*="font-weight: 800"],
+[style*="font-weight:900"],
+[style*="font-weight: 900"] {
   color: var(--color-highlight);
 }
 
@@ -276,7 +292,9 @@ hr {
   flex-direction: row-reverse;
   align-items: center;
   justify-content: space-around;
-  padding: 4cqi;
+  /* Track the .content-area / .goto-preview-bg / .print-page-bg
+     padding (10/20). Change all four in lockstep. */
+  padding: 10px 20px;
   box-sizing: border-box;
 }
 
