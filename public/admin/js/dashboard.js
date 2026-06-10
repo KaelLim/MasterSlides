@@ -60,6 +60,7 @@ function renderTable() {
       </td>
       <td class="col-actions">
         <button class="icon-btn" data-action="view" title="預覽">👁</button>
+        <button class="icon-btn" data-action="edit" title="編輯標題 / 日期 / 單位報告">✎</button>
         <button class="icon-btn danger" data-action="delete" title="刪除">✕</button>
       </td>
     </tr>
@@ -73,7 +74,7 @@ function renderTable() {
           <th style="width:200px">Doc ID</th>
           <th style="width:130px">建立日期</th>
           <th style="width:90px">公開</th>
-          <th style="width:130px"></th>
+          <th style="width:170px"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -93,6 +94,10 @@ async function onRowAction(e) {
 
   if (action === "view") {
     window.open(`/slides/?src=${encodeURIComponent(docId)}`, "_blank");
+    return;
+  }
+  if (action === "edit") {
+    location.href = `/edit/?src=${encodeURIComponent(docId)}`;
     return;
   }
   if (action === "toggle") {
