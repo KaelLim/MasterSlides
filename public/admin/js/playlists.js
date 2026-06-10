@@ -3,6 +3,7 @@ import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
+import "./help-modal.js";
 
 const contentEl = document.getElementById("content");
 const countEl = document.getElementById("count");
@@ -72,6 +73,7 @@ function render() {
     contentEl.innerHTML = `<div class="empty-state">
       <h3>還沒有 Playlist</h3>
       <p>點選右上「新增 Playlist」建立第一筆。</p>
+      <p class="empty-state__hint">需要教學？按 <kbd>?</kbd>。</p>
     </div>`;
     updateSelectionBar();
     return;

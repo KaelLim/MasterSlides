@@ -3,6 +3,7 @@ import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
+import "./help-modal.js";
 
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
@@ -89,16 +90,55 @@ function filteredDocs() {
   );
 }
 
+// First-run welcome banner. Shows once, only while the docs list is empty.
+// Dismissal is persisted via localStorage so the banner stays gone after a
+// reload — even if the user later deletes every doc and returns to a zero
+// state.
+const FIRST_RUN_KEY = "admin_seen_v1";
+function hasSeenFirstRun() {
+  try { return localStorage.getItem(FIRST_RUN_KEY) === "1"; }
+  catch { return true; /* if storage is blocked, suppress the banner */ }
+}
+function markFirstRunSeen() {
+  try { localStorage.setItem(FIRST_RUN_KEY, "1"); } catch { /* noop */ }
+}
+function renderFirstRunBanner() {
+  if (hasSeenFirstRun()) return "";
+  return `
+    <div class="ds-first-run" id="firstRunBanner" role="status">
+      <span class="material-symbols-rounded ds-first-run__icon">waving_hand</span>
+      <div class="ds-first-run__body">
+        <strong>歡迎使用簡報後台</strong>
+        <p>點右上「<span class="material-symbols-rounded inline">add</span> 新增文件」貼入 Google Docs 網址即可開始。需要 Google Docs 怎麼分享嗎？按 <kbd>?</kbd> 看教學。</p>
+      </div>
+      <button class="ds-first-run__dismiss" id="firstRunDismiss" aria-label="關閉歡迎訊息">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+  `;
+}
+function wireFirstRunBanner() {
+  const btn = contentEl.querySelector("#firstRunDismiss");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    markFirstRunSeen();
+    const banner = contentEl.querySelector("#firstRunBanner");
+    if (banner) banner.remove();
+  });
+}
+
 function renderTable() {
   const list = filteredDocs();
   docsCountEl.textContent = filterQ
     ? `${list.length} / ${docs.length} 筆`
     : `${docs.length} 筆`;
   if (docs.length === 0) {
-    contentEl.innerHTML = `<div class="empty-state">
+    contentEl.innerHTML = `${renderFirstRunBanner()}<div class="empty-state">
       <h3>還沒有文件</h3>
       <p>點選右上「新增文件」貼入 Google Docs 網址，即可建立第一筆。</p>
+      <p class="empty-state__hint">需要教學？按 <kbd>?</kbd>，或<a href="#" data-action="open-help" data-scroll-to=".help-share-guide">查看 Google Docs 分享教學</a>。</p>
     </div>`;
+    wireFirstRunBanner();
     updateSelectionBar();
     return;
   }
@@ -613,7 +653,7 @@ function openNewDocModal() {
   wrap.innerHTML = `
     <div class="modal">
       <h3>新增文件</h3>
-      <p class="desc">貼入 Google Docs 分享網址。文件需設為「任何人都可檢視」。</p>
+      <p class="desc">貼入 Google Docs 分享網址。文件需設為「任何人都可檢視」。<a href="#" id="share-guide-link">不知道怎麼設？查看教學</a></p>
       <label>Google Docs 網址</label>
       <input id="newDocUrl" type="url" placeholder="https://docs.google.com/document/d/..." autofocus>
       <div class="error" id="newDocErr"></div>
@@ -627,6 +667,17 @@ function openNewDocModal() {
   const close = () => wrap.remove();
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
   wrap.querySelector("#newDocCancel").addEventListener("click", close);
+  wrap.querySelector("#share-guide-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    close();
+    // Defer dispatch so the new-doc modal is fully removed before the help
+    // modal mounts — keeps focus management and Escape-handler chains sane.
+    queueMicrotask(() => {
+      window.dispatchEvent(new CustomEvent("admin:open-help", {
+        detail: { scrollTo: ".help-share-guide" },
+      }));
+    });
+  });
   wrap.querySelector("#newDocSubmit").addEventListener("click", async () => {
     const url = wrap.querySelector("#newDocUrl").value.trim();
     const errEl = wrap.querySelector("#newDocErr");

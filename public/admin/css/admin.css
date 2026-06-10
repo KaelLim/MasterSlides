@@ -621,6 +621,214 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .modal button.danger:hover { background: #9a3324; }
 .modal button.danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .modal .error { color: #c54a35; font-size: 13px; margin-top: 12px; min-height: 18px; }
+.modal .desc a {
+  color: #2c6cb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(44, 108, 181, 0.4);
+  text-underline-offset: 2px;
+  margin-left: 4px;
+}
+.modal .desc a:hover { text-decoration-color: #2c6cb5; }
+
+/* ── Help modal ───────────────────────────────────── */
+/* Reuses .modal-backdrop / .modal scaffolding from above. .help-modal
+   widens the panel so the hotkey table doesn't crowd, and caps height
+   so long FAQs scroll inside the panel rather than the page. */
+.modal.help-modal {
+  max-width: 640px;
+  max-height: 80vh;
+  overflow: auto;
+}
+.help-section + .help-section { margin-top: 24px; }
+.help-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4d4339;
+  margin: 0 0 12px;
+  letter-spacing: 0.2px;
+}
+.help-kbd-group + .help-kbd-group { margin-top: 14px; }
+.help-kbd-group h5 {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b5e50;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 6px;
+}
+.help-kbd-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  align-items: baseline;
+}
+.help-kbd-list dt {
+  text-align: right;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.help-kbd-list dd {
+  margin: 0;
+  font-size: 13px;
+  color: #312922;
+}
+.help-kbd-plus {
+  color: #b8a785;
+  font-size: 11px;
+  padding: 0 1px;
+}
+.help-kbd-sep {
+  color: #b8a785;
+  font-size: 12px;
+  padding: 0 2px;
+}
+.modal kbd, .empty-state kbd, .ds-first-run kbd {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #ece5d4;
+  border: 1px solid #d2c6ab;
+  color: #312922;
+  box-shadow: 0 1px 0 #d2c6ab;
+  display: inline-block;
+  vertical-align: baseline;
+}
+.help-share-guide {
+  padding-left: 20px;
+  margin: 0;
+  line-height: 1.7;
+  color: #4d4339;
+  font-size: 14px;
+}
+.help-share-guide li { margin: 2px 0; }
+.help-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: #ece5d4;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b5e50;
+  border-left: 3px solid #b8a785;
+}
+.help-section details {
+  margin: 6px 0;
+  border-bottom: 1px solid #ece5d4;
+}
+.help-section details:last-child { border-bottom: none; }
+.help-section details summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #312922;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-section details summary::-webkit-details-marker { display: none; }
+.help-section details summary::before {
+  content: "›";
+  display: inline-block;
+  width: 12px;
+  color: #b8a785;
+  font-size: 16px;
+  transition: transform 150ms ease;
+}
+.help-section details[open] summary::before { transform: rotate(90deg); }
+.help-section details[open] summary { color: #2c6cb5; }
+.help-section details p {
+  margin: 0 0 12px 20px;
+  font-size: 13px;
+  color: #4d4339;
+  line-height: 1.6;
+}
+
+/* ── First-run welcome banner ────────────────────── */
+.ds-first-run {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fbf8f0;
+  border: 1px solid #d2c6ab;
+  border-left: 3px solid #2c6cb5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.ds-first-run__icon {
+  color: #2c6cb5;
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ds-first-run__body { flex: 1; min-width: 0; }
+.ds-first-run__body strong {
+  display: block;
+  color: #312922;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ds-first-run__body p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b5e50;
+  line-height: 1.6;
+}
+.ds-first-run .material-symbols-rounded.inline {
+  font-size: 14px;
+  vertical-align: -2px;
+  color: #4d4339;
+}
+.ds-first-run__dismiss {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b5e50;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ds-first-run__dismiss:hover { background: #ece5d4; color: #312922; }
+.ds-first-run__dismiss:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
+}
+
+/* Empty-state hint line — sits below the primary copy as a quieter
+   secondary prompt linking out to the help modal. */
+.empty-state__hint {
+  margin-top: 12px !important;
+  font-size: 13px;
+  color: #6b5e50;
+}
+.empty-state__hint a {
+  color: #2c6cb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(44, 108, 181, 0.4);
+  text-underline-offset: 2px;
+}
+.empty-state__hint a:hover { text-decoration-color: #2c6cb5; }
+.picker .empty a {
+  display: inline-block;
+  margin-top: 8px;
+  color: #2c6cb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(44, 108, 181, 0.4);
+  text-underline-offset: 2px;
+  font-size: 13px;
+}
+.picker .empty a:hover { text-decoration-color: #2c6cb5; }
 
 /* ── Playlist Editor (picker UI) ─────────────────── */
 /* Used by /admin/playlist-edit. Extracted from inline <style> per the

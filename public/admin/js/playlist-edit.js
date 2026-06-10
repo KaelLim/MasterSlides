@@ -4,6 +4,7 @@ import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
+import "./help-modal.js";
 
 const params = new URLSearchParams(location.search);
 const playlistId = params.get("id") ? Number(params.get("id")) : null;
@@ -94,7 +95,7 @@ function renderAvailable() {
     availableEl.innerHTML = `<div class="empty">
       <span class="material-symbols-rounded">${publicDocs.length === 0 ? "lock" : "search_off"}</span>
       ${publicDocs.length === 0
-        ? "沒有公開文件可選。<br>先到「文件」頁把要納入的文件設為公開。"
+        ? `沒有公開文件可選。<br>先到「文件」頁把要納入的文件設為公開。<br><a href="#" data-action="open-help" data-scroll-to=".help-share-guide">需要分享教學？</a>`
         : "找不到符合條件的文件"}
     </div>`;
     availablePagerEl.innerHTML = "";
