@@ -9,8 +9,11 @@ export function exportPDF() {
 
   const containerW = dom.manuscriptContainer.clientWidth;
   const containerH = dom.manuscriptContainer.clientHeight;
-  const pageW = containerW + 160;
-  const pageH = containerH + 120;
+  // pageW/H = containerW/H + .content-area padding (10/20 each side) so
+  // @page exactly matches the live viewport. Update in lockstep with
+  // .content-area padding in manuscript.css.
+  const pageW = containerW + 40;
+  const pageH = containerH + 20;
 
   printStyle = document.createElement('style');
   printStyle.id = 'printPageStyle';

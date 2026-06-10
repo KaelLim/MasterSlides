@@ -232,7 +232,7 @@
   pointer-events: none;
 }
 /* Mirrors .print-page-bg — paints the theme background and applies the
- * content-area padding (60/80) so the inner clip equals the live
+ * content-area padding (10/20) so the inner clip equals the live
  * manuscript-container size. */
 .goto-preview-bg {
   width: 100%;
@@ -242,7 +242,7 @@
   background-position: center;
   background-repeat: no-repeat;
   background-color: var(--color-bg-base);
-  padding: 60px 80px;
+  padding: 10px 20px;
   box-sizing: border-box;
 }
 /* Mirrors .print-page-clip — restores the container-type:size chain so

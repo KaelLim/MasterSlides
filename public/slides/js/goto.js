@@ -60,8 +60,8 @@ function applyPreviewScale(item, containerW, containerH) {
   if (!preview) return;
 
   const hasSnapshot = slidePageSnapshot.length > 0;
-  const previewW = hasSnapshot ? containerW + 160 : containerW;
-  const previewH = hasSnapshot ? containerH + 120 : containerH;
+  const previewW = hasSnapshot ? containerW + 40 : containerW;
+  const previewH = hasSnapshot ? containerH + 20 : containerH;
 
   const itemW = item.clientWidth;
   const itemH = item.clientHeight;
@@ -109,10 +109,10 @@ function renderPreview(item, containerW, containerH, vertical) {
     bg.appendChild(clip);
     preview.appendChild(bg);
 
-    // Outer mirrors the print @page (containerW + 80*2, containerH + 60*2)
+    // Outer mirrors the print @page (containerW + 20*2, containerH + 10*2)
     // so bg padding leaves an inner clip of exactly containerW × containerH.
-    preview.style.width = (containerW + 160) + 'px';
-    preview.style.height = (containerH + 120) + 'px';
+    preview.style.width = (containerW + 40) + 'px';
+    preview.style.height = (containerH + 20) + 'px';
   } else {
     // Main-stack fallback (no .slide-page divs — CSS columns scroll model):
     // clone the whole manuscript and translate to the target page offset.
@@ -164,7 +164,7 @@ function buildGrid() {
   // include the content-area padding (matches PDF print's @page); otherwise
   // we use raw container aspect (no padding wrapper).
   const cellAspect = slidePageSnapshot.length > 0
-    ? `${containerW + 160} / ${containerH + 120}`
+    ? `${containerW + 40} / ${containerH + 20}`
     : `${containerW} / ${containerH}`;
 
   // Create lightweight placeholder items (no cloning yet)

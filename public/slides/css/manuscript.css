@@ -5,8 +5,10 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  /* padding 放在這裡，container 在內層 */
-  padding: 40px 60px;
+  /* padding 放在這裡，container 在內層。
+     goto-preview-bg / print-page-bg / goto.js 的 cell-aspect 算式都鏡像
+     這對數值，改動要三邊同步、不然縮圖跟 PDF 會跟 live 對不上。 */
+  padding: 10px 20px;
 }
 
 .manuscript-container {
@@ -52,9 +54,9 @@ body.horizontal-mode li {
 
 /* ===========================
    標題樣式
-   h3 intentionally has no rules — falls back to UA defaults so it
-   reads as body-weight prose, letting <strong> inside it carry the
-   only highlight in that line.
+   h3 carries font-size only — no color/weight/letter-spacing/margin
+   override, so <strong> inside it remains the only highlight on the
+   line and surrounding spacing tracks body prose.
    =========================== */
 h1, h2, h4 {
   font-family: var(--font-family-body);
@@ -76,6 +78,10 @@ h2 {
   font-size: calc(clamp(42px, 7cqi, 90px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-primary);
   font-weight: 600;
+}
+
+h3 {
+  font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
 }
 
 h4 {
@@ -180,6 +186,10 @@ img {
 .heading-table h2 {
   font-size: calc(clamp(32px, 4.5cqi, 64px) * var(--font-scale));
   color: var(--color-primary);
+}
+
+.heading-table h3 {
+  font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
 }
 
 .heading-table h4 {
