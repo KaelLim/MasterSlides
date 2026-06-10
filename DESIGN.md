@@ -27,15 +27,15 @@ typography:
     lineHeight: 1.5
     letterSpacing: "normal"
   headline:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif"
+    fontFamily: "'MOEStandardKaiti', 'DFKai-SB', 'BiauKai', '標楷體', 'Kaiti TC', '楷體-繁', 'STKaiti', serif"
     fontSize: "22px"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.3
     letterSpacing: "0.5px"
   title:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif"
+    fontFamily: "'MOEStandardKaiti', 'DFKai-SB', 'BiauKai', '標楷體', 'Kaiti TC', '楷體-繁', 'STKaiti', serif"
     fontSize: "18px"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.3
     letterSpacing: "normal"
   label:
@@ -232,17 +232,22 @@ function and reuse the token.
 
 ## 3. Typography
 
-**Display Font:** none. The admin has no display tier.
+**Display Font:** 標楷體 stack — `MOEStandardKaiti`, `DFKai-SB`, `BiauKai`,
+`標楷體`, `Kaiti TC`, `楷體-繁`, `STKaiti`, falling back to `serif`. Mirrored
+from the viewer (`public/slides/css/base.css`) so the admin carries the same
+Tzu Chi voice on its section markers.
 **Body Font:** System UI stack — `-apple-system`, `BlinkMacSystemFont`,
 `Segoe UI`, `Roboto`, then `Noto Sans TC`, `PingFang TC`, `Hiragino Sans CNS`,
 falling back to `sans-serif`.
 **Label/Mono Font:** `ui-monospace`, `SF Mono`, `Menlo`, then `monospace`.
 Used only for `doc_id` cells and inline code-like values.
 
-**Character:** Operating-system body, no webfont request, no character
-opinion. The page leans on the OS's own Chinese rendering — which on macOS
-is `PingFang TC`, on Windows is `Microsoft JhengHei`, on iOS/iPadOS is
-`PingFang TC`. Three real renderings instead of one Inter-shaped fake one.
+**Character:** A deliberate display-tier addition — 標楷體 lands on H1 / H2 / H3
+to carry the single Tzu Chi voice on section markers; body and meta stay
+OS-native so Chinese body text renders with the OS's own engine. On macOS
+that's `PingFang TC`, on Windows `Microsoft JhengHei`, on iOS/iPadOS
+`PingFang TC` — three real body renderings paired with one shared display
+voice, instead of one Inter-shaped fake one.
 
 ### Hierarchy
 - **Headline** (`600`, `22px`, line-height `1.3`, letter-spacing `0.5px`):
@@ -265,9 +270,11 @@ panel-head eyebrows — not section dividers and not button labels. If a
 second uppercase tier wants in, it joins the Label tier or doesn't ship.
 
 **The OS-Native Type Rule.** Body text uses the operating system's own
-default sans-serif and the operating system's own Chinese rendering. No
-webfont is loaded for body or headings. The admin reads with the user's
-own system, not an opinionated brand voice.
+default sans-serif and the operating system's own Chinese rendering. The
+admin reads with the user's own system on the tiers that matter for
+legibility. Exception: the display tier (headline, title) opts into 標楷體
+to carry the Tzu Chi voice on section markers. Body, subtle, label, mono
+remain OS-native.
 
 ## 4. Elevation
 

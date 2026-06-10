@@ -1,10 +1,14 @@
 /* Admin dashboard — Tzu Chi slides */
 
+:root {
+  --font-display: "MOEStandardKaiti", "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", "楷體-繁", "STKaiti", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", sans-serif;
+}
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", sans-serif;
+  font-family: var(--font-body);
   background: #f6f1e6;
   color: #312922;
   min-height: 100vh;
@@ -21,7 +25,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 28px;
 }
-.topbar h1 { font-size: 18px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+.topbar h1 { font-size: 18px; margin: 0; font-weight: 500; letter-spacing: 0.5px; font-family: var(--font-display); }
 .topbar nav { display: flex; gap: 4px; flex: 1; }
 .topbar nav a {
   color: #6b5e50;
@@ -42,7 +46,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 28px; }
   justify-content: space-between;
   margin-bottom: 20px;
 }
-.section-header h2 { font-size: 22px; margin: 0; font-weight: 600; }
+.section-header h2 { font-size: 22px; margin: 0; font-weight: 500; font-family: var(--font-display); }
 .section-header .actions { display: flex; gap: 10px; }
 button.primary {
   background: #2c6cb5;
@@ -237,7 +241,8 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .auth-card h1 {
   font-size: 22px;
   margin: 0 0 6px;
-  font-weight: 600;
+  font-weight: 500;
+  font-family: var(--font-display);
 }
 .auth-card .subtitle {
   color: #6b5e50;
@@ -317,7 +322,7 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   width: 100%;
   max-width: 460px;
 }
-.modal h3 { margin: 0 0 8px; font-size: 18px; }
+.modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 500; font-family: var(--font-display); }
 .modal .desc { color: #6b5e50; font-size: 13px; margin-bottom: 18px; }
 .modal label {
   display: block;

@@ -155,11 +155,11 @@
     "typographyMeta": {
       "headline": {
         "displayName": "Headline",
-        "purpose": "Page H2 (one per page); identifies the section the user is on."
+        "purpose": "Page H2 (one per page); identifies the section the user is on. Set in the 標楷體 display stack mirrored from the viewer to carry the Tzu Chi voice on top-level section markers."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Modal and panel-level H3 headers."
+        "purpose": "Modal and panel-level H3 headers. Set in the 標楷體 display stack so modal heads and panel titles share the Tzu Chi voice with the Headline tier — display only; body and meta remain OS-native."
       },
       "body": {
         "displayName": "Body",
