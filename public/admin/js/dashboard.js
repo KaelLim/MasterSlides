@@ -1,6 +1,7 @@
 // /admin dashboard — docs list + actions.
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
+import { notify, classifyHttpError } from "./notify.js";
 
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
@@ -29,10 +30,14 @@ async function refresh() {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
   const res = await fetch("/api/admin/docs", { credentials: "same-origin" });
   if (!res.ok) {
+    const { message } = classifyHttpError(res.status);
     contentEl.innerHTML = `<div class="empty-state">
       <h3>載入失敗</h3>
-      <p>HTTP ${res.status}</p>
+      <p>${message}</p>
+      <p><button class="primary" id="reloadDocs">重新載入</button></p>
     </div>`;
+    const btn = contentEl.querySelector("#reloadDocs");
+    if (btn) btn.addEventListener("click", refresh);
     return;
   }
   docs = (await res.json()).docs;
@@ -147,18 +152,34 @@ async function onRowAction(e) {
         return;
       }
     }
-    const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
-      method: "PATCH",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_public: next }),
-    });
-    if (!res.ok) {
-      alert(`切換公開狀態失敗（HTTP ${res.status}）`);
-      target.checked = !next;
-    } else {
+    const togglePublic = async () => {
+      const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: next }),
+      });
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
       const d = docs.find((x) => x.doc_id === docId);
       if (d) d.is_public = next ? 1 : 0;
+      target.checked = next;
+    };
+    try {
+      await togglePublic();
+    } catch (err) {
+      // Revert the optimistic checkbox state; the toast offers a retry.
+      target.checked = !next;
+      const { message } = classifyHttpError(err.status || 0);
+      notify({
+        tone: "error",
+        title: "公開狀態切換失敗",
+        body: message,
+        retry: togglePublic,
+      });
     }
     return;
   }
@@ -176,7 +197,8 @@ async function onRowAction(e) {
       credentials: "same-origin",
     });
     if (!res.ok) {
-      alert(`刪除失敗（HTTP ${res.status}）`);
+      const { message } = classifyHttpError(res.status);
+      notify({ tone: "error", title: "刪除失敗", body: message });
       return;
     }
     docs = docs.filter((x) => x.doc_id !== docId);

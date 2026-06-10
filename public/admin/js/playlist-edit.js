@@ -2,6 +2,7 @@
 // URL: ?id=<n> → edit; no id → new.
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
+import { notify, classifyHttpError } from "./notify.js";
 
 const params = new URLSearchParams(location.search);
 const playlistId = params.get("id") ? Number(params.get("id")) : null;
@@ -57,7 +58,12 @@ async function loadPlaylistIfEdit() {
   if (!playlistId) return;
   const res = await fetch(`/api/admin/playlists/${playlistId}`, { credentials: "same-origin" });
   if (!res.ok) {
-    statusEl.textContent = `載入失敗 (${res.status})`;
+    const { message } = classifyHttpError(res.status);
+    statusEl.textContent = `載入失敗：${message}`;
+    // Status text sits beneath the form fields; on long screens it lands
+    // below the fold. Mirror the failure as a toast so the user doesn't
+    // miss it after a fresh page load.
+    notify({ tone: "error", title: "Playlist 載入失敗", body: message });
     return;
   }
   const p = (await res.json()).playlist;
@@ -366,7 +372,13 @@ saveBtn.addEventListener("click", async () => {
   });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
-    statusEl.textContent = `儲存失敗：${e.error || res.status}`;
+    const { message } = classifyHttpError(res.status);
+    const detail = e.error || message;
+    statusEl.textContent = `儲存失敗：${detail}`;
+    // Reinforce the inline status (next to the save button) with a toast
+    // — the inline copy is for the user already looking there, the toast
+    // is for the user whose focus has drifted up the page.
+    notify({ tone: "error", title: "儲存失敗", body: detail });
     saveBtn.disabled = false;
     saveBtn.textContent = "儲存";
     return;

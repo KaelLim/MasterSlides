@@ -717,3 +717,148 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
     opacity: 0.6;
   }
 }
+
+/* ── Toast notifications (notify.js) ──────────────────────────────
+   Lightweight stack of right-aligned toasts. Three tones share a
+   structure but pick different surface + border + text colors. */
+.ds-toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.ds-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  box-shadow: 0 6px 18px rgba(45, 35, 25, 0.12);
+  font-size: 14px;
+  line-height: 1.5;
+  animation: ds-toast-in 250ms ease-out;
+}
+
+@keyframes ds-toast-in {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.ds-toast--leaving {
+  animation: ds-toast-out 200ms ease-in forwards;
+}
+@keyframes ds-toast-out {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(-4px); opacity: 0; }
+}
+
+.ds-toast__icon {
+  flex: 0 0 auto;
+  font-size: 20px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.ds-toast__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ds-toast__title {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.ds-toast__message {
+  margin: 0;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.ds-toast__actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.ds-toast__retry,
+.ds-toast__dismiss {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+}
+.ds-toast__retry {
+  background: rgba(255, 255, 255, 0.5);
+}
+.ds-toast__retry:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.8);
+}
+.ds-toast__retry:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.ds-toast__dismiss:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ds-toast__retry-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.ds-toast__close {
+  flex: 0 0 auto;
+  margin: -2px -4px 0 0;
+  background: transparent;
+  border: 0;
+  padding: 2px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ds-toast__close:hover { opacity: 1; background: rgba(255, 255, 255, 0.4); }
+.ds-toast__close .material-symbols-rounded { font-size: 18px; }
+
+/* Tone — success: warm pale green that lives with the cream surface. */
+.ds-toast--success {
+  background: #dfe9d4;
+  color: #3a5a25;
+  border-color: #9eb88a;
+}
+
+/* Tone — caution: warm amber. */
+.ds-toast--caution {
+  background: #f4e0b8;
+  color: #6a4d12;
+  border-color: #cfa86a;
+}
+
+/* Tone — error: Tzu Chi danger palette (matches existing danger-red tokens). */
+.ds-toast--error {
+  background: #f5dbcf;
+  color: #9a3324;
+  border-color: #c54a35;
+}

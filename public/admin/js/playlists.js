@@ -1,6 +1,7 @@
 // /admin/playlists — list playlists + actions.
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
+import { notify, classifyHttpError } from "./notify.js";
 
 const contentEl = document.getElementById("content");
 const countEl = document.getElementById("count");
@@ -24,7 +25,14 @@ async function refresh() {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
   const res = await fetch("/api/admin/playlists", { credentials: "same-origin" });
   if (!res.ok) {
-    contentEl.innerHTML = `<div class="empty-state"><h3>載入失敗</h3><p>HTTP ${res.status}</p></div>`;
+    const { message } = classifyHttpError(res.status);
+    contentEl.innerHTML = `<div class="empty-state">
+      <h3>載入失敗</h3>
+      <p>${message}</p>
+      <p><button class="primary" id="reloadPlaylists">重新載入</button></p>
+    </div>`;
+    const btn = contentEl.querySelector("#reloadPlaylists");
+    if (btn) btn.addEventListener("click", refresh);
     return;
   }
   playlists = (await res.json()).playlists;
@@ -107,7 +115,11 @@ async function onAction(e) {
     if (p && p.doc_ids.length > 0) {
       window.open(`/slides/?playlist=${id}`, "_blank");
     } else {
-      alert("這個 Playlist 還沒有加入任何文件。");
+      notify({
+        tone: "caution",
+        title: "尚未加入任何文件",
+        body: "請先編輯這個 Playlist 並加入至少一份文件。",
+      });
     }
     return;
   }
@@ -130,17 +142,32 @@ async function onAction(e) {
         return;
       }
     }
-    const res = await fetch(`/api/admin/playlists/${id}`, {
-      method: "PATCH",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_public: next }),
-    });
-    if (!res.ok) {
-      alert(`切換失敗（${res.status}）`);
+    const togglePublic = async () => {
+      const res = await fetch(`/api/admin/playlists/${id}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: next }),
+      });
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      if (p) p.is_public = next ? 1 : 0;
+      t.checked = next;
+    };
+    try {
+      await togglePublic();
+    } catch (err) {
       t.checked = !next;
-    } else if (p) {
-      p.is_public = next ? 1 : 0;
+      const { message } = classifyHttpError(err.status || 0);
+      notify({
+        tone: "error",
+        title: "公開狀態切換失敗",
+        body: message,
+        retry: togglePublic,
+      });
     }
     return;
   }
@@ -156,7 +183,11 @@ async function onAction(e) {
       method: "DELETE",
       credentials: "same-origin",
     });
-    if (!res.ok) { alert(`刪除失敗（${res.status}）`); return; }
+    if (!res.ok) {
+      const { message } = classifyHttpError(res.status);
+      notify({ tone: "error", title: "刪除失敗", body: message });
+      return;
+    }
     playlists = playlists.filter((x) => x.id !== id);
     render();
   }
