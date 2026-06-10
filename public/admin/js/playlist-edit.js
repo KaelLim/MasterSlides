@@ -1,6 +1,7 @@
 // /admin/playlist-edit — create or edit a playlist.
 // URL: ?id=<n> → edit; no id → new.
 import { renderPager, slice, totalPages } from "./pager.js";
+import { confirmDestructive } from "./confirm-modal.js";
 
 const params = new URLSearchParams(location.search);
 const playlistId = params.get("id") ? Number(params.get("id")) : null;
@@ -34,6 +35,8 @@ function fmtDate(s) {
 let publicDocs = [];              // [{doc_id, title, created_at, ...}, ...] — all is_public=1, sorted by created_at desc
 let selected = [];                 // [{doc_id, title}, ...] in display order
 let availablePage = 0;
+let isDirty = false;
+const markDirty = () => { isDirty = true; };
 
 async function loadDocs() {
   const res = await fetch("/api/admin/docs", { credentials: "same-origin" });
@@ -152,6 +155,7 @@ availableEl.addEventListener("click", (e) => {
   const d = publicDocs.find((x) => x.doc_id === docId);
   if (!d) return;
   selected.push(d);
+  markDirty();
   renderAvailable();
   renderSelected();
 });
@@ -164,21 +168,60 @@ selectedEl.addEventListener("click", (e) => {
   const action = btn.dataset.action;
   if (action === "remove") {
     selected.splice(i, 1);
+    markDirty();
   } else if (action === "up" && i > 0) {
     [selected[i - 1], selected[i]] = [selected[i], selected[i - 1]];
+    markDirty();
   } else if (action === "down" && i < selected.length - 1) {
     [selected[i + 1], selected[i]] = [selected[i], selected[i + 1]];
+    markDirty();
   }
   renderAvailable();
   renderSelected();
 });
 
 filterEl.addEventListener("input", () => { availablePage = 0; renderAvailable(); });
+titleEl.addEventListener("input", markDirty);
+isPublicEl.addEventListener("change", markDirty);
+
+// Native browser guard for tab close / hard reload / address-bar navigation.
+window.addEventListener("beforeunload", (e) => {
+  if (isDirty) e.preventDefault();
+});
+
+// Soft guard for the "取消" link — same-page modal, no native dialog.
+const cancelLink = document.querySelector(".footer-bar a.secondary");
+if (cancelLink) {
+  cancelLink.addEventListener("click", async (e) => {
+    if (!isDirty) return;
+    e.preventDefault();
+    const ok = await confirmDestructive({
+      title: "捨棄變更",
+      body: "尚未儲存的變更會遺失，確定要離開嗎？",
+      dangerLabel: "離開",
+      cancelLabel: "繼續編輯",
+      tone: "caution",
+    });
+    if (ok) {
+      isDirty = false;
+      window.location.href = cancelLink.getAttribute("href");
+    }
+  });
+}
 
 saveBtn.addEventListener("click", async () => {
   const title = titleEl.value.trim();
   if (!title) { statusEl.textContent = "請填入標題"; titleEl.focus(); return; }
-  if (selected.length === 0 && !confirm("尚未加入任何文件，仍要儲存嗎？")) return;
+  if (selected.length === 0) {
+    const ok = await confirmDestructive({
+      title: "尚未加入任何文件",
+      body: "這個 Playlist 還沒有任何文件，仍要儲存嗎？",
+      dangerLabel: "仍要儲存",
+      cancelLabel: "繼續編輯",
+      tone: "caution",
+    });
+    if (!ok) return;
+  }
 
   saveBtn.disabled = true;
   saveBtn.textContent = "儲存中…";
@@ -207,6 +250,7 @@ saveBtn.addEventListener("click", async () => {
     saveBtn.textContent = "儲存";
     return;
   }
+  isDirty = false;
   window.location.href = "/admin/playlists";
 });
 

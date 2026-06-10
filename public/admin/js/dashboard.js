@@ -1,5 +1,6 @@
 // /admin dashboard — docs list + actions.
 import { renderPager, slice, totalPages } from "./pager.js";
+import { confirmDestructive } from "./confirm-modal.js";
 
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
@@ -123,6 +124,21 @@ async function onRowAction(e) {
   }
   if (action === "toggle") {
     const next = target.checked;
+    // Friction on off→on only: making something public has a consequence;
+    // un-publishing is the conservative direction and stays one click.
+    if (next === true) {
+      const ok = await confirmDestructive({
+        title: "設為公開",
+        body: "設為公開後，任何拿到網址的人都能看到這份簡報。確定要公開嗎？",
+        dangerLabel: "設為公開",
+        cancelLabel: "取消",
+        tone: "caution",
+      });
+      if (!ok) {
+        target.checked = false;
+        return;
+      }
+    }
     const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
       method: "PATCH",
       credentials: "same-origin",
@@ -140,7 +156,13 @@ async function onRowAction(e) {
   }
   if (action === "delete") {
     const d = docs.find((x) => x.doc_id === docId);
-    if (!confirm(`確定要刪除「${d?.title || docId}」嗎？此操作無法復原，且會同步從所有 Playlist 移除。`)) return;
+    const ok = await confirmDestructive({
+      title: "刪除文件",
+      body: `確定要刪除「${escapeHTML(d?.title || docId)}」嗎？此操作無法復原，且會同步從所有 Playlist 移除。`,
+      dangerLabel: "刪除",
+      cancelLabel: "取消",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
       method: "DELETE",
       credentials: "same-origin",

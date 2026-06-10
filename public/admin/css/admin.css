@@ -358,4 +358,16 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   font-size: 14px;
 }
 .modal button.secondary:hover { background: #d2c6ab; }
+.modal button.danger {
+  background: #c54a35;
+  color: white;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.modal button.danger:hover { background: #9a3324; }
+.modal button.danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .modal .error { color: #c54a35; font-size: 13px; margin-top: 12px; min-height: 18px; }

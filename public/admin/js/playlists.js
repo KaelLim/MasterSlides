@@ -1,5 +1,6 @@
 // /admin/playlists — list playlists + actions.
 import { renderPager, slice, totalPages } from "./pager.js";
+import { confirmDestructive } from "./confirm-modal.js";
 
 const contentEl = document.getElementById("content");
 const countEl = document.getElementById("count");
@@ -116,6 +117,19 @@ async function onAction(e) {
   }
   if (action === "toggle") {
     const next = t.checked;
+    if (next === true) {
+      const ok = await confirmDestructive({
+        title: "設為公開",
+        body: "設為公開後，任何拿到網址的人都能看到這份簡報。確定要公開嗎？",
+        dangerLabel: "設為公開",
+        cancelLabel: "取消",
+        tone: "caution",
+      });
+      if (!ok) {
+        t.checked = false;
+        return;
+      }
+    }
     const res = await fetch(`/api/admin/playlists/${id}`, {
       method: "PATCH",
       credentials: "same-origin",
@@ -131,7 +145,13 @@ async function onAction(e) {
     return;
   }
   if (action === "delete") {
-    if (!confirm(`確定要刪除「${p?.title}」嗎？`)) return;
+    const ok = await confirmDestructive({
+      title: "刪除 Playlist",
+      body: `確定要刪除「${escapeHTML(p?.title)}」嗎？此操作無法復原。`,
+      dangerLabel: "刪除",
+      cancelLabel: "取消",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/admin/playlists/${id}`, {
       method: "DELETE",
       credentials: "same-origin",
