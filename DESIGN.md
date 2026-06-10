@@ -2,23 +2,23 @@
 name: MasterSlides Admin
 description: Internal admin console for the Tzu Chi Google Docs → presentation pipeline (current baseline; pre-rebrand snapshot)
 colors:
-  console-base: "#0f1419"
-  console-deep: "#0f1722"
-  console-rail: "#14202d"
-  console-surface: "#1a2332"
-  console-surface-hover: "#1e2a3a"
-  console-stroke: "#2a3a52"
-  console-stroke-strong: "#3a4a62"
-  ink-primary: "#e3e8ee"
-  ink-secondary: "#cdd6e2"
-  ink-muted: "#8a9aae"
-  ink-dim: "#6b7c8f"
-  process-blue: "#2563eb"
-  process-blue-deep: "#1d4ed8"
-  hint-cyan: "#66d9ef"
-  danger-red: "#ef4444"
-  danger-red-deep: "#b91c1c"
-  danger-red-bed: "#7f1d1d"
+  console-base: "#f6f1e6"
+  console-deep: "#ece5d4"
+  console-rail: "#e1d8c3"
+  console-surface: "#fbf8f0"
+  console-surface-hover: "#eee5d0"
+  console-stroke: "#d2c6ab"
+  console-stroke-strong: "#b8a785"
+  ink-primary: "#312922"
+  ink-secondary: "#4d4339"
+  ink-muted: "#6b5e50"
+  ink-dim: "#8a7e6f"
+  process-blue: "#2c6cb5"
+  process-blue-deep: "#1f5598"
+  hint-cyan: "#2a87a8"
+  danger-red: "#c54a35"
+  danger-red-deep: "#9a3324"
+  danger-red-bed: "#f5dbcf"
 typography:
   body:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans CNS', sans-serif"
@@ -97,7 +97,7 @@ components:
     size: "34px"
   icon-button-danger-hover:
     backgroundColor: "{colors.danger-red-bed}"
-    textColor: "#ffffff"
+    textColor: "{colors.danger-red-deep}"
     rounded: "{rounded.md}"
     size: "34px"
   table-surface:
@@ -156,9 +156,9 @@ PRODUCT.md — will replace this one. Until then, this baseline ships because
 it is legible, accessible, and honest about its own provenance.
 
 **Key Characteristics:**
-- Single-tenant dark surface (`#0f1419` console base) with a four-step tonal
-  ramp climbing toward `#3a4a62` strokes.
-- One accent (`Process Blue #2563eb`) carries every primary action and the
+- Single-tenant dark surface (`#f6f1e6` console base) with a four-step tonal
+  ramp climbing toward `#b8a785` strokes.
+- One accent (`Process Blue #2c6cb5`) carries every primary action and the
   on-state of toggles. Used on ≤5% of any given screen.
 - Tables are the dominant pattern; cards exist only inside the playlist
   picker, where two-column comparison demands them.
@@ -174,49 +174,49 @@ A monochromatic dark-slate surface ramp paired with one saturated utility
 accent and a strict danger red.
 
 ### Primary
-- **Process Blue** (`#2563eb`): Primary action surface — `Save`, `Add new doc`,
+- **Process Blue** (`#2c6cb5`): Primary action surface — `Save`, `Add new doc`,
   toggle-on state, the active page in the pager. Borrowed from Tailwind's
   `blue-600`; honest about its origin.
-- **Process Blue Deep** (`#1d4ed8`): Hover state for Process Blue surfaces;
+- **Process Blue Deep** (`#1f5598`): Hover state for Process Blue surfaces;
   never used standalone.
 
 ### Secondary
-- **Hint Cyan** (`#66d9ef`): Link hover and icon-button hover ink. Reserved
+- **Hint Cyan** (`#2a87a8`): Link hover and icon-button hover ink. Reserved
   for "this is interactive" affordance feedback; never a fill.
 
 ### Neutral (the surface ramp)
-- **Console Base** (`#0f1419`): Document background. The far floor of the
+- **Console Base** (`#f6f1e6`): Document background. The far floor of the
   ramp.
-- **Console Deep** (`#0f1722`): Inset surfaces — input fields, modals'
+- **Console Deep** (`#ece5d4`): Inset surfaces — input fields, modals'
   embedded fields. Sits half a step below the surface to read as recessed.
-- **Console Rail** (`#14202d`): Table headers, panel headers in the playlist
+- **Console Rail** (`#e1d8c3`): Table headers, panel headers in the playlist
   picker. The "structural" tier — content above it should feel like the
   active surface.
-- **Console Surface** (`#1a2332`): The default raised surface — top bar,
+- **Console Surface** (`#fbf8f0`): The default raised surface — top bar,
   table body, modal body, panel body.
-- **Console Surface Hover** (`#1e2a3a`): Row hover; one notch warmer than
+- **Console Surface Hover** (`#eee5d0`): Row hover; one notch warmer than
   Surface to read without being loud.
-- **Console Stroke** (`#2a3a52`): 1px dividers, button borders, table
+- **Console Stroke** (`#d2c6ab`): 1px dividers, button borders, table
   borders, toggle off-track.
-- **Console Stroke Strong** (`#3a4a62`): Icon-button border at rest; the
+- **Console Stroke Strong** (`#b8a785`): Icon-button border at rest; the
   outer edge of the system.
 
 ### Neutral (the ink ramp)
-- **Ink Primary** (`#e3e8ee`): Body text, table titles, modal headers.
+- **Ink Primary** (`#312922`): Body text, table titles, modal headers.
   Roughly 92% lightness — softened off-white that doesn't glare on the dark
   surface ramp.
-- **Ink Secondary** (`#cdd6e2`): Secondary text — secondary button labels,
+- **Ink Secondary** (`#4d4339`): Secondary text — secondary button labels,
   table sub-content.
-- **Ink Muted** (`#8a9aae`): Helper text, table column labels, doc_id
+- **Ink Muted** (`#6b5e50`): Helper text, table column labels, doc_id
   monospace, navigation when inactive.
-- **Ink Dim** (`#6b7c8f`): Empty-state copy, panel meta lines, the muted
+- **Ink Dim** (`#8a7e6f`): Empty-state copy, panel meta lines, the muted
   edges of the system.
 
 ### Tertiary (danger)
-- **Danger Red** (`#ef4444`): Inline warning copy in playlist picker
+- **Danger Red** (`#c54a35`): Inline warning copy in playlist picker
   (`已設為私有，請改回公開或移除`), modal error states.
-- **Danger Red Deep** (`#b91c1c`): Danger icon-button hover border.
-- **Danger Red Bed** (`#7f1d1d`): Danger icon-button hover surface.
+- **Danger Red Deep** (`#9a3324`): Danger icon-button hover border.
+- **Danger Red Bed** (`#f5dbcf`): Danger icon-button hover surface.
 
 ### Named Rules
 
@@ -315,7 +315,7 @@ elevation cue.
 - **Row:** `14px 16px` cell padding, 1px Console Stroke bottom border,
   vertical-align middle, body type tier. Last row's bottom border is
   removed by the container border.
-- **Row hover:** Surface flips to Console Surface Hover (`#1e2a3a`).
+- **Row hover:** Surface flips to Console Surface Hover (`#eee5d0`).
 - **Title cell:** Ink Primary ink, weight 500, `max-width: 360px`, clickable
   via a `.link` span. `.link:hover` flips ink to Hint Cyan and underlines.
 - **Doc-ID cell:** Mono type tier, Ink Muted, truncated at 16 chars + `…`.
@@ -341,7 +341,7 @@ elevation cue.
 - **Field label:** Label type tier, `12px 0 6px` margin block, Ink Muted.
 - **Field input:** Console Deep background, 1px Console Stroke border,
   `6px` radius, `10px 12px` padding, Ink Primary text. Focus border flips
-  to Process Blue (`#2563eb`), no glow.
+  to Process Blue (`#2c6cb5`), no glow.
 - **Action bar:** Right-aligned flex with `8px` gap, `22px` top margin.
 
 ### Pager

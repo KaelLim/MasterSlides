@@ -126,7 +126,7 @@ function renderSelected() {
     <div class="item" data-doc-id="${escapeHTML(d.doc_id)}" data-index="${i}">
       <span class="index">${i + 1}</span>
       <div class="title">
-        <span class="title-text">${escapeHTML(d.title || d.doc_id)}${d.missing ? ' <span style="color:#ef4444;font-size:11px">(已設為私有，請改回公開或移除)</span>' : ""}</span>
+        <span class="title-text">${escapeHTML(d.title || d.doc_id)}${d.missing ? ' <span style="color:#c54a35;font-size:11px">(已設為私有，請改回公開或移除)</span>' : ""}</span>
         <div class="doc-meta">
           <span class="doc-id">${escapeHTML(d.doc_id.slice(0, 22))}…</span>
           ${d.created_at ? `<span class="doc-date">${fmtDate(d.created_at)}</span>` : ""}

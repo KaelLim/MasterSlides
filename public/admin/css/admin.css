@@ -5,17 +5,17 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", sans-serif;
-  background: #0f1419;
-  color: #e3e8ee;
+  background: #f6f1e6;
+  color: #312922;
   min-height: 100vh;
 }
-a { color: #66d9ef; text-decoration: none; }
+a { color: #2a87a8; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ── Header ─────────────────────────────────────────── */
 .topbar {
-  background: #1a2332;
-  border-bottom: 1px solid #2a3a52;
+  background: #fbf8f0;
+  border-bottom: 1px solid #d2c6ab;
   padding: 14px 28px;
   display: flex;
   align-items: center;
@@ -24,14 +24,14 @@ a:hover { text-decoration: underline; }
 .topbar h1 { font-size: 18px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
 .topbar nav { display: flex; gap: 4px; flex: 1; }
 .topbar nav a {
-  color: #8a9aae;
+  color: #6b5e50;
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 14px;
 }
-.topbar nav a:hover { background: #2a3a52; color: #cdd6e2; }
-.topbar nav a.active { color: #e3e8ee; background: #2a3a52; }
+.topbar nav a:hover { background: #d2c6ab; color: #4d4339; }
+.topbar nav a.active { color: #312922; background: #d2c6ab; }
 
 /* ── Main area ──────────────────────────────────────── */
 main { max-width: 1200px; margin: 0 auto; padding: 32px 28px; }
@@ -45,7 +45,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 28px; }
 .section-header h2 { font-size: 22px; margin: 0; font-weight: 600; }
 .section-header .actions { display: flex; gap: 10px; }
 button.primary {
-  background: #2563eb;
+  background: #2c6cb5;
   color: white;
   border: none;
   padding: 9px 18px;
@@ -54,47 +54,47 @@ button.primary {
   font-size: 14px;
   font-weight: 500;
 }
-button.primary:hover { background: #1d4ed8; }
+button.primary:hover { background: #1f5598; }
 button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Table ──────────────────────────────────────────── */
 .docs-table {
   width: 100%;
-  background: #1a2332;
+  background: #fbf8f0;
   border-radius: 8px;
-  border: 1px solid #2a3a52;
+  border: 1px solid #d2c6ab;
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
 }
 .docs-table thead th {
-  background: #14202d;
+  background: #e1d8c3;
   text-align: left;
   padding: 12px 16px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #8a9aae;
-  border-bottom: 1px solid #2a3a52;
+  color: #6b5e50;
+  border-bottom: 1px solid #d2c6ab;
 }
 .docs-table tbody td {
   padding: 14px 16px;
-  border-bottom: 1px solid #2a3a52;
+  border-bottom: 1px solid #d2c6ab;
   vertical-align: middle;
   font-size: 14px;
 }
 .docs-table tbody tr:last-child td { border-bottom: none; }
-.docs-table tbody tr:hover { background: #1e2a3a; }
+.docs-table tbody tr:hover { background: #eee5d0; }
 
 .docs-table .col-title { font-weight: 500; max-width: 360px; }
 .docs-table .col-title .link {
-  color: #e3e8ee;
+  color: #312922;
   cursor: pointer;
 }
-.docs-table .col-title .link:hover { color: #66d9ef; text-decoration: underline; }
-.docs-table .col-doc-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: #8a9aae; }
-.docs-table .col-date { color: #8a9aae; font-size: 13px; white-space: nowrap; }
+.docs-table .col-title .link:hover { color: #2a87a8; text-decoration: underline; }
+.docs-table .col-doc-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: #6b5e50; }
+.docs-table .col-date { color: #6b5e50; font-size: 13px; white-space: nowrap; }
 .docs-table .col-actions { text-align: right; white-space: nowrap; }
 
 /* ── Public toggle (CSS-only switch) ────────────────── */
@@ -107,7 +107,7 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .toggle .track {
   width: 36px;
   height: 20px;
-  background: #2a3a52;
+  background: #d2c6ab;
   border-radius: 999px;
   position: relative;
   transition: background 120ms ease;
@@ -123,7 +123,7 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   border-radius: 999px;
   transition: transform 120ms ease;
 }
-.toggle input:checked + .track { background: #2563eb; }
+.toggle input:checked + .track { background: #2c6cb5; }
 .toggle input:checked + .track::after { transform: translateX(16px); }
 
 /* ── Material Symbols baseline ──────────────────────── */
@@ -148,8 +148,8 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ── Action buttons (icon) ──────────────────────────── */
 .icon-btn {
   background: transparent;
-  border: 1px solid #3a4a62;
-  color: #cdd6e2;
+  border: 1px solid #b8a785;
+  color: #4d4339;
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -161,8 +161,8 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 .icon-btn .material-symbols-rounded { font-size: 20px; }
-.icon-btn:hover { background: #2a3a52; color: #66d9ef; border-color: #3d5170; }
-.icon-btn.danger:hover { background: #7f1d1d; border-color: #b91c1c; color: white; }
+.icon-btn:hover { background: #d2c6ab; color: #2a87a8; border-color: #b8a785; }
+.icon-btn.danger:hover { background: #f5dbcf; border-color: #9a3324; color: #9a3324; }
 
 /* Primary button can carry an icon next to its label */
 button.primary, a.primary {
@@ -184,9 +184,9 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   user-select: none;
 }
 .pager button {
-  background: #1a2332;
-  border: 1px solid #2a3a52;
-  color: #cdd6e2;
+  background: #fbf8f0;
+  border: 1px solid #d2c6ab;
+  color: #4d4339;
   min-width: 34px;
   height: 34px;
   padding: 0 10px;
@@ -199,21 +199,21 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   transition: background 120ms ease, border-color 120ms ease;
 }
 .pager button .material-symbols-rounded { font-size: 18px; }
-.pager button:hover:not(:disabled) { background: #2a3a52; border-color: #3d5170; }
+.pager button:hover:not(:disabled) { background: #d2c6ab; border-color: #b8a785; }
 .pager button:disabled { opacity: 0.35; cursor: not-allowed; }
 .pager button.is-current {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #2c6cb5;
+  border-color: #2c6cb5;
   color: white;
 }
 .pager .ellipsis {
-  color: #6b7c8f;
+  color: #8a7e6f;
   padding: 0 4px;
   font-size: 14px;
   align-self: center;
 }
 .pager .summary {
-  color: #8a9aae;
+  color: #6b5e50;
   font-size: 12px;
   margin-right: 12px;
 }
@@ -227,8 +227,8 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   padding: 20px;
 }
 .auth-card {
-  background: #1a2332;
-  border: 1px solid #2a3a52;
+  background: #fbf8f0;
+  border: 1px solid #d2c6ab;
   border-radius: 12px;
   padding: 36px 32px;
   width: 100%;
@@ -240,7 +240,7 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   font-weight: 600;
 }
 .auth-card .subtitle {
-  color: #8a9aae;
+  color: #6b5e50;
   font-size: 13px;
   margin-bottom: 26px;
 }
@@ -248,7 +248,7 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #8a9aae;
+  color: #6b5e50;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -257,20 +257,20 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .auth-card input {
   width: 100%;
   padding: 10px 12px;
-  background: #0f1722;
-  border: 1px solid #2a3a52;
+  background: #ece5d4;
+  border: 1px solid #d2c6ab;
   border-radius: 6px;
-  color: #e3e8ee;
+  color: #312922;
   font-size: 14px;
 }
 .auth-card input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: #2c6cb5;
 }
 .auth-card button[type=submit] {
   width: 100%;
   margin-top: 24px;
-  background: #2563eb;
+  background: #2c6cb5;
   color: white;
   border: none;
   padding: 11px;
@@ -279,11 +279,11 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   font-size: 14px;
   font-weight: 600;
 }
-.auth-card button[type=submit]:hover { background: #1d4ed8; }
+.auth-card button[type=submit]:hover { background: #1f5598; }
 .auth-card button[type=submit]:disabled { opacity: 0.6; cursor: not-allowed; }
 .auth-card .error {
   margin-top: 14px;
-  color: #ef4444;
+  color: #c54a35;
   font-size: 13px;
   min-height: 18px;
 }
@@ -292,12 +292,12 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .empty-state, .loading-state {
   text-align: center;
   padding: 60px 20px;
-  color: #8a9aae;
-  background: #1a2332;
+  color: #6b5e50;
+  background: #fbf8f0;
   border-radius: 8px;
-  border: 1px solid #2a3a52;
+  border: 1px solid #d2c6ab;
 }
-.empty-state h3 { color: #cdd6e2; margin: 0 0 8px; }
+.empty-state h3 { color: #4d4339; margin: 0 0 8px; }
 .empty-state p { margin: 0; font-size: 14px; }
 
 /* ── Modal ─────────────────────────────────────────── */
@@ -310,20 +310,20 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   z-index: 100;
 }
 .modal {
-  background: #1a2332;
-  border: 1px solid #2a3a52;
+  background: #fbf8f0;
+  border: 1px solid #d2c6ab;
   border-radius: 10px;
   padding: 24px;
   width: 100%;
   max-width: 460px;
 }
 .modal h3 { margin: 0 0 8px; font-size: 18px; }
-.modal .desc { color: #8a9aae; font-size: 13px; margin-bottom: 18px; }
+.modal .desc { color: #6b5e50; font-size: 13px; margin-bottom: 18px; }
 .modal label {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #8a9aae;
+  color: #6b5e50;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin: 12px 0 6px;
@@ -331,10 +331,10 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .modal input {
   width: 100%;
   padding: 10px 12px;
-  background: #0f1722;
-  border: 1px solid #2a3a52;
+  background: #ece5d4;
+  border: 1px solid #d2c6ab;
   border-radius: 6px;
-  color: #e3e8ee;
+  color: #312922;
   font-size: 14px;
 }
 .modal .actions {
@@ -345,12 +345,12 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 }
 .modal button.secondary {
   background: transparent;
-  border: 1px solid #3a4a62;
-  color: #cdd6e2;
+  border: 1px solid #b8a785;
+  color: #4d4339;
   padding: 9px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
 }
-.modal button.secondary:hover { background: #2a3a52; }
-.modal .error { color: #ef4444; font-size: 13px; margin-top: 12px; min-height: 18px; }
+.modal button.secondary:hover { background: #d2c6ab; }
+.modal .error { color: #c54a35; font-size: 13px; margin-top: 12px; min-height: 18px; }

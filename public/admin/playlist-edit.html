@@ -21,7 +21,7 @@
       display: block;
       font-size: 12px;
       font-weight: 600;
-      color: #8a9aae;
+      color: #6b5e50;
       letter-spacing: 0.6px;
       text-transform: uppercase;
       margin-bottom: 6px;
@@ -29,13 +29,13 @@
     .meta-row input[type=text] {
       width: 100%;
       padding: 10px 12px;
-      background: #0f1722;
-      border: 1px solid #2a3a52;
+      background: #ece5d4;
+      border: 1px solid #d2c6ab;
       border-radius: 6px;
-      color: #e3e8ee;
+      color: #312922;
       font-size: 15px;
     }
-    .meta-row input[type=text]:focus { outline: none; border-color: #2563eb; }
+    .meta-row input[type=text]:focus { outline: none; border-color: #2c6cb5; }
 
     .picker {
       display: grid;
@@ -44,8 +44,8 @@
       min-height: 480px;
     }
     .panel {
-      background: #1a2332;
-      border: 1px solid #2a3a52;
+      background: #fbf8f0;
+      border: 1px solid #d2c6ab;
       border-radius: 10px;
       display: flex;
       flex-direction: column;
@@ -53,8 +53,8 @@
     }
     .panel-head {
       padding: 14px 18px;
-      background: #14202d;
-      border-bottom: 1px solid #2a3a52;
+      background: #e1d8c3;
+      border-bottom: 1px solid #d2c6ab;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -64,13 +64,13 @@
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #8a9aae;
+      color: #6b5e50;
       display: flex;
       align-items: center;
       gap: 6px;
       white-space: nowrap;
     }
-    .panel-head h3 .material-symbols-rounded { font-size: 18px; color: #66d9ef; }
+    .panel-head h3 .material-symbols-rounded { font-size: 18px; color: #2a87a8; }
     .panel-head .filter-wrap {
       flex: 1;
       position: relative;
@@ -81,23 +81,23 @@
       position: absolute;
       left: 10px;
       font-size: 18px;
-      color: #6b7c8f;
+      color: #8a7e6f;
       pointer-events: none;
     }
     .panel-head .filter {
       width: 100%;
       padding: 8px 10px 8px 34px;
-      background: #0f1722;
-      border: 1px solid #2a3a52;
+      background: #ece5d4;
+      border: 1px solid #d2c6ab;
       border-radius: 6px;
-      color: #e3e8ee;
+      color: #312922;
       font-size: 13px;
     }
-    .panel-head .filter:focus { outline: none; border-color: #2563eb; }
+    .panel-head .filter:focus { outline: none; border-color: #2c6cb5; }
     .panel-head .count-pill {
       font-size: 12px;
-      color: #cdd6e2;
-      background: #2a3a52;
+      color: #4d4339;
+      background: #d2c6ab;
       padding: 3px 10px;
       border-radius: 10px;
       white-space: nowrap;
@@ -108,9 +108,9 @@
       padding: 4px 0;
     }
     .panel-foot {
-      border-top: 1px solid #2a3a52;
+      border-top: 1px solid #d2c6ab;
       padding: 10px 12px;
-      background: #14202d;
+      background: #e1d8c3;
     }
     .panel-foot .pager { margin-top: 0; flex-wrap: wrap; }
     .item {
@@ -118,10 +118,10 @@
       align-items: center;
       padding: 12px 16px;
       gap: 12px;
-      border-bottom: 1px solid #1f2c3d;
+      border-bottom: 1px solid #d2c6ab;
     }
     .item:last-child { border-bottom: none; }
-    .item:hover { background: #1e2a3a; }
+    .item:hover { background: #eee5d0; }
     .item .title {
       flex: 1;
       font-size: 14px;
@@ -133,7 +133,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #e3e8ee;
+      color: #312922;
     }
     .item .doc-meta {
       display: flex;
@@ -141,7 +141,7 @@
       align-items: center;
       margin-top: 4px;
       font-size: 11px;
-      color: #6b7c8f;
+      color: #8a7e6f;
     }
     .item .doc-id {
       font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -149,13 +149,13 @@
     .item .doc-date::before {
       content: "•";
       margin-right: 8px;
-      color: #3a4a62;
+      color: #b8a785;
     }
     .item .index {
       width: 26px;
       height: 26px;
       border-radius: 13px;
-      background: #2563eb;
+      background: #2c6cb5;
       color: white;
       font-size: 12px;
       display: flex;
@@ -166,8 +166,8 @@
     }
     .item .icon-btn-sm {
       background: transparent;
-      border: 1px solid #3a4a62;
-      color: #cdd6e2;
+      border: 1px solid #b8a785;
+      color: #4d4339;
       width: 30px;
       height: 30px;
       border-radius: 6px;
@@ -179,32 +179,32 @@
     }
     .item .icon-btn-sm .material-symbols-rounded { font-size: 18px; }
     .item .icon-btn-sm:hover:not(:disabled) {
-      background: #2a3a52;
-      color: #66d9ef;
-      border-color: #3d5170;
+      background: #d2c6ab;
+      color: #2a87a8;
+      border-color: #b8a785;
     }
     .item .icon-btn-sm.danger:hover {
-      background: #7f1d1d;
-      border-color: #b91c1c;
-      color: white;
+      background: #f5dbcf;
+      border-color: #9a3324;
+      color: #9a3324;
     }
     .item .icon-btn-sm.primary {
-      background: #2563eb;
-      border-color: #2563eb;
+      background: #2c6cb5;
+      border-color: #2c6cb5;
       color: white;
     }
-    .item .icon-btn-sm.primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+    .item .icon-btn-sm.primary:hover { background: #1f5598; border-color: #1f5598; }
     .item .icon-btn-sm:disabled { opacity: 0.3; cursor: not-allowed; }
     .picker .empty {
       padding: 40px 20px;
       text-align: center;
-      color: #6b7c8f;
+      color: #8a7e6f;
       font-size: 13px;
       line-height: 1.6;
     }
     .picker .empty .material-symbols-rounded {
       font-size: 32px;
-      color: #3a4a62;
+      color: #b8a785;
       display: block;
       margin: 0 auto 10px;
     }
@@ -218,19 +218,19 @@
     }
     .footer-bar .left {
       flex: 1;
-      color: #8a9aae;
+      color: #6b5e50;
       font-size: 13px;
     }
     .footer-bar button.secondary {
       background: transparent;
-      border: 1px solid #3a4a62;
-      color: #cdd6e2;
+      border: 1px solid #b8a785;
+      color: #4d4339;
       padding: 9px 18px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
     }
-    .footer-bar button.secondary:hover { background: #2a3a52; }
+    .footer-bar button.secondary:hover { background: #d2c6ab; }
   </style>
 </head>
 <body>
