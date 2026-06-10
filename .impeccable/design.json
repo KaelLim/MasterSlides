@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-10T00:00:00Z",
+  "title": "Design System: MasterSlides Admin",
+  "extensions": {
+    "colorMeta": {
+      "process-blue": {
+        "role": "primary",
+        "displayName": "Process Blue",
+        "canonical": "oklch(54.65% 0.214 263.2)",
+        "tonalRamp": [
+          "oklch(20% 0.10 263)",
+          "oklch(28% 0.13 263)",
+          "oklch(36% 0.16 263)",
+          "oklch(45% 0.19 263)",
+          "oklch(55% 0.21 263)",
+          "oklch(66% 0.18 263)",
+          "oklch(78% 0.13 263)",
+          "oklch(92% 0.04 263)"
+        ]
+      },
+      "process-blue-deep": {
+        "role": "primary",
+        "displayName": "Process Blue Deep",
+        "canonical": "oklch(48.55% 0.219 264.0)",
+        "tonalRamp": [
+          "oklch(18% 0.10 264)",
+          "oklch(26% 0.13 264)",
+          "oklch(34% 0.16 264)",
+          "oklch(42% 0.19 264)",
+          "oklch(49% 0.22 264)",
+          "oklch(60% 0.19 264)",
+          "oklch(73% 0.14 264)",
+          "oklch(90% 0.05 264)"
+        ]
+      },
+      "hint-cyan": {
+        "role": "secondary",
+        "displayName": "Hint Cyan",
+        "canonical": "oklch(85.5% 0.158 195.3)",
+        "tonalRamp": [
+          "oklch(28% 0.07 195)",
+          "oklch(40% 0.10 195)",
+          "oklch(52% 0.13 195)",
+          "oklch(64% 0.15 195)",
+          "oklch(75% 0.16 195)",
+          "oklch(86% 0.16 195)",
+          "oklch(92% 0.10 195)",
+          "oklch(97% 0.03 195)"
+        ]
+      },
+      "console-base": {
+        "role": "neutral",
+        "displayName": "Console Base",
+        "canonical": "oklch(18.86% 0.014 235.0)",
+        "tonalRamp": [
+          "oklch(12% 0.008 235)",
+          "oklch(19% 0.014 235)",
+          "oklch(24% 0.018 235)",
+          "oklch(31% 0.022 235)",
+          "oklch(40% 0.025 235)",
+          "oklch(55% 0.025 235)",
+          "oklch(72% 0.018 235)",
+          "oklch(92% 0.010 235)"
+        ]
+      },
+      "console-deep": {
+        "role": "neutral",
+        "displayName": "Console Deep",
+        "canonical": "oklch(18.85% 0.018 248.2)",
+        "tonalRamp": null
+      },
+      "console-rail": {
+        "role": "neutral",
+        "displayName": "Console Rail",
+        "canonical": "oklch(23.20% 0.024 244.8)",
+        "tonalRamp": null
+      },
+      "console-surface": {
+        "role": "neutral",
+        "displayName": "Console Surface",
+        "canonical": "oklch(26.32% 0.028 245.3)",
+        "tonalRamp": null
+      },
+      "console-surface-hover": {
+        "role": "neutral",
+        "displayName": "Console Surface Hover",
+        "canonical": "oklch(28.46% 0.030 246.0)",
+        "tonalRamp": null
+      },
+      "console-stroke": {
+        "role": "neutral",
+        "displayName": "Console Stroke",
+        "canonical": "oklch(34.96% 0.035 250.8)",
+        "tonalRamp": null
+      },
+      "console-stroke-strong": {
+        "role": "neutral",
+        "displayName": "Console Stroke Strong",
+        "canonical": "oklch(42.43% 0.040 251.4)",
+        "tonalRamp": null
+      },
+      "ink-primary": {
+        "role": "neutral",
+        "displayName": "Ink Primary",
+        "canonical": "oklch(92.51% 0.011 247.9)",
+        "tonalRamp": null
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "oklch(86.05% 0.017 249.6)",
+        "tonalRamp": null
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(67.42% 0.030 246.9)",
+        "tonalRamp": null
+      },
+      "ink-dim": {
+        "role": "neutral",
+        "displayName": "Ink Dim",
+        "canonical": "oklch(55.45% 0.029 245.8)",
+        "tonalRamp": null
+      },
+      "danger-red": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "oklch(63.69% 0.220 25.3)",
+        "tonalRamp": [
+          "oklch(28% 0.09 25)",
+          "oklch(38% 0.13 25)",
+          "oklch(48% 0.17 25)",
+          "oklch(56% 0.20 25)",
+          "oklch(64% 0.22 25)",
+          "oklch(73% 0.18 25)",
+          "oklch(84% 0.12 25)",
+          "oklch(94% 0.04 25)"
+        ]
+      },
+      "danger-red-deep": {
+        "role": "tertiary",
+        "displayName": "Danger Red Deep",
+        "canonical": "oklch(48.84% 0.207 26.4)",
+        "tonalRamp": null
+      },
+      "danger-red-bed": {
+        "role": "tertiary",
+        "displayName": "Danger Red Bed",
+        "canonical": "oklch(38.04% 0.158 26.8)",
+        "tonalRamp": null
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page H2 (one per page); identifies the section the user is on."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Modal and panel-level H3 headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text — table cells, panel copy, button labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase eyebrows — form-field labels, table column headers, panel-head tags. The single uppercase tier of the system."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "doc_id slugs and inline code-like meta only."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "120ms ease",
+        "purpose": "Default duration + easing for background / color / border / transform state transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "main-cap",
+        "value": "1200px",
+        "purpose": "max-width of the centered main area; admin layout assumes desktop only."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Saturated Process Blue CTA used for section-header primary actions and modal confirms. Pairs with a Material Symbols Rounded icon when the action takes a noun.",
+      "html": "<button class=\"ds-btn-primary\"><span class=\"ds-icon\" aria-hidden=\"true\">＋</span>新增文件</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #2563eb; color: #ffffff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 14px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; cursor: pointer; transition: background 120ms ease; } .ds-btn-primary:hover { background: #1d4ed8; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; } .ds-btn-primary .ds-icon { font-size: 18px; line-height: 1; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Transparent-fill cancel/dismiss button used inside modals. The negative pair to Primary.",
+      "html": "<button class=\"ds-btn-secondary\">取消</button>",
+      "css": ".ds-btn-secondary { background: transparent; color: #cdd6e2; border: 1px solid #3a4a62; padding: 9px 16px; border-radius: 6px; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; cursor: pointer; transition: background 120ms ease; } .ds-btn-secondary:hover { background: #2a3a52; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "34px square button carrying one Material Symbols Rounded glyph. Used in table action columns and the playlist picker. The danger variant is for destructive actions only.",
+      "html": "<div style=\"display:inline-flex; gap:6px;\"><button class=\"ds-icon-btn\" aria-label=\"預覽\"><svg class=\"ds-icon-glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z\"/></svg></button><button class=\"ds-icon-btn\" aria-label=\"編輯\"><svg class=\"ds-icon-glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M14.06 9 15 9.94 5.92 19H5v-.92L14.06 9zm3.6-6a1 1 0 0 0-.71.29l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34A1 1 0 0 0 17.66 3zM14.06 6.19 3 17.25V21h3.75L17.81 9.94 14.06 6.19z\"/></svg></button><button class=\"ds-icon-btn ds-icon-btn--danger\" aria-label=\"刪除\"><svg class=\"ds-icon-glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z\"/></svg></button></div>",
+      "css": ".ds-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: transparent; color: #cdd6e2; border: 1px solid #3a4a62; border-radius: 8px; cursor: pointer; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; padding: 0; } .ds-icon-btn:hover { background: #2a3a52; color: #66d9ef; border-color: #3d5170; } .ds-icon-btn .ds-icon-glyph { width: 20px; height: 20px; } .ds-icon-btn--danger:hover { background: #7f1d1d; border-color: #b91c1c; color: #ffffff; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "card",
+      "refersTo": "table-surface",
+      "description": "The dominant pattern of the admin. Console Surface body, Console Rail header, Console Stroke dividers, row hover lifts to Console Surface Hover. The corner radius is clipped by overflow hidden so the top row sits flush.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>標題</th><th style=\"width:130px\">建立日期</th><th style=\"width:90px\">公開</th></tr></thead><tbody><tr><td class=\"ds-table__title\"><span class=\"ds-link\">2026 第一季法會</span></td><td class=\"ds-table__date\">2026-06-09</td><td><label class=\"ds-toggle\"><input type=\"checkbox\" checked><span class=\"ds-toggle__track\"></span></label></td></tr><tr><td class=\"ds-table__title\"><span class=\"ds-link\">尼泊爾援助案</span></td><td class=\"ds-table__date\">2026-06-07</td><td><label class=\"ds-toggle\"><input type=\"checkbox\"><span class=\"ds-toggle__track\"></span></label></td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; background: #1a2332; border: 1px solid #2a3a52; border-radius: 8px; border-collapse: separate; border-spacing: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; color: #e3e8ee; } .ds-table thead th { background: #14202d; text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #8a9aae; border-bottom: 1px solid #2a3a52; } .ds-table tbody td { padding: 14px 16px; border-bottom: 1px solid #2a3a52; vertical-align: middle; font-size: 14px; } .ds-table tbody tr:last-child td { border-bottom: none; } .ds-table tbody tr:hover { background: #1e2a3a; } .ds-table__title { font-weight: 500; max-width: 360px; } .ds-table__date { color: #8a9aae; font-size: 13px; white-space: nowrap; } .ds-link { color: #e3e8ee; cursor: pointer; transition: color 120ms ease; } .ds-link:hover { color: #66d9ef; text-decoration: underline; } .ds-toggle { display: inline-flex; align-items: center; cursor: pointer; } .ds-toggle input { display: none; } .ds-toggle__track { width: 36px; height: 20px; background: #2a3a52; border-radius: 999px; position: relative; transition: background 120ms ease; } .ds-toggle__track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 999px; transition: transform 120ms ease; } .ds-toggle input:checked + .ds-toggle__track { background: #2563eb; } .ds-toggle input:checked + .ds-toggle__track::after { transform: translateX(16px); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Inset Console Deep surface with a 1px Console Stroke border. Focus shifts the border to Process Blue with no glow or outline ring; the colour change is the entire treatment.",
+      "html": "<label class=\"ds-field-label\">Google Docs 網址</label><input class=\"ds-field-input\" type=\"url\" placeholder=\"https://docs.google.com/document/d/...\">",
+      "css": ".ds-field-label { display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 600; color: #8a9aae; letter-spacing: 0.6px; text-transform: uppercase; margin: 0 0 6px; } .ds-field-input { display: block; width: 100%; padding: 10px 12px; background: #0f1722; border: 1px solid #2a3a52; border-radius: 6px; color: #e3e8ee; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; transition: border-color 120ms ease; } .ds-field-input:focus { outline: none; border-color: #2563eb; } .ds-field-input::placeholder { color: #6b7c8f; }"
+    },
+    {
+      "name": "Pager",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Client-side pagination strip used on every list surface. The current-page button is the only Process Blue moment on a quiet list page.",
+      "html": "<div class=\"ds-pager\"><span class=\"ds-pager__summary\">第 1–20 筆，共 47 筆</span><button class=\"ds-pager__btn\" aria-label=\"上一頁\" disabled>‹</button><button class=\"ds-pager__btn ds-pager__btn--current\">1</button><button class=\"ds-pager__btn\">2</button><button class=\"ds-pager__btn\">3</button><span class=\"ds-pager__ellipsis\">…</span><button class=\"ds-pager__btn\">3</button><button class=\"ds-pager__btn\" aria-label=\"下一頁\">›</button></div>",
+      "css": ".ds-pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 18px; user-select: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; } .ds-pager__summary { color: #8a9aae; font-size: 12px; margin-right: 12px; } .ds-pager__btn { background: #1a2332; border: 1px solid #2a3a52; color: #cdd6e2; min-width: 34px; height: 34px; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; transition: background 120ms ease, border-color 120ms ease; } .ds-pager__btn:hover:not(:disabled) { background: #2a3a52; border-color: #3d5170; } .ds-pager__btn:disabled { opacity: 0.35; cursor: not-allowed; } .ds-pager__btn--current { background: #2563eb; border-color: #2563eb; color: #fff; } .ds-pager__ellipsis { color: #6b7c8f; padding: 0 4px; font-size: 14px; align-self: center; }"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Site shell — brand mark + section nav. No logo image; the brand mark is a single line of Headline-weight text. Active tab gets the Console Stroke pill.",
+      "html": "<header class=\"ds-topbar\"><h1 class=\"ds-topbar__brand\">簡報後台</h1><nav class=\"ds-topbar__nav\"><a class=\"ds-topbar__link ds-topbar__link--active\">文件</a><a class=\"ds-topbar__link\">Playlists</a></nav></header>",
+      "css": ".ds-topbar { background: #1a2332; border-bottom: 1px solid #2a3a52; padding: 14px 28px; display: flex; align-items: center; gap: 28px; color: #e3e8ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', sans-serif; } .ds-topbar__brand { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; } .ds-topbar__nav { display: flex; gap: 4px; flex: 1; } .ds-topbar__link { color: #8a9aae; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 120ms ease, color 120ms ease; } .ds-topbar__link:hover { background: #2a3a52; color: #cdd6e2; } .ds-topbar__link--active { color: #e3e8ee; background: #2a3a52; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Maintenance Console",
+    "overview": "This is the work surface a developer reaches for when the admin needs another button — not a brand artefact. The whole system reads as 'engineer sitting at a dark navy console after hours, adding what's needed and shipping it'. It is not posed, not aestheticised, not aspirational. Density is moderate, palette is monochromatic with a single utility accent, and typography defaults to the operating-system stack so a fresh install on any laptop still reads correctly. A planned successor system — the Tzu Chi blue / cream / 標楷體 identity in PRODUCT.md — will replace this one. Until then, this baseline ships because it is legible, accessible, and honest about its own provenance.",
+    "keyCharacteristics": [
+      "Single-tenant dark surface (#0f1419 console base) with a four-step tonal ramp climbing toward #3a4a62 strokes.",
+      "One accent (Process Blue #2563eb) carries every primary action and the on-state of toggles. Used on ≤5% of any given screen.",
+      "Tables are the dominant pattern; cards exist only inside the playlist picker, where two-column comparison demands them.",
+      "System font stack with Noto Sans TC fallback for Traditional Chinese; no webfont request for body or headings. Material Symbols Rounded is the only third-party font, loaded for icon glyphs.",
+      "Motion is 120ms ease on background / colour / border — feedback only, no choreography."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Process Blue is the only saturated colour on any screen. The pager's current page, the primary CTA, and the toggle-on state are the three places it appears. If a fourth would land on the page, find something to remove first.", "section": "colors" },
+      { "name": "The Four-Tier Surface Rule", "body": "Every surface above the document floor is exactly one of four tiers: Base / Rail / Surface / Surface-hover. New surfaces do not invent a fifth; they pick the tier that matches their function and reuse the token.", "section": "colors" },
+      { "name": "The One Uppercase Tier Rule", "body": "Uppercase + letter-spacing appears at exactly one size (the Label tier). It marks system-defined meta — labels, panel-head eyebrows — not section dividers and not button labels.", "section": "typography" },
+      { "name": "The OS-Native Type Rule", "body": "Body text uses the operating system's own default sans-serif and the operating system's own Chinese rendering. No webfont is loaded for body or headings. The admin reads with the user's own system, not an opinionated brand voice.", "section": "typography" },
+      { "name": "The No-Shadow Rule", "body": "Depth comes from the surface ramp and the backdrop overlay. box-shadow is forbidden in admin CSS. If a surface needs to lift, promote it to the next tier of the ramp.", "section": "elevation" },
+      { "name": "The Backdrop-Over-Float Rule", "body": "Modal dialogs darken the page behind them (rgba(0,0,0,0.6)) rather than floating on a shadow. The backdrop is the elevation cue.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Process Blue on ≤5% of any screen — primary CTA, toggle-on, current-page pager button. The One Accent Rule is normative.",
+      "Do use the four-tier surface ramp (Base / Rail / Surface / Surface-hover) for every elevation choice.",
+      "Do carry every column-header label, panel-head eyebrow, and form-field label in the Label tier (12px / 600 / letter-spacing 0.6px / uppercase / Ink Muted).",
+      "Do lead destructive actions with a confirm dialog that names the collateral effect (e.g. '此操作無法復原，且會同步從所有 Playlist 移除').",
+      "Do show pagination summary in both directions (第 X–Y 筆，共 N 筆), never just Page 1 of 10.",
+      "Do reserve a min-height: 18px slot for inline errors so the form layout does not jump when validation fires.",
+      "Do use display=block on the Material Symbols stylesheet URL so the variable axes do not FOUT."
+    ],
+    "donts": [
+      "Don't ship corporate-tech hero gradients, scroll-driven choreography, or hero metric tiles in the admin. (PRODUCT.md anti-reference: corporate-tech 藍黃漸層、炸開的網狀背景、scroll-driven 動畫.)",
+      "Don't add antique-government-portal scaffolding — heart icons, 3D bevels, neon list rows, Comic Sans / 微軟正黑體粗體 headings.",
+      "Don't drop Buddhist iconography into admin chrome — lotus watermarks, Buddha silhouettes, sutra-script display fonts, gold/purple ceremonial palettes.",
+      "Don't clone the Notion / Linear all-white-and-Inter look. The admin must read as Tzu Chi's tool, not a generic SaaS template.",
+      "Don't use border-left or border-right greater than 1px as a coloured stripe on table rows, callouts, or cards.",
+      "Don't introduce a fifth surface tier. Pick Base, Rail, Surface, or Surface-hover.",
+      "Don't introduce gradient text, gradient fills, or glass / blur cards. Flat surfaces only.",
+      "Don't float modals on box-shadow. The backdrop overlay is the elevation cue.",
+      "Don't add a second uppercase tier (section dividers, eyebrow kickers, numbered scaffolds 01 / 02 / 03). Uppercase lives at the Label tier or nowhere.",
+      "Don't treat this baseline as the brand. PRODUCT.md commits to a Tzu Chi blue / cream / 標楷體 identity the next pass will land."
+    ]
+  }
+}
