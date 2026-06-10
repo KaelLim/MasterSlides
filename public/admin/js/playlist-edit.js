@@ -3,6 +3,7 @@
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
+import { bindHotkey } from "./hotkeys.js";
 
 const params = new URLSearchParams(location.search);
 const playlistId = params.get("id") ? Number(params.get("id")) : null;
@@ -423,6 +424,37 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && isDirty) {
     notify({ tone: "caution", body: "你還有未儲存的變更。", durationMs: 4000 });
   }
+});
+
+// ── Hotkeys ──────────────────────────────────────────────────────
+bindHotkey({
+  key: "?", label: "顯示快速鍵說明", scope: "全域",
+  handler: () => window.dispatchEvent(new CustomEvent("admin:open-help")),
+});
+bindHotkey({
+  key: "/", label: "聚焦搜尋", scope: "全域",
+  handler: () => { filterEl.focus(); filterEl.select(); },
+});
+bindHotkey({
+  key: "s", mod: "cmd", label: "儲存", scope: "編輯",
+  handler: () => { if (!saveBtn.disabled) saveBtn.click(); },
+});
+bindHotkey({
+  key: "Escape", label: "取消（回到 Playlist 列表）", scope: "編輯",
+  handler: () => {
+    // If a filter is focused, clear focus first; otherwise fall through
+    // to the cancel link (with the dirty guard built into its handler).
+    if (document.activeElement === filterEl || document.activeElement === selectedFilterEl) {
+      document.activeElement.blur();
+      return;
+    }
+    // Use the link's existing click handler (with its dirty-guard) when set;
+    // for a clean state fall back to direct navigation.
+    if (cancelLink) {
+      if (isDirty) cancelLink.click();
+      else window.location.href = cancelLink.getAttribute("href");
+    }
+  },
 });
 
 // ── boot ─────────────────────────────────────────────────────────

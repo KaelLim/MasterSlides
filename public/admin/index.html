@@ -28,6 +28,23 @@
       </div>
     </div>
 
+    <div class="table-filter-bar">
+      <div class="filter-wrap">
+        <span class="material-symbols-rounded">search</span>
+        <input class="filter" id="docsFilter" type="text" placeholder="搜尋標題或 doc_id（按 / 聚焦）" aria-label="搜尋文件">
+      </div>
+    </div>
+
+    <div id="selectionBar" class="ds-selection-bar" hidden>
+      <span class="ds-selection-bar__count" id="selectionCount">已選 0 份</span>
+      <div class="ds-selection-bar__actions">
+        <button class="secondary" data-bulk="set-public">批次設為公開</button>
+        <button class="secondary" data-bulk="set-draft">批次設為草稿</button>
+        <button class="danger" data-bulk="delete">批次刪除</button>
+        <button class="ghost" data-bulk="clear">清除選取</button>
+      </div>
+    </div>
+
     <div id="content">
       <div class="loading-state">載入中…</div>
     </div>

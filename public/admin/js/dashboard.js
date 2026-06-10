@@ -2,9 +2,13 @@
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
+import { bindHotkey } from "./hotkeys.js";
 
 const contentEl = document.getElementById("content");
 const docsCountEl = document.getElementById("docsCount");
+const filterEl = document.getElementById("docsFilter");
+const selectionBarEl = document.getElementById("selectionBar");
+const selectionCountEl = document.getElementById("selectionCount");
 
 function fmtDate(s) {
   // Drust stores "YYYY-MM-DD HH:MM:SS" UTC. Show local YYYY-MM-DD.
@@ -25,9 +29,15 @@ function escapeHTML(s) {
 
 let docs = [];
 let page = 0;
+let filterQ = "";
 // docId → number of playlists that reference it. Populated in refresh() so
 // renderTable() can show the 在 N 個 playlist badge without re-fetching.
 let playlistCountByDocId = new Map();
+
+// Multi-select state.
+const selectedDocIds = new Set();
+let highlightedIndex = -1;     // index within the currently visible page slice
+let lastShiftAnchorIndex = -1; // for shift-click range selection
 
 async function fetchPlaylistCounts() {
   // Best-effort: a failure here just leaves the counts empty so the column
@@ -70,33 +80,60 @@ async function refresh() {
   renderTable();
 }
 
+function filteredDocs() {
+  const q = filterQ.trim().toLowerCase();
+  if (!q) return docs;
+  return docs.filter((d) =>
+    (d.title || "").toLowerCase().includes(q) ||
+    (d.doc_id || "").toLowerCase().includes(q)
+  );
+}
+
 function renderTable() {
-  docsCountEl.textContent = `${docs.length} 筆`;
+  const list = filteredDocs();
+  docsCountEl.textContent = filterQ
+    ? `${list.length} / ${docs.length} 筆`
+    : `${docs.length} 筆`;
   if (docs.length === 0) {
     contentEl.innerHTML = `<div class="empty-state">
       <h3>還沒有文件</h3>
       <p>點選右上「新增文件」貼入 Google Docs 網址，即可建立第一筆。</p>
     </div>`;
+    updateSelectionBar();
+    return;
+  }
+  if (list.length === 0) {
+    contentEl.innerHTML = `<div class="empty-state">
+      <h3>找不到符合條件的文件</h3>
+      <p>調整搜尋條件，或清空 filter 看全部。</p>
+    </div>`;
+    updateSelectionBar();
     return;
   }
   // Clamp page after a delete shrinks the list past the current page bounds.
-  const pages = totalPages(docs.length);
+  const pages = totalPages(list.length);
   if (page >= pages) page = pages - 1;
-  const visible = slice(docs, page);
+  const visible = slice(list, page);
+  if (highlightedIndex >= visible.length) highlightedIndex = visible.length - 1;
 
-  const rows = visible.map((d) => {
+  const rows = visible.map((d, i) => {
     const stateBadge = d.is_public
       ? `<span class="ds-badge ds-badge--public">公開</span>`
       : `<span class="ds-badge ds-badge--draft">草稿</span>`;
-    // In-playlist count computed at refresh() from /api/admin/playlists.
-    // 未使用 reads softer (no border, italicised, ink-dim) so it doesn't
-    // compete with the primary 公開/草稿 badge for attention.
     const n = playlistCountByDocId.get(d.doc_id) || 0;
     const playlistBadge = n > 0
       ? `<span class="ds-badge ds-badge--in-use">在 ${n} 個 playlist</span>`
       : `<span class="ds-badge ds-badge--unused">未使用</span>`;
+    const isSel = selectedDocIds.has(d.doc_id);
+    const isHi = i === highlightedIndex;
     return `
-    <tr data-doc-id="${escapeHTML(d.doc_id)}">
+    <tr data-doc-id="${escapeHTML(d.doc_id)}" data-row-index="${i}"
+        class="${isSel ? "is-selected" : ""} ${isHi ? "is-highlighted" : ""}"
+        ${isHi ? 'aria-selected="true"' : ""}>
+      <td class="col-select">
+        <input type="checkbox" class="row-check" data-action="select"
+               aria-label="選取此列" ${isSel ? "checked" : ""}>
+      </td>
       <td class="col-title">
         <span class="link" data-action="view">${escapeHTML(d.title || d.doc_id)}</span>
       </td>
@@ -123,10 +160,17 @@ function renderTable() {
   `;
   }).join("");
 
+  const allVisibleSelected = visible.length > 0 &&
+    visible.every((d) => selectedDocIds.has(d.doc_id));
+
   contentEl.innerHTML = `
     <table class="docs-table">
       <thead>
         <tr>
+          <th class="col-select">
+            <input type="checkbox" id="selectAllVisible" aria-label="選取本頁全部"
+                   ${allVisibleSelected ? "checked" : ""}>
+          </th>
           <th>標題</th>
           <th style="width:140px">狀態</th>
           <th style="width:130px">建立日期</th>
@@ -141,17 +185,115 @@ function renderTable() {
 
   contentEl.querySelector("tbody").addEventListener("click", onRowAction);
   contentEl.querySelector("tbody").addEventListener("change", onRowAction);
+  const headerCheck = contentEl.querySelector("#selectAllVisible");
+  if (headerCheck) {
+    headerCheck.addEventListener("change", () => {
+      const v = headerCheck.checked;
+      for (const d of visible) {
+        if (v) selectedDocIds.add(d.doc_id);
+        else selectedDocIds.delete(d.doc_id);
+      }
+      renderTable();
+    });
+  }
   renderPager({
     targetEl: contentEl.querySelector("#pager"),
-    total: docs.length,
+    total: list.length,
     page,
-    onChange: (next) => { page = next; renderTable(); window.scrollTo({ top: 0, behavior: "smooth" }); },
+    onChange: (next) => {
+      page = next;
+      highlightedIndex = -1;
+      renderTable();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+  });
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const n = selectedDocIds.size;
+  if (n === 0) {
+    selectionBarEl.hidden = true;
+    return;
+  }
+  selectionBarEl.hidden = false;
+  selectionCountEl.textContent = `已選 ${n} 份`;
+}
+
+function currentVisible() {
+  return slice(filteredDocs(), page);
+}
+
+function highlightRow(nextIndex) {
+  const visible = currentVisible();
+  if (visible.length === 0) return;
+  const clamped = Math.max(0, Math.min(visible.length - 1, nextIndex));
+  highlightedIndex = clamped;
+  // Re-render rows' highlight state by targeted class swap (cheaper than full
+  // renderTable, and avoids stealing focus from filter input).
+  const trs = contentEl.querySelectorAll("tbody tr");
+  trs.forEach((tr, i) => {
+    if (i === clamped) {
+      tr.classList.add("is-highlighted");
+      tr.setAttribute("aria-selected", "true");
+      tr.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else {
+      tr.classList.remove("is-highlighted");
+      tr.removeAttribute("aria-selected");
+    }
   });
 }
 
 async function onRowAction(e) {
+  // Multi-select checkbox: handle separately so click doesn't bubble into the
+  // generic row-action path.
+  const checkTarget = e.target.closest("input.row-check");
+  if (checkTarget && e.type === "change") {
+    const tr = checkTarget.closest("tr");
+    const docId = tr.dataset.docId;
+    const rowIndex = Number(tr.dataset.rowIndex);
+    if (e.shiftKey || (e instanceof MouseEvent && e.shiftKey)) {
+      // shiftKey not normally present on `change`; the click path handles range.
+    }
+    if (checkTarget.checked) selectedDocIds.add(docId);
+    else selectedDocIds.delete(docId);
+    tr.classList.toggle("is-selected", checkTarget.checked);
+    lastShiftAnchorIndex = rowIndex;
+    updateSelectionBar();
+    // Update header select-all reflection.
+    const visible = currentVisible();
+    const headerCheck = contentEl.querySelector("#selectAllVisible");
+    if (headerCheck) {
+      headerCheck.checked = visible.every((d) => selectedDocIds.has(d.doc_id));
+    }
+    return;
+  }
+  // Shift-click range extension fires on click (the change comes after).
+  if (e.type === "click" && checkTarget && e.shiftKey && lastShiftAnchorIndex >= 0) {
+    const tr = checkTarget.closest("tr");
+    const rowIndex = Number(tr.dataset.rowIndex);
+    const visible = currentVisible();
+    const [lo, hi] = rowIndex < lastShiftAnchorIndex
+      ? [rowIndex, lastShiftAnchorIndex]
+      : [lastShiftAnchorIndex, rowIndex];
+    // Defer to after the native toggle resolves the clicked row's checked state.
+    queueMicrotask(() => {
+      const targetState = checkTarget.checked;
+      for (let i = lo; i <= hi; i++) {
+        const d = visible[i];
+        if (!d) continue;
+        if (targetState) selectedDocIds.add(d.doc_id);
+        else selectedDocIds.delete(d.doc_id);
+      }
+      renderTable();
+    });
+    return;
+  }
+
   const target = e.target.closest("[data-action]");
   if (!target) return;
+  // Skip the select checkbox here — it has its own handler above.
+  if (target.dataset.action === "select") return;
   const tr = target.closest("tr");
   const docId = tr.dataset.docId;
   const action = target.dataset.action;
@@ -166,8 +308,6 @@ async function onRowAction(e) {
   }
   if (action === "toggle") {
     const next = target.checked;
-    // Friction on off→on only: making something public has a consequence;
-    // un-publishing is the conservative direction and stays one click.
     if (next === true) {
       const ok = await confirmDestructive({
         title: "設為公開",
@@ -212,7 +352,6 @@ async function onRowAction(e) {
         body: next ? `「${title}」已公開` : `「${title}」已改為草稿`,
       });
     } catch (err) {
-      // Revert the optimistic checkbox state; the toast offers a retry.
       target.checked = !next;
       const { message } = classifyHttpError(err.status || 0);
       notify({
@@ -225,34 +364,246 @@ async function onRowAction(e) {
     return;
   }
   if (action === "delete") {
-    const d = docs.find((x) => x.doc_id === docId);
-    const ok = await confirmDestructive({
-      title: "刪除文件",
-      body: `確定要刪除「${escapeHTML(d?.title || docId)}」嗎？此操作無法復原，且會同步從所有 Playlist 移除。`,
-      dangerLabel: "刪除",
-      cancelLabel: "取消",
-    });
-    if (!ok) return;
-    const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
-      method: "DELETE",
-      credentials: "same-origin",
-    });
-    if (!res.ok) {
-      const { message } = classifyHttpError(res.status);
-      notify({ tone: "error", title: "刪除失敗", body: message });
-      return;
-    }
-    const deletedTitle = d?.title || docId;
-    docs = docs.filter((x) => x.doc_id !== docId);
-    // Cascade-delete on the server may have shrunk other playlists' doc_ids.
-    // Re-fetch counts so the table reflects the new intersection. Background
-    // refresh — render immediately so the deleted row disappears without
-    // waiting on the network.
-    renderTable();
-    notify({ tone: "success", body: `「${deletedTitle}」已刪除`, durationMs: 3000 });
-    fetchPlaylistCounts().then(() => renderTable());
+    await deleteDoc(docId);
+    return;
   }
 }
+
+async function deleteDoc(docId) {
+  const d = docs.find((x) => x.doc_id === docId);
+  const ok = await confirmDestructive({
+    title: "刪除文件",
+    body: `確定要刪除「${escapeHTML(d?.title || docId)}」嗎？此操作無法復原，且會同步從所有 Playlist 移除。`,
+    dangerLabel: "刪除",
+    cancelLabel: "取消",
+  });
+  if (!ok) return;
+  const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+  });
+  if (!res.ok) {
+    const { message } = classifyHttpError(res.status);
+    notify({ tone: "error", title: "刪除失敗", body: message });
+    return;
+  }
+  const deletedTitle = d?.title || docId;
+  docs = docs.filter((x) => x.doc_id !== docId);
+  selectedDocIds.delete(docId);
+  renderTable();
+  notify({ tone: "success", body: `「${deletedTitle}」已刪除`, durationMs: 3000 });
+  fetchPlaylistCounts().then(() => renderTable());
+}
+
+// ── Bulk operations ──────────────────────────────────────────────
+selectionBarEl.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-bulk]");
+  if (!btn) return;
+  const op = btn.dataset.bulk;
+  if (op === "clear") {
+    selectedDocIds.clear();
+    renderTable();
+    return;
+  }
+  if (op === "delete") {
+    await bulkDelete();
+    return;
+  }
+  if (op === "set-public") {
+    await bulkSetPublic(true);
+    return;
+  }
+  if (op === "set-draft") {
+    await bulkSetPublic(false);
+    return;
+  }
+});
+
+// Sticky progress toast helper. notify() returns a dismiss thunk and we
+// poke its message <p> directly to avoid spamming the stack on each tick.
+function makeProgressToast(initialBody) {
+  const dismiss = notify({ tone: "caution", body: initialBody, durationMs: 0 });
+  // The most recent toast is the last child of .ds-toast-stack.
+  const stack = document.querySelector(".ds-toast-stack");
+  const li = stack ? stack.lastElementChild : null;
+  const messageEl = li ? li.querySelector(".ds-toast__message") : null;
+  return {
+    update(body) { if (messageEl) messageEl.textContent = body; },
+    dismiss,
+  };
+}
+
+async function bulkDelete() {
+  const ids = Array.from(selectedDocIds);
+  if (ids.length === 0) return;
+  const ok = await confirmDestructive({
+    title: `刪除 ${ids.length} 份文件`,
+    body: `確定要刪除已選的 ${ids.length} 份文件嗎？此操作無法復原，且會同步從所有 Playlist 移除。`,
+    dangerLabel: "全部刪除",
+    cancelLabel: "取消",
+  });
+  if (!ok) return;
+  const progress = makeProgressToast(`刪除中… 0/${ids.length}`);
+  let done = 0;
+  let failed = 0;
+  await Promise.all(ids.map(async (id) => {
+    try {
+      const res = await fetch(`/api/admin/docs/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      docs = docs.filter((x) => x.doc_id !== id);
+      selectedDocIds.delete(id);
+    } catch {
+      failed += 1;
+    } finally {
+      done += 1;
+      progress.update(`刪除中… ${done}/${ids.length}`);
+    }
+  }));
+  progress.dismiss();
+  renderTable();
+  if (failed > 0) {
+    notify({
+      tone: "error",
+      title: "部分刪除失敗",
+      body: `共 ${ids.length} 份，成功 ${ids.length - failed}、失敗 ${failed}。`,
+    });
+  } else {
+    notify({ tone: "success", body: `已刪除 ${ids.length} 份文件` });
+  }
+  fetchPlaylistCounts().then(() => renderTable());
+}
+
+async function bulkSetPublic(makePublic) {
+  const ids = Array.from(selectedDocIds);
+  if (ids.length === 0) return;
+  if (makePublic) {
+    const ok = await confirmDestructive({
+      title: `設為公開：${ids.length} 份`,
+      body: `這 ${ids.length} 份文件都會變成「任何拿到網址的人都能看到」。確定嗎？`,
+      dangerLabel: "全部設為公開",
+      cancelLabel: "取消",
+      tone: "caution",
+    });
+    if (!ok) return;
+  }
+  const verb = makePublic ? "設為公開" : "設為草稿";
+  const progress = makeProgressToast(`${verb}… 0/${ids.length}`);
+  let done = 0;
+  let failed = 0;
+  await Promise.all(ids.map(async (id) => {
+    try {
+      const res = await fetch(`/api/admin/docs/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: makePublic }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = docs.find((x) => x.doc_id === id);
+      if (d) d.is_public = makePublic ? 1 : 0;
+    } catch {
+      failed += 1;
+    } finally {
+      done += 1;
+      progress.update(`${verb}… ${done}/${ids.length}`);
+    }
+  }));
+  progress.dismiss();
+  renderTable();
+  if (failed > 0) {
+    notify({
+      tone: "error",
+      title: `部分${verb}失敗`,
+      body: `共 ${ids.length} 份，成功 ${ids.length - failed}、失敗 ${failed}。`,
+    });
+  } else {
+    notify({ tone: "success", body: `已將 ${ids.length} 份文件${verb}` });
+  }
+}
+
+// ── Filter input ─────────────────────────────────────────────────
+filterEl.addEventListener("input", () => {
+  filterQ = filterEl.value;
+  page = 0;
+  highlightedIndex = -1;
+  renderTable();
+});
+
+// ── Hotkeys ──────────────────────────────────────────────────────
+bindHotkey({
+  key: "?", label: "顯示快速鍵說明", scope: "全域",
+  handler: () => window.dispatchEvent(new CustomEvent("admin:open-help")),
+});
+bindHotkey({
+  key: "/", label: "聚焦搜尋", scope: "全域",
+  handler: () => { filterEl.focus(); filterEl.select(); },
+});
+bindHotkey({
+  key: "j", label: "下一列", scope: "瀏覽",
+  handler: () => highlightRow(highlightedIndex < 0 ? 0 : highlightedIndex + 1),
+});
+bindHotkey({
+  key: "ArrowDown", label: "下一列", scope: "瀏覽",
+  handler: () => highlightRow(highlightedIndex < 0 ? 0 : highlightedIndex + 1),
+});
+bindHotkey({
+  key: "k", label: "上一列", scope: "瀏覽",
+  handler: () => highlightRow(highlightedIndex < 0 ? 0 : highlightedIndex - 1),
+});
+bindHotkey({
+  key: "ArrowUp", label: "上一列", scope: "瀏覽",
+  handler: () => highlightRow(highlightedIndex < 0 ? 0 : highlightedIndex - 1),
+});
+bindHotkey({
+  key: "Enter", label: "預覽選取的文件", scope: "瀏覽",
+  handler: () => {
+    const visible = currentVisible();
+    const d = visible[highlightedIndex];
+    if (d) window.open(`/slides/?src=${encodeURIComponent(d.doc_id)}`, "_blank");
+  },
+});
+bindHotkey({
+  key: "e", label: "編輯選取的文件", scope: "瀏覽",
+  handler: () => {
+    const visible = currentVisible();
+    const d = visible[highlightedIndex];
+    if (d) location.href = `/edit/?src=${encodeURIComponent(d.doc_id)}`;
+  },
+});
+bindHotkey({
+  key: "Backspace", label: "刪除選取的文件", scope: "瀏覽",
+  handler: () => {
+    const visible = currentVisible();
+    const d = visible[highlightedIndex];
+    if (d) deleteDoc(d.doc_id);
+  },
+});
+bindHotkey({
+  key: "Delete", label: "刪除選取的文件", scope: "瀏覽",
+  handler: () => {
+    const visible = currentVisible();
+    const d = visible[highlightedIndex];
+    if (d) deleteDoc(d.doc_id);
+  },
+});
+bindHotkey({
+  key: "a", mod: "cmd", label: "選取本頁全部", scope: "選取",
+  handler: () => {
+    const visible = currentVisible();
+    for (const d of visible) selectedDocIds.add(d.doc_id);
+    renderTable();
+  },
+});
+bindHotkey({
+  key: "Escape", label: "清除選取 / 收起搜尋", scope: "全域",
+  handler: () => {
+    if (document.activeElement === filterEl) { filterEl.blur(); return; }
+    if (selectedDocIds.size > 0) { selectedDocIds.clear(); renderTable(); }
+  },
+});
 
 // ── New-doc modal ───────────────────────────────────────────────
 document.getElementById("newDocBtn").addEventListener("click", openNewDocModal);
@@ -304,11 +655,6 @@ function openNewDocModal() {
       close();
       const importedTitle = body.title;
       notify({ tone: "success", body: `「${importedTitle ?? '文件'}」已匯入` });
-      // Force metadata entry — every newly imported doc passes through the edit
-      // page before it appears on the slides surface. body.doc_id is the
-      // canonical id (extracted server-side from the pasted URL).
-      // Delay navigation 800ms so the success toast renders visibly before
-      // the page unloads.
       setTimeout(() => {
         location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
       }, 800);

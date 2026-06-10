@@ -66,6 +66,103 @@ a.primary:focus-visible {
   outline-offset: 2px;
 }
 
+/* ── Table filter bar (dashboard + playlists) ──────── */
+/* Wraps the search input that sits above the docs/playlists table. Mirrors
+   the playlist-editor panel-head filter (search icon + console-deep bg)
+   so the two surfaces feel cousin. Tightly scoped so it doesn't leak into
+   the picker (which has its own .filter-wrap). */
+.table-filter-bar {
+  margin-bottom: 16px;
+}
+.table-filter-bar .filter-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 420px;
+}
+.table-filter-bar .filter-wrap .material-symbols-rounded {
+  position: absolute;
+  left: 10px;
+  font-size: 18px;
+  color: #8a7e6f;
+  pointer-events: none;
+}
+.table-filter-bar .filter {
+  width: 100%;
+  padding: 8px 10px 8px 34px;
+  background: #ece5d4;
+  border: 1px solid #d2c6ab;
+  border-radius: 6px;
+  color: #312922;
+  font-size: 13px;
+}
+.table-filter-bar .filter:focus {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
+  border-color: #2c6cb5;
+}
+
+/* ── Selection bar (floats above the table once a row is selected) ── */
+/* Console Surface bg, 1px Console Stroke border. Shows up immediately on
+   first selection — sticky-top so it tracks the user when they page. */
+.ds-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fbf8f0;
+  border: 1px solid #d2c6ab;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: 0 2px 8px rgba(45, 35, 25, 0.06);
+}
+.ds-selection-bar[hidden] { display: none; }
+.ds-selection-bar__count {
+  font-size: 14px;
+  font-weight: 500;
+  color: #312922;
+}
+.ds-selection-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ds-selection-bar__actions button {
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  border: 1px solid #b8a785;
+  background: transparent;
+  color: #4d4339;
+}
+.ds-selection-bar__actions button:hover { background: #d2c6ab; }
+.ds-selection-bar__actions button.danger {
+  background: transparent;
+  border-color: #c54a35;
+  color: #9a3324;
+}
+.ds-selection-bar__actions button.danger:hover {
+  background: #f5dbcf;
+}
+.ds-selection-bar__actions button.ghost {
+  border-color: transparent;
+  color: #6b5e50;
+}
+.ds-selection-bar__actions button.ghost:hover {
+  background: #ece5d4;
+  color: #312922;
+}
+.ds-selection-bar__actions button:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
+
 /* ── Table ──────────────────────────────────────────── */
 .docs-table {
   width: 100%;
@@ -95,6 +192,37 @@ a.primary:focus-visible {
 }
 .docs-table tbody tr:last-child td { border-bottom: none; }
 .docs-table tbody tr:hover { background: #eee5d0; }
+
+/* ── Multi-select column + selected/highlighted rows ───────────── */
+.docs-table th.col-select,
+.docs-table td.col-select {
+  width: 36px;
+  padding-left: 14px;
+  padding-right: 6px;
+  text-align: center;
+}
+.docs-table input[type="checkbox"].row-check,
+.docs-table input[type="checkbox"]#selectAllVisible {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #2c6cb5;
+}
+.docs-table tbody tr.is-selected {
+  background: rgba(44, 108, 181, 0.08);
+}
+.docs-table tbody tr.is-selected:hover {
+  background: rgba(44, 108, 181, 0.14);
+}
+/* Highlight is the j/k keyboard cursor — slightly stronger than hover,
+   weaker than selection. They can stack (selected + highlighted). */
+.docs-table tbody tr.is-highlighted {
+  box-shadow: inset 3px 0 0 #2c6cb5;
+}
+.docs-table tbody tr.is-highlighted.is-selected {
+  background: rgba(44, 108, 181, 0.14);
+}
 
 .docs-table .col-title { font-weight: 500; max-width: 360px; }
 .docs-table .col-title .link {
