@@ -105,7 +105,7 @@ function renderAvailable() {
           <span class="doc-date">${fmtDate(d.created_at)}</span>
         </div>
       </div>
-      <button class="icon-btn-sm primary" data-action="add" title="加入清單">
+      <button class="icon-btn-sm primary" data-action="add" title="加入清單" aria-label="加入清單">
         <span class="material-symbols-rounded">add</span>
       </button>
     </div>
@@ -171,13 +171,13 @@ function renderSelected() {
           ${d.created_at ? `<span class="doc-date">${fmtDate(d.created_at)}</span>` : ""}
         </div>
       </div>
-      <button class="icon-btn-sm" data-action="up" title="上移" ${i === 0 ? "disabled" : ""}>
+      <button class="icon-btn-sm" data-action="up" title="上移" aria-label="上移" ${i === 0 ? "disabled" : ""}>
         <span class="material-symbols-rounded">arrow_upward</span>
       </button>
-      <button class="icon-btn-sm" data-action="down" title="下移" ${i === selected.length - 1 ? "disabled" : ""}>
+      <button class="icon-btn-sm" data-action="down" title="下移" aria-label="下移" ${i === selected.length - 1 ? "disabled" : ""}>
         <span class="material-symbols-rounded">arrow_downward</span>
       </button>
-      <button class="icon-btn-sm danger" data-action="remove" title="移除">
+      <button class="icon-btn-sm danger" data-action="remove" title="移除" aria-label="移除">
         <span class="material-symbols-rounded">close</span>
       </button>
     </div>

@@ -54,39 +54,47 @@ function renderTable() {
   if (page >= pages) page = pages - 1;
   const visible = slice(docs, page);
 
-  const rows = visible.map((d) => `
+  const rows = visible.map((d) => {
+    const stateBadge = d.is_public
+      ? `<span class="state-badge state-badge--public">公開</span>`
+      : `<span class="state-badge state-badge--draft">草稿</span>`;
+    // In-playlist count is a TODO — requires intersecting all playlists' doc_ids
+    // with the docs list. Placeholder kept so the column reads as designed.
+    const playlistCount = `<span class="state-meta">在 — 個 playlist</span>`;
+    return `
     <tr data-doc-id="${escapeHTML(d.doc_id)}">
       <td class="col-title">
         <span class="link" data-action="view">${escapeHTML(d.title || d.doc_id)}</span>
       </td>
-      <td class="col-doc-id" title="${escapeHTML(d.doc_id)}">${escapeHTML(d.doc_id.slice(0, 16))}…</td>
+      <td class="col-state">${stateBadge} ${playlistCount}</td>
       <td class="col-date">${fmtDate(d.created_at)}</td>
       <td>
         <label class="toggle">
-          <input type="checkbox" data-action="toggle" ${d.is_public ? "checked" : ""}>
+          <input type="checkbox" data-action="toggle" aria-label="切換公開狀態" ${d.is_public ? "checked" : ""}>
           <span class="track"></span>
         </label>
       </td>
       <td class="col-actions">
-        <button class="icon-btn" data-action="view" title="預覽">
+        <button class="icon-btn" data-action="view" title="預覽（新分頁）" aria-label="預覽（新分頁）">
           <span class="material-symbols-rounded">visibility</span>
         </button>
-        <button class="icon-btn" data-action="edit" title="編輯標題 / 日期 / 單位報告">
+        <button class="icon-btn" data-action="edit" title="編輯" aria-label="編輯">
           <span class="material-symbols-rounded">edit</span>
         </button>
-        <button class="icon-btn danger" data-action="delete" title="刪除">
+        <button class="icon-btn danger" data-action="delete" title="刪除" aria-label="刪除">
           <span class="material-symbols-rounded">delete</span>
         </button>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   contentEl.innerHTML = `
     <table class="docs-table">
       <thead>
         <tr>
           <th>標題</th>
-          <th style="width:200px">Doc ID</th>
+          <th style="width:140px">狀態</th>
           <th style="width:130px">建立日期</th>
           <th style="width:90px">公開</th>
           <th style="width:180px"></th>

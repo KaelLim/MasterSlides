@@ -52,18 +52,18 @@ function render() {
       <td class="col-date">${fmtDate(p.created_at)}</td>
       <td>
         <label class="toggle">
-          <input type="checkbox" data-action="toggle" ${p.is_public ? "checked" : ""}>
+          <input type="checkbox" data-action="toggle" aria-label="切換公開狀態" ${p.is_public ? "checked" : ""}>
           <span class="track"></span>
         </label>
       </td>
       <td class="col-actions">
-        <button class="icon-btn" data-action="play" title="開始播放">
+        <button class="icon-btn" data-action="play" title="開始播放" aria-label="開始播放">
           <span class="material-symbols-rounded">play_arrow</span>
         </button>
-        <button class="icon-btn" data-action="edit" title="編輯">
+        <button class="icon-btn" data-action="edit" title="編輯" aria-label="編輯">
           <span class="material-symbols-rounded">edit</span>
         </button>
-        <button class="icon-btn danger" data-action="delete" title="刪除">
+        <button class="icon-btn danger" data-action="delete" title="刪除" aria-label="刪除">
           <span class="material-symbols-rounded">delete</span>
         </button>
       </td>

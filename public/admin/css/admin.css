@@ -60,6 +60,11 @@ button.primary {
 }
 button.primary:hover { background: #1f5598; }
 button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary:focus-visible,
+a.primary:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 
 /* ── Table ──────────────────────────────────────────── */
 .docs-table {
@@ -97,7 +102,26 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   cursor: pointer;
 }
 .docs-table .col-title .link:hover { color: #2a87a8; text-decoration: underline; }
-.docs-table .col-doc-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: #6b5e50; }
+.docs-table .col-state { font-size: 12px; color: #6b5e50; white-space: nowrap; }
+.docs-table .col-state .state-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.docs-table .col-state .state-badge--public {
+  background: #2c6cb5;
+  color: white;
+}
+.docs-table .col-state .state-badge--draft {
+  background: #d2c6ab;
+  color: #4d4339;
+}
+.docs-table .col-state .state-meta { color: #8a7e6f; }
 .docs-table .col-date { color: #6b5e50; font-size: 13px; white-space: nowrap; }
 .docs-table .col-actions { text-align: right; white-space: nowrap; }
 
@@ -107,7 +131,18 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   align-items: center;
   cursor: pointer;
 }
-.toggle input { display: none; }
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+.toggle:has(input:focus-visible) .track {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 .toggle .track {
   width: 36px;
   height: 20px;
@@ -167,6 +202,10 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .icon-btn .material-symbols-rounded { font-size: 20px; }
 .icon-btn:hover { background: #d2c6ab; color: #2a87a8; border-color: #b8a785; }
 .icon-btn.danger:hover { background: #f5dbcf; border-color: #9a3324; color: #9a3324; }
+.icon-btn:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 
 /* Primary button can carry an icon next to its label */
 button.primary, a.primary {
@@ -205,6 +244,10 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 .pager button .material-symbols-rounded { font-size: 18px; }
 .pager button:hover:not(:disabled) { background: #d2c6ab; border-color: #b8a785; }
 .pager button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager button:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 .pager button.is-current {
   background: #2c6cb5;
   border-color: #2c6cb5;
@@ -269,7 +312,8 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   font-size: 14px;
 }
 .auth-card input:focus {
-  outline: none;
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
   border-color: #2c6cb5;
 }
 .auth-card button[type=submit] {
@@ -286,6 +330,10 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 }
 .auth-card button[type=submit]:hover { background: #1f5598; }
 .auth-card button[type=submit]:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-card button[type=submit]:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 .auth-card .error {
   margin-top: 14px;
   color: #c54a35;
@@ -304,6 +352,20 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 }
 .empty-state h3 { color: #4d4339; margin: 0 0 8px; }
 .empty-state p { margin: 0; font-size: 14px; }
+
+.loading-state::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: ds-spin 800ms linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes ds-spin { to { transform: rotate(360deg); } }
 
 /* ── Modal ─────────────────────────────────────────── */
 .modal-backdrop {
@@ -342,6 +404,11 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   color: #312922;
   font-size: 14px;
 }
+.modal input:focus {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
+  border-color: #2c6cb5;
+}
 .modal .actions {
   display: flex;
   gap: 8px;
@@ -358,6 +425,13 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   font-size: 14px;
 }
 .modal button.secondary:hover { background: #d2c6ab; }
+.modal button.secondary:focus-visible,
+.modal button.danger:focus-visible,
+.footer-bar button.secondary:focus-visible,
+.footer-bar a.secondary:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 .modal button.danger {
   background: #c54a35;
   color: white;
@@ -401,7 +475,11 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   color: #312922;
   font-size: 15px;
 }
-.meta-row input[type=text]:focus { outline: none; border-color: #2c6cb5; }
+.meta-row input[type=text]:focus {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
+  border-color: #2c6cb5;
+}
 
 .picker {
   display: grid;
@@ -459,7 +537,11 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
   color: #312922;
   font-size: 13px;
 }
-.picker .panel-head .filter:focus { outline: none; border-color: #2c6cb5; }
+.picker .panel-head .filter:focus {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 1px;
+  border-color: #2c6cb5;
+}
 .picker .panel-head .count-pill {
   font-size: 12px;
   color: #4d4339;
@@ -561,6 +643,10 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 }
 .picker .icon-btn-sm.primary:hover { background: #1f5598; border-color: #1f5598; }
 .picker .icon-btn-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+.picker .icon-btn-sm:focus-visible {
+  outline: 2px solid #2c6cb5;
+  outline-offset: 2px;
+}
 .picker .empty {
   padding: 40px 20px;
   text-align: center;
@@ -614,3 +700,20 @@ button.primary .material-symbols-rounded, a.primary .material-symbols-rounded {
 }
 .footer-bar button.secondary:hover,
 .footer-bar a.secondary:hover { background: #d2c6ab; }
+
+/* ── prefers-reduced-motion universal override ────────────────────
+   PRODUCT.md line 57 normative: every transition/animation needs a
+   reduced-motion fallback. Clamp durations to ~zero across the board
+   and force instant scroll. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .loading-state::before {
+    animation: none;
+    opacity: 0.6;
+  }
+}

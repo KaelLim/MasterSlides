@@ -482,3 +482,7 @@ panels share a structure:
   prefer "could survive the rebrand" choices: tokenised surfaces, semantic
   type tiers, OS-native body font. New work that hard-codes dark navy is
   rework debt.
+- **Don't** use `outline: none` without replacing it with a visible focus
+  indicator. WCAG 2.1 SC 2.4.7 is normative; sighted keyboard users must
+  see where focus is. If a native browser outline is too loud, replace it
+  with a 2px Process Blue ring on `:focus-visible` — never remove it.
