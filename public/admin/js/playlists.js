@@ -1,4 +1,5 @@
 // /admin/playlists — list playlists + actions.
+import "./theme.js";
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";

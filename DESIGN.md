@@ -151,9 +151,21 @@ single accent + slate ramp is what carries the 端莊 (dignified) /
 克制 (restrained) / 人本 (humane) brand personality PRODUCT.md commits
 to — the dignity lives in restraint, not in decoration.
 
+**Light + dark modes.** Every colour ships as a CSS custom property
+on `:root`. The default values are the light palette below. Dark mode
+overrides the same tokens on `:root[data-theme="dark"]` and inside an
+`@media (prefers-color-scheme: dark)` block that activates when the
+user hasn't manually pinned a theme. The toggle is a `Material Symbols
+Rounded` icon-button at the right edge of the topbar; it cycles
+`system → light → dark → system` and persists in `localStorage`
+(`admin_theme`). A FOUC guard inline-script in each admin `<head>`
+applies the saved preference before stylesheets resolve.
+
 **Key Characteristics:**
-- Body surface is true white (`#ffffff`). Surfaces sit on a four-step
-  cool-slate ramp: `#ffffff` → `#f8fafc` → `#f1f5f9` → `#e5e7eb`.
+- Body surface is true white (`#ffffff`) in light, slate near-black
+  (`#0b1220`) in dark. Surfaces sit on a four-step cool-slate ramp:
+  `#ffffff / #0b1220` → `#f8fafc / #1f2937` → `#f1f5f9 / #1f2937` →
+  `#e5e7eb / #1f2937`.
 - One accent — **Tzu Chi Blue** (`#2c6cb5`) — appears on ≤5% of any
   screen: primary CTA, toggle-on, current-page pager button, active
   nav link, public-state text in the docs table.
@@ -170,6 +182,29 @@ to — the dignity lives in restraint, not in decoration.
 
 A near-monochrome cool-slate surface ramp with one saturated brand
 accent and standard semantic tones for success / warning / danger.
+Every colour ships as both light and dark via CSS custom properties;
+the brand hue stays the same (Tzu Chi Blue) but lightens in dark mode
+(`#6e9cc4`) to keep WCAG AA contrast on the dark surface.
+
+### Dark mode equivalents
+
+| Token | Light | Dark |
+|---|---|---|
+| `bg` | `#ffffff` | `#0b1220` |
+| `surface` | `#ffffff` | `#111827` |
+| `surface-inset` | `#f8fafc` | `#0b1220` |
+| `surface-hover` | `#f1f5f9` | `#1f2937` |
+| `stroke` | `#e5e7eb` | `#1f2937` |
+| `stroke-strong` | `#cbd5e1` | `#374151` |
+| `ink` | `#0f172a` | `#f1f5f9` |
+| `ink-2` | `#334155` | `#cbd5e1` |
+| `ink-muted` | `#64748b` | `#94a3b8` |
+| `ink-dim` | `#94a3b8` | `#64748b` |
+| `brand` | `#2c6cb5` | `#6e9cc4` |
+| `brand-deep` | `#1f5598` | `#93b8d8` |
+| `success` | `#15803d` / `#dcfce7` | `#4ade80` / `#052e16` |
+| `warning` | `#92400e` / `#fef3c7` | `#fbbf24` / `#422006` |
+| `danger` | `#dc2626` / `#fee2e2` | `#f87171` / `#450a0a` |
 
 ### Primary
 - **Tzu Chi Blue** (`#2c6cb5`): The system's only saturated colour.

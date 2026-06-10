@@ -1,5 +1,6 @@
 // /admin/playlist-edit — create or edit a playlist.
 // URL: ?id=<n> → edit; no id → new.
+import "./theme.js";
 import { renderPager, slice, totalPages } from "./pager.js";
 import { confirmDestructive } from "./confirm-modal.js";
 import { notify, classifyHttpError } from "./notify.js";
