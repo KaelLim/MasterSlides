@@ -62,18 +62,22 @@
 
 .lightbox-caption {
   flex: 0 0 auto;
-  max-width: 90%;
-  max-height: 25%;
+  max-width: 92%;
+  /* 字級拉到接近簡報內容（不乘 --mode-scale 因為 caption 永遠橫書）。
+   * min-height 預留 3 行高度（line-height 1.6 × 3 = 4.8em），即使只有
+   * 短短一行字，圖下方也會留出三行容量、不會被擠扁；超過 30% viewport
+   * 高度才開始 overflow scroll。 */
+  font-size: calc(clamp(28px, 4cqi, 48px) * var(--font-scale));
+  line-height: 1.6;
+  min-height: 4.8em;
+  max-height: 30vh;
   overflow-y: auto;
   color: white;
-  /* 不乘 --mode-scale：caption 永遠橫書，不該被 vertical 模式的 1.6× 放大。 */
-  font-size: calc(clamp(20px, 3cqi, 36px) * var(--font-scale));
-  line-height: 1.6;
   letter-spacing: 0.05em;
   writing-mode: horizontal-tb;
   text-orientation: mixed;
   text-align: center;
-  padding: 0 12px;
+  padding: 8px 14px;
 }
 
 .lightbox-caption:empty {

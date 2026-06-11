@@ -3,6 +3,7 @@
 // state.js so other modules read/write the same identity.
 import { state, dom, type WritingMode } from './state.js';
 import { paginate, showPage } from './paginator.ts';
+import { applyReporterOverflow } from './first-slide-overflow.js';
 
 export function isVerticalMode(): boolean {
   return state.currentWritingMode === 'vertical-rl';
@@ -60,4 +61,8 @@ export function repaginate(): void {
   paginate(article, dom.manuscript, state.currentWritingMode);
   updatePageCount();
   goToPage(Math.min(state.currentPage, state.totalPages - 1));
+  // After paginate has populated .slide-page divs, truncate the first
+  // slide's reporter list if it exceeds the visible cap. Reads from a
+  // cached canonical list so font-scale / orientation changes recompute.
+  applyReporterOverflow();
 }

@@ -361,6 +361,12 @@ hr {
 .first-slide-reporters {
   font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-text-primary);
+  /* Push reporter text down from the panel's top edge so a single name
+   * doesn't read as if it's tucked into the corner. The padding-top is
+   * physical (always the visual top) regardless of the panel's
+   * writing-mode: vertical-rl, because the inline-axis is vertical here. */
+  padding-top: 12cqh;
+  box-sizing: border-box;
 }
 
 /* composeFirstSlide emits one <div> per reporter, no <ol>/<li>. In the
@@ -383,5 +389,109 @@ hr {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   "+N 位" button — shown when the reporter list exceeds the visible
+   cap (see public/slides/js/first-slide-overflow.ts). Inherits the
+   reporters panel's vertical-rl writing-mode so it sits in line with
+   the visible names; click opens a modal listing every name.
+   =============================================================== */
+.first-slide-reporters-more {
+  appearance: none;
+  border: 0;
+  background: rgba(255, 200, 0, 0.12);
+  color: var(--color-highlight);
+  font-family: inherit;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.4em 0.6em;
+  border-radius: 6px;
+  cursor: pointer;
+  writing-mode: inherit;
+  text-orientation: inherit;
+  margin-inline-start: 1rem;
+  transition: background 0.15s;
+}
+.first-slide-reporters-more:hover {
+  background: rgba(255, 200, 0, 0.22);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   "所有報告人" modal — modal listing every reporter when the inline
+   list was truncated. Visible only on click of .first-slide-reporters-more.
+   =============================================================== */
+.first-slide-reporters-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  writing-mode: horizontal-tb;
+}
+.first-slide-reporters-card {
+  position: relative;
+  background: rgba(20, 28, 40, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 36px 40px;
+  max-width: min(640px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  color: #fff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+.first-slide-reporters-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 28px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+.first-slide-reporters-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.first-slide-reporters-heading {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  letter-spacing: 0.05em;
+}
+.first-slide-reporters-list {
+  list-style: decimal-leading-zero inside;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+}
+.first-slide-reporters-list li {
+  font-size: 20px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+@media (max-width: 540px) {
+  .first-slide-reporters-list {
+    grid-template-columns: 1fr;
+  }
 }
 

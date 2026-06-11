@@ -10,6 +10,7 @@ import { initHelpModal } from './modals.js';
 import { initContextMenu } from './context-menu.js';
 import { exportPDF } from './pdf-export.js';
 import { refresh } from './loader.js';
+import { loadPlaylist } from './playlist.js';
 import { handleKeydown } from './keyboard.js';
 import { syncRemoteState } from './remote-control.js';
 
@@ -44,7 +45,25 @@ export function initEventListeners(): void {
   document.getElementById('laserBtn')!.onclick = toggleLaser;
   initLaser();
   document.getElementById('exportPdfBtn')!.onclick = exportPDF;
-  document.getElementById('refreshBtn')!.onclick = refresh;
+  // Refresh dispatcher: in playlist mode (state.playlistState set), reload
+  // the whole playlist; in single-doc mode, re-sync from Google via
+  // loader.refresh(). Previously the button silently no-op'd on playlist
+  // URLs because loader.refresh() reads state.currentSrc which only the
+  // single-doc loader sets.
+  document.getElementById('refreshBtn')!.onclick = async (): Promise<void> => {
+    const btn = document.getElementById('refreshBtn');
+    if (state.playlistState) {
+      if (btn?.classList.contains('refreshing')) return;
+      btn?.classList.add('refreshing');
+      try {
+        await loadPlaylist(state.playlistState.id);
+      } finally {
+        btn?.classList.remove('refreshing');
+      }
+    } else {
+      await refresh();
+    }
+  };
   document.getElementById('tocBtn')!.onclick = showGoToPageDialog;
 
   initHelpModal();
