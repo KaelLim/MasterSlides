@@ -2,7 +2,7 @@ import { dom } from './state.js';
 
 // Bilinear-resample a canvas to fit within maxW × maxH while preserving
 // aspect ratio.
-export function downscaleCanvas(src, maxW, maxH) {
+export function downscaleCanvas(src: HTMLCanvasElement, maxW: number, maxH: number): HTMLCanvasElement {
   const ratio = Math.min(maxW / src.width, maxH / src.height, 1);
   if (ratio === 1) return src;
   const dst = document.createElement('canvas');
@@ -17,7 +17,7 @@ export function downscaleCanvas(src, maxW, maxH) {
   return dst;
 }
 
-export async function convertTablesToImages() {
+export async function convertTablesToImages(): Promise<void> {
   const tables = dom.manuscript.querySelectorAll('table');
   if (tables.length === 0) return;
   const containerWidth = dom.manuscriptContainer.clientWidth * 0.95;
@@ -35,12 +35,12 @@ export async function convertTablesToImages() {
         img.style.margin = '0 auto';
       });
       table.querySelectorAll('tr').forEach(tr => {
-        const cells = Array.from(tr.children).filter(c => c.tagName === 'TD' || c.tagName === 'TH');
+        const cells = Array.from(tr.children).filter((c): c is HTMLTableCellElement => c.tagName === 'TD' || c.tagName === 'TH');
         if (cells.length === 0) return;
         const heights = cells.map(c => c.offsetHeight);
         const maxH = Math.max(...heights);
         cells.forEach((c, i) => {
-          const diff = maxH - heights[i];
+          const diff = maxH - heights[i]!;
           if (diff <= 0) return;
           const extra = Math.round(diff / 2);
           c.style.padding = `${10 + extra}px 14px`;
@@ -52,7 +52,7 @@ export async function convertTablesToImages() {
       img.className = 'table-image';
       const thumb = downscaleCanvas(canvas, 600, 450);
       img.dataset.thumbSrc = thumb.toDataURL('image/jpeg', 0.7);
-      table.parentNode.replaceChild(img, table);
+      table.parentNode!.replaceChild(img, table);
     } catch (err) {
       console.error('table conversion failed:', err);
     }

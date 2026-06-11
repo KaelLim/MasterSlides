@@ -1,12 +1,18 @@
-import { state, dom } from './state.js';
+import { state, dom, STORAGE_KEYS } from './state.js';
 import { goToPage, isVerticalMode } from './navigation.js';
 import { closeSidebar } from './display.js';
 
-let activeTab = 'toc';
+let activeTab: 'toc' | 'grid' = 'toc';
 
-function getPageForElement(el) {
+// Detailed-TOC toggle. false = show only doc <h2> (post-promotion top-level
+// section dividers); true = include <h3>/<h4>. Persisted to localStorage so
+// the user's preference survives reload — defaults to false because the
+// audience is older and a flat top-level outline is what they want by default.
+let tocDetailed: boolean = localStorage.getItem(STORAGE_KEYS.tocDetailed) === 'true';
+
+function getPageForElement(el: HTMLElement): number {
   // Aliswa: element lives inside a `.slide-page` with dataset.page set.
-  const slidePage = el.closest('.slide-page');
+  const slidePage = el.closest<HTMLElement>('.slide-page');
   if (slidePage && slidePage.dataset.page != null) {
     return parseInt(slidePage.dataset.page, 10);
   }
@@ -20,48 +26,63 @@ function getPageForElement(el) {
   }
 }
 
-function buildTocList() {
-  const toc = document.getElementById('gotoToc');
-  const headings = dom.manuscript.querySelectorAll('h1, h2, h3');
+function buildTocList(): void {
+  const toc = document.getElementById('gotoToc')!;
+  // H1 is hidden by manuscript.css and the body H2/H3/H4 are visually demoted
+  // one level (so H2 reads as level-1). Map the TOC indent accordingly: H2→1,
+  // H3→2, H4→3 — that's what the existing data-level CSS expects.
+  // When tocDetailed is false (default), only h2 is queried — the audience
+  // is older and the flat top-level outline is what they want by default.
+  const selector = tocDetailed ? 'h2, h3, h4' : 'h2';
+  const headings = dom.manuscript.querySelectorAll<HTMLElement>(selector);
   if (headings.length === 0) {
     toc.innerHTML = '<div class="goto-toc-empty">此文件沒有標題</div>';
     return;
   }
   toc.innerHTML = '<div class="goto-toc-title">目錄</div>';
   headings.forEach(h => {
-    const level = parseInt(h.tagName[1]);
+    const level = parseInt(h.tagName[1]) - 1;
     const page = getPageForElement(h);
     const item = document.createElement('div');
     item.className = 'goto-toc-item';
-    item.dataset.level = level;
+    item.dataset.level = String(level);
     item.innerHTML = `<span class="toc-page">${page + 1}</span><span class="toc-text">${h.textContent}</span>`;
     item.onclick = () => { goToPage(page); closeGotoModal(); };
     toc.appendChild(item);
   });
 }
 
-let gridObserver = null;
-let gridResizeObserver = null;
+function applyTocToggleState(): void {
+  const btn = document.getElementById('gotoTocToggle');
+  if (!btn) return;
+  btn.setAttribute('aria-checked', tocDetailed ? 'true' : 'false');
+}
+
+let gridObserver: IntersectionObserver | null = null;
+let gridResizeObserver: ResizeObserver | null = null;
 // Snapshot of live .slide-page refs taken at buildGrid time. Using a frozen
 // snapshot makes the grid stable against any repaginate() that fires while
 // the modal is open (e.g. via resize) — every tile renders from the same
 // set of refs, not from whatever dom.manuscript happens to look like when
 // the IntersectionObserver lazily fires for that tile.
-let slidePageSnapshot = [];
+let slidePageSnapshot: HTMLElement[] = [];
 
 /**
  * Compute and apply the contain-scale transform for a single tile. Called
  * both at render time and from a ResizeObserver — that observer is what
- * corrects the scale when the modal's max-width transition (50% → 95%) ends
+ * corrects the scale when the modal's max-width transition (72% → 95%) ends
  * after the tile was already rendered at a smaller intermediate size.
  */
-function applyPreviewScale(item, containerW, containerH) {
-  const preview = item.querySelector('.goto-grid-preview');
+function applyPreviewScale(item: HTMLElement, containerW: number, containerH: number): void {
+  const preview = item.querySelector<HTMLElement>('.goto-grid-preview');
   if (!preview) return;
 
   const hasSnapshot = slidePageSnapshot.length > 0;
-  const previewW = hasSnapshot ? containerW + 40 : containerW;
-  const previewH = hasSnapshot ? containerH + 20 : containerH;
+  // +120/+80 = .content-area padding (60 horizontal, 40 vertical) doubled,
+  // matching the bg-padding the rendered preview applies. Keep in lockstep
+  // with the renderPreview block below.
+  const previewW = hasSnapshot ? containerW + 120 : containerW;
+  const previewH = hasSnapshot ? containerH + 80 : containerH;
 
   const itemW = item.clientWidth;
   const itemH = item.clientHeight;
@@ -74,11 +95,12 @@ function applyPreviewScale(item, containerW, containerH) {
   preview.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
 }
 
-function renderPreview(item, containerW, containerH, vertical) {
-  if (item.dataset.rendered) return;
-  item.dataset.rendered = 'true';
+function renderPreview(item: Element, containerW: number, containerH: number, vertical: boolean): void {
+  const itemEl = item as HTMLElement;
+  if (itemEl.dataset.rendered) return;
+  itemEl.dataset.rendered = 'true';
 
-  const pageIndex = parseInt(item.dataset.page);
+  const pageIndex = parseInt(itemEl.dataset.page!);
   const preview = document.createElement('div');
   preview.className = 'goto-grid-preview';
   preview.style.writingMode = vertical ? 'vertical-rl' : 'horizontal-tb';
@@ -90,7 +112,7 @@ function renderPreview(item, containerW, containerH, vertical) {
     // the live render).
     const sourcePage = slidePageSnapshot[pageIndex];
     if (!sourcePage) {
-      item.insertBefore(preview, item.firstChild);
+      itemEl.insertBefore(preview, itemEl.firstChild);
       return;
     }
 
@@ -100,7 +122,7 @@ function renderPreview(item, containerW, containerH, vertical) {
     const clip = document.createElement('div');
     clip.className = 'goto-preview-clip';
 
-    const clone = sourcePage.cloneNode(true);
+    const clone = sourcePage.cloneNode(true) as HTMLElement;
     clone.style.display = '';
     clone.style.width = containerW + 'px';
     clone.style.height = containerH + 'px';
@@ -109,17 +131,19 @@ function renderPreview(item, containerW, containerH, vertical) {
     bg.appendChild(clip);
     preview.appendChild(bg);
 
-    // Outer mirrors the print @page (containerW + 20*2, containerH + 10*2)
+    // Outer mirrors the print @page (containerW + 60*2, containerH + 40*2)
     // so bg padding leaves an inner clip of exactly containerW × containerH.
-    preview.style.width = (containerW + 40) + 'px';
-    preview.style.height = (containerH + 20) + 'px';
+    // Must stay in sync with .content-area / .print-page-bg / .goto-preview-bg
+    // padding (currently 40px 60px = 40 vertical, 60 horizontal).
+    preview.style.width = (containerW + 120) + 'px';
+    preview.style.height = (containerH + 80) + 'px';
   } else {
     // Main-stack fallback (no .slide-page divs — CSS columns scroll model):
     // clone the whole manuscript and translate to the target page offset.
     preview.style.width = containerW + 'px';
     preview.style.height = containerH + 'px';
 
-    const clone = dom.manuscript.cloneNode(true);
+    const clone = dom.manuscript.cloneNode(true) as HTMLElement;
     clone.removeAttribute('id');
     clone.style.width = '100%';
     clone.style.height = '100%';
@@ -132,12 +156,12 @@ function renderPreview(item, containerW, containerH, vertical) {
     preview.appendChild(clone);
   }
 
-  item.insertBefore(preview, item.firstChild);
-  applyPreviewScale(item, containerW, containerH);
+  itemEl.insertBefore(preview, itemEl.firstChild);
+  applyPreviewScale(itemEl, containerW, containerH);
 }
 
-function buildGrid() {
-  const grid = document.getElementById('gotoGrid');
+function buildGrid(): void {
+  const grid = document.getElementById('gotoGrid')!;
   grid.innerHTML = '';
 
   // Clean up previous observers
@@ -157,26 +181,26 @@ function buildGrid() {
   // Take the slide-page snapshot now, NOT lazily inside renderPreview, so
   // every tile uses a consistent set of refs even if repaginate runs later.
   slidePageSnapshot = Array.from(
-    dom.manuscript.querySelectorAll(':scope > .slide-page')
+    dom.manuscript.querySelectorAll<HTMLElement>(':scope > .slide-page')
   );
 
   // Cell aspect mirrors the preview's outer aspect: when slide-pages exist we
   // include the content-area padding (matches PDF print's @page); otherwise
   // we use raw container aspect (no padding wrapper).
   const cellAspect = slidePageSnapshot.length > 0
-    ? `${containerW + 40} / ${containerH + 20}`
+    ? `${containerW + 120} / ${containerH + 80}`
     : `${containerW} / ${containerH}`;
 
   // Create lightweight placeholder items (no cloning yet)
   for (let i = 0; i < state.totalPages; i++) {
     const item = document.createElement('div');
     item.className = 'goto-grid-item' + (i === state.currentPage ? ' current' : '');
-    item.dataset.page = i;
+    item.dataset.page = String(i);
     item.style.aspectRatio = cellAspect;
 
     const badge = document.createElement('span');
     badge.className = 'goto-grid-page';
-    badge.textContent = i + 1;
+    badge.textContent = String(i + 1);
     item.appendChild(badge);
 
     item.onclick = () => { goToPage(i); closeGotoModal(); };
@@ -184,7 +208,7 @@ function buildGrid() {
   }
 
   requestAnimationFrame(() => {
-    const items = grid.querySelectorAll('.goto-grid-item');
+    const items = grid.querySelectorAll<HTMLElement>('.goto-grid-item');
 
     // Observe visibility — only render previews when scrolled into view
     gridObserver = new IntersectionObserver((entries) => {
@@ -199,27 +223,27 @@ function buildGrid() {
     // Handles: modal max-width transition, window resize, future layout shifts.
     gridResizeObserver = new ResizeObserver(entries => {
       entries.forEach(entry => {
-        applyPreviewScale(entry.target, containerW, containerH);
+        applyPreviewScale(entry.target as HTMLElement, containerW, containerH);
       });
     });
 
     items.forEach(item => {
-      gridObserver.observe(item);
-      gridResizeObserver.observe(item);
+      gridObserver!.observe(item);
+      gridResizeObserver!.observe(item);
     });
   });
 }
 
-function switchTab(tab) {
+function switchTab(tab: 'toc' | 'grid'): void {
   activeTab = tab;
-  const tabs = dom.gotoModal.querySelectorAll('.goto-tab');
+  const tabs = dom.gotoModal.querySelectorAll<HTMLElement>('.goto-tab');
   tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
 
-  document.getElementById('gotoPanelToc').classList.toggle('goto-panel-hidden', tab !== 'toc');
-  document.getElementById('gotoPanelGrid').classList.toggle('goto-panel-hidden', tab !== 'grid');
+  document.getElementById('gotoPanelToc')!.classList.toggle('goto-panel-hidden', tab !== 'toc');
+  document.getElementById('gotoPanelGrid')!.classList.toggle('goto-panel-hidden', tab !== 'grid');
 
   // Wider layout for grid mode
-  dom.gotoModal.querySelector('.goto-content').classList.toggle('grid-mode', tab === 'grid');
+  dom.gotoModal.querySelector('.goto-content')!.classList.toggle('grid-mode', tab === 'grid');
 
   if (tab === 'toc') {
     setTimeout(() => dom.gotoPageInput.focus(), 50);
@@ -228,10 +252,11 @@ function switchTab(tab) {
   }
 }
 
-export function showGoToPageDialog() {
+export function showGoToPageDialog(): void {
   const input = dom.gotoPageInput;
-  input.max = state.totalPages;
+  input.max = String(state.totalPages);
   input.placeholder = `頁碼 (1-${state.totalPages})`;
+  applyTocToggleState();
   buildTocList();
   dom.gotoModal.classList.add('active');
   closeSidebar();
@@ -240,7 +265,7 @@ export function showGoToPageDialog() {
   switchTab('toc');
 }
 
-export function closeGotoModal() {
+export function closeGotoModal(): void {
   dom.gotoModal.classList.remove('active');
   dom.gotoPageInput.value = '';
   // Clean up observers, clones, and snapshot refs
@@ -252,23 +277,33 @@ export function closeGotoModal() {
     gridResizeObserver.disconnect();
     gridResizeObserver = null;
   }
-  document.getElementById('gotoGrid').innerHTML = '';
+  document.getElementById('gotoGrid')!.innerHTML = '';
   slidePageSnapshot = [];
 }
 
-export function initGotoModal() {
-  document.querySelector('.goto-modal-close').onclick = closeGotoModal;
-  dom.gotoModal.onclick = (e) => {
+export function initGotoModal(): void {
+  document.querySelector<HTMLElement>('.goto-modal-close')!.onclick = closeGotoModal;
+  dom.gotoModal.onclick = (e: MouseEvent) => {
     if (e.target === dom.gotoModal) closeGotoModal();
   };
 
+  const toggle = document.getElementById('gotoTocToggle');
+  if (toggle) {
+    toggle.onclick = () => {
+      tocDetailed = !tocDetailed;
+      localStorage.setItem(STORAGE_KEYS.tocDetailed, tocDetailed ? 'true' : 'false');
+      applyTocToggleState();
+      buildTocList();
+    };
+  }
+
   // Tab switching
-  dom.gotoModal.querySelectorAll('.goto-tab').forEach(tab => {
-    tab.onclick = () => switchTab(tab.dataset.tab);
+  dom.gotoModal.querySelectorAll<HTMLElement>('.goto-tab').forEach(tab => {
+    tab.onclick = () => switchTab(tab.dataset.tab as 'toc' | 'grid');
   });
 
   // Page input
-  document.getElementById('gotoPageBtn').onclick = () => {
+  document.getElementById('gotoPageBtn')!.onclick = () => {
     const val = parseInt(dom.gotoPageInput.value, 10);
     if (!isNaN(val) && val >= 1 && val <= state.totalPages) {
       goToPage(val - 1);
@@ -276,10 +311,10 @@ export function initGotoModal() {
     }
   };
 
-  dom.gotoPageInput.addEventListener('keydown', (e) => {
+  dom.gotoPageInput.addEventListener('keydown', (e: KeyboardEvent) => {
     e.stopPropagation();
     if (e.key === 'Enter') {
-      document.getElementById('gotoPageBtn').click();
+      (document.getElementById('gotoPageBtn') as HTMLElement).click();
     } else if (e.key === 'Escape') {
       closeGotoModal();
     } else if (e.key === 'Tab') {
@@ -289,7 +324,7 @@ export function initGotoModal() {
   });
 
   // Tab key switching when grid is focused
-  dom.gotoModal.addEventListener('keydown', (e) => {
+  dom.gotoModal.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Tab' && dom.gotoModal.classList.contains('active')) {
       // Only intercept if not in input
       if (e.target !== dom.gotoPageInput) {

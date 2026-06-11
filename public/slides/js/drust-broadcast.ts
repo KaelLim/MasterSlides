@@ -13,13 +13,35 @@
 // nothing — so callers are responsible for any rejoin handshake (e.g. phone
 // publishes 'phone-join' on open so the viewer answers with a fresh sync).
 
-let _configPromise = null;
-function getConfig() {
+interface DrustConfig {
+  wsUrl: string;
+}
+
+interface DrustEnvelope {
+  kind?: string;
+  room?: string;
+  payload?: unknown;
+  ts?: number;
+}
+
+export interface ConnectRoomOptions {
+  onMessage?: (payload: unknown) => void;
+  onOpen?: () => void;
+  onClose?: () => void;
+}
+
+export interface RoomConnection {
+  publish: (payload: unknown) => Promise<void>;
+  stop: () => void;
+}
+
+let _configPromise: Promise<DrustConfig> | null = null;
+function getConfig(): Promise<DrustConfig> {
   if (!_configPromise) {
     _configPromise = fetch("/api/config")
       .then((r) => {
         if (!r.ok) throw new Error(`/api/config → ${r.status}`);
-        return r.json();
+        return r.json() as Promise<DrustConfig>;
       })
       .catch((err) => {
         // Don't memoize failures — let the next caller retry.
@@ -33,29 +55,32 @@ function getConfig() {
 const MIN_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 15000;
 
-export async function connectRoom(roomName, { onMessage, onOpen, onClose } = {}) {
+export async function connectRoom(
+  roomName: string,
+  { onMessage, onOpen, onClose }: ConnectRoomOptions = {},
+): Promise<RoomConnection> {
   const { wsUrl } = await getConfig();
 
-  let ws = null;
+  let ws: WebSocket | null = null;
   let backoff = MIN_BACKOFF_MS;
   let stopped = false;
-  let openTimer = null;
+  let openTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function open() {
+  function open(): void {
     if (stopped) return;
     ws = new WebSocket(wsUrl);
 
     ws.addEventListener("open", () => {
       backoff = MIN_BACKOFF_MS;
       // (Re-)subscribe on every open — Drust subscriptions are per-connection.
-      ws.send(JSON.stringify({ op: "subscribe", room: roomName }));
+      ws!.send(JSON.stringify({ op: "subscribe", room: roomName }));
       onOpen?.();
     });
 
-    ws.addEventListener("message", (ev) => {
-      let env;
+    ws.addEventListener("message", (ev: MessageEvent) => {
+      let env: DrustEnvelope | undefined;
       try {
-        env = JSON.parse(ev.data);
+        env = JSON.parse(ev.data) as DrustEnvelope;
       } catch {
         return; // malformed frame
       }
@@ -79,7 +104,7 @@ export async function connectRoom(roomName, { onMessage, onOpen, onClose } = {})
 
   open();
 
-  async function publish(payload) {
+  async function publish(payload: unknown): Promise<void> {
     try {
       const res = await fetch(`/api/publish/${roomName}`, {
         method: "POST",
@@ -97,7 +122,7 @@ export async function connectRoom(roomName, { onMessage, onOpen, onClose } = {})
     }
   }
 
-  function stop() {
+  function stop(): void {
     stopped = true;
     if (openTimer) clearTimeout(openTimer);
     try {

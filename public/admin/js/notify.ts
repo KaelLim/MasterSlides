@@ -14,22 +14,24 @@
 
 const STACK_CLASS = "ds-toast-stack";
 
-const DEFAULT_DURATIONS = {
+export type Tone = "success" | "caution" | "error";
+
+const DEFAULT_DURATIONS: Record<Tone, number> = {
   success: 3000,
   caution: 5000,
   error: 0, // sticky until dismissed or retried
 };
 
-const ICONS = {
+const ICONS: Record<Tone, string> = {
   success: "check_circle",
   caution: "warning",
   error: "error",
 };
 
-const prefersReducedMotion = () =>
-  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const prefersReducedMotion = (): boolean =>
+  !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function getStack() {
+function getStack(): Element {
   let stack = document.querySelector(`.${STACK_CLASS}`);
   if (!stack) {
     stack = document.createElement("ol");
@@ -39,27 +41,41 @@ function getStack() {
   return stack;
 }
 
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+function escapeHTML(s: unknown): string {
+  const map: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  };
+  return String(s ?? "").replace(/[&<>"']/g, (c) => map[c] as string);
+}
+
+export interface NotifyOptions {
+  tone?: Tone;
+  title?: string;
+  body: string;
+  retry?: () => void | Promise<void>;
+  durationMs?: number;
+}
+
+export interface HttpErrorClassification {
+  kind: "network" | "permission" | "not_found" | "server" | "unknown";
+  message: string;
 }
 
 /**
- * Show a toast. Returns a thunk that dismisses it.
- *
- * @param {Object} opts
- * @param {"success"|"caution"|"error"} opts.tone
- * @param {string} [opts.title]      Optional short heading (中文).
- * @param {string} opts.body         Required main message (中文).
- * @param {Function} [opts.retry]    Optional thunk; renders 重試 button.
- *                                   May be async. Toast stays open during
- *                                   the call; on completion (no throw),
- *                                   the toast auto-dismisses.
- * @param {number} [opts.durationMs] Override auto-dismiss. Pass 0 for sticky.
- * @returns {Function} dismiss
+ * Show a toast. Returns a handle: callable to dismiss for backwards compat,
+ * with `.dismiss()` and `.element` for callers that need to address this
+ * specific toast (e.g., live-update its message during a long operation
+ * without racing concurrent notify() calls in the same stack).
  */
-export function notify({ tone = "success", title, body, retry, durationMs } = {}) {
+export interface ToastHandle {
+  (): void;
+  dismiss: () => void;
+  element: HTMLLIElement;
+}
+
+export function notify(
+  { tone = "success", title, body, retry, durationMs }: NotifyOptions = {} as NotifyOptions,
+): ToastHandle {
   if (!body) throw new Error("notify(): body is required");
 
   const stack = getStack();
@@ -89,9 +105,9 @@ export function notify({ tone = "success", title, body, retry, durationMs } = {}
   `;
 
   let dismissed = false;
-  let autoTimer = null;
+  let autoTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const dismiss = () => {
+  const dismiss = (): void => {
     if (dismissed) return;
     dismissed = true;
     if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
@@ -105,7 +121,7 @@ export function notify({ tone = "success", title, body, retry, durationMs } = {}
   };
 
   // Wire close + dismiss buttons.
-  li.querySelector(".ds-toast__close").addEventListener("click", dismiss);
+  li.querySelector(".ds-toast__close")!.addEventListener("click", dismiss);
   const dismissBtn = li.querySelector(".ds-toast__dismiss");
   if (dismissBtn) dismissBtn.addEventListener("click", dismiss);
 
@@ -113,15 +129,15 @@ export function notify({ tone = "success", title, body, retry, durationMs } = {}
   // (no throw), we auto-dismiss as a success signal. Caller can also
   // pop its own success toast inside the thunk.
   if (hasRetry) {
-    const retryBtn = li.querySelector(".ds-toast__retry");
+    const retryBtn = li.querySelector<HTMLButtonElement>(".ds-toast__retry")!;
     retryBtn.addEventListener("click", async () => {
       retryBtn.disabled = true;
       const originalText = retryBtn.textContent;
       retryBtn.textContent = "重試中…";
       try {
-        await retry();
+        await retry!();
         dismiss();
-      } catch (err) {
+      } catch {
         // Leave toast open so the user can try again. Surface the error
         // inline by appending a short note (only once).
         retryBtn.disabled = false;
@@ -130,7 +146,7 @@ export function notify({ tone = "success", title, body, retry, durationMs } = {}
           const note = document.createElement("p");
           note.className = "ds-toast__retry-error";
           note.textContent = "仍然失敗，請稍候再試。";
-          li.querySelector(".ds-toast__body").appendChild(note);
+          li.querySelector(".ds-toast__body")!.appendChild(note);
         }
       }
     });
@@ -146,14 +162,19 @@ export function notify({ tone = "success", title, body, retry, durationMs } = {}
     autoTimer = setTimeout(dismiss, duration);
   }
 
-  return dismiss;
+  // Build a callable handle that also exposes dismiss + the toast's <li>.
+  // Callable form preserves the pre-existing `const f = notify(...); f()` idiom.
+  const handle = (() => dismiss()) as ToastHandle;
+  handle.dismiss = dismiss;
+  handle.element = li;
+  return handle;
 }
 
 /**
  * Map an HTTP status into a friendly { kind, message } pair.
  * status 0 OR navigator.onLine === false → 'network'.
  */
-export function classifyHttpError(status) {
+export function classifyHttpError(status: number): HttpErrorClassification {
   if (status === 0 || (typeof navigator !== "undefined" && navigator.onLine === false)) {
     return { kind: "network", message: "請檢查網路連線後再試。" };
   }

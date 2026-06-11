@@ -8,16 +8,37 @@ import { toggleFullscreen, closeSidebar } from './display.js';
 import { navigation } from './navigation.js';
 import { registerRemoteModalCloser } from './modals.js';
 
-let room = null;
-let roomChannel = null;
-let syncTimer = null;
+interface RoomHandle {
+  publish: (payload: unknown) => void | Promise<void>;
+  stop: () => void;
+}
 
-function getCurrentPageImages() {
+interface RemoteImage {
+  src: string;
+  alt: string;
+}
+
+interface RemoteCommandPayload {
+  type?: string;
+  action?: string;
+  src?: string;
+  alt?: string;
+  dx?: number;
+  dy?: number;
+  keyword?: string;
+  page?: number;
+}
+
+let room: RoomHandle | null = null;
+let roomChannel: string | null = null;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getCurrentPageImages(): RemoteImage[] {
   const containerWidth = dom.manuscriptContainer.clientWidth;
   const containerHeight = dom.manuscriptContainer.clientHeight;
   const images = dom.manuscript.querySelectorAll('img');
-  const visible = [];
-  images.forEach(img => {
+  const visible: RemoteImage[] = [];
+  images.forEach((img: HTMLImageElement) => {
     const rect = img.getBoundingClientRect();
     const cRect = dom.manuscriptContainer.getBoundingClientRect();
     const iL = rect.left - cRect.left, iT = rect.top - cRect.top;
@@ -33,7 +54,7 @@ function getCurrentPageImages() {
   return visible;
 }
 
-function buildSyncPayload() {
+function buildSyncPayload(): Record<string, unknown> {
   const searchState = getSearchState();
   return {
     type: 'sync',
@@ -47,12 +68,12 @@ function buildSyncPayload() {
   };
 }
 
-function publishSync() {
+function publishSync(): void {
   if (!room) return;
   room.publish(buildSyncPayload());
 }
 
-export function syncRemoteState() {
+export function syncRemoteState(): void {
   if (syncTimer != null) return;
   syncTimer = setTimeout(() => {
     syncTimer = null;
@@ -60,7 +81,7 @@ export function syncRemoteState() {
   }, 50);
 }
 
-function handleRemoteCommand(payload) {
+function handleRemoteCommand(payload: RemoteCommandPayload): void {
   const { action } = payload;
   const lightboxActive = dom.lightbox.classList.contains('active');
   switch (action) {
@@ -93,7 +114,7 @@ function handleRemoteCommand(payload) {
     case 'searchNext': nextMatch(); break;
     case 'searchClose': closeSearch(); break;
     case 'goto':
-      if (payload.page >= 1 && payload.page <= state.totalPages) {
+      if (payload.page !== undefined && payload.page >= 1 && payload.page <= state.totalPages) {
         if (lightboxActive) closeLightbox();
         goToPage(payload.page - 1);
       }
@@ -102,7 +123,7 @@ function handleRemoteCommand(payload) {
   syncRemoteState();
 }
 
-function markRemoteConnected() {
+function markRemoteConnected(): void {
   const status = document.getElementById('remoteStatus');
   if (status) {
     status.textContent = '遙控器已連線！';
@@ -111,17 +132,18 @@ function markRemoteConnected() {
   setTimeout(closeRemoteModal, 2000);
 }
 
-function drustRoomFor(roomId) {
+function drustRoomFor(roomId: string): string {
   return `slides-${roomId}`;
 }
 
-export async function initRemote() {
+export async function initRemote(): Promise<void> {
   if (!state.roomId) {
     state.roomId = Math.random().toString(36).substring(2, 8);
     navigation.onPageChange = syncRemoteState;
-    document.getElementById('remoteBtn').onclick = openRemoteModal;
-    document.getElementById('remoteModalClose').onclick = closeRemoteModal;
-    dom.remoteModal.onclick = (e) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
+    document.getElementById('remoteBtn')!.onclick = openRemoteModal;
+    document.getElementById('remoteModalClose')!.onclick = closeRemoteModal;
+    document.getElementById('remoteCopyBtn')!.onclick = copyRemoteUrl;
+    dom.remoteModal.onclick = (e: MouseEvent) => { if (e.target === dom.remoteModal) closeRemoteModal(); };
   }
 
   const channel = drustRoomFor(state.roomId);
@@ -133,10 +155,11 @@ export async function initRemote() {
   }
   roomChannel = channel;
   room = await connectRoom(channel, {
-    onMessage: (msg) => {
+    onMessage: (msg: unknown) => {
       if (!msg || typeof msg !== 'object') return;
-      switch (msg.type) {
-        case 'command': handleRemoteCommand(msg); break;
+      const m = msg as RemoteCommandPayload;
+      switch (m.type) {
+        case 'command': handleRemoteCommand(m); break;
         case 'phone-join':
           markRemoteConnected();
           publishSync();
@@ -146,21 +169,58 @@ export async function initRemote() {
   });
 }
 
-export function openRemoteModal() {
-  const qrcodeEl = document.getElementById('qrcode');
-  const urlEl = document.getElementById('remoteUrl');
+export function openRemoteModal(): void {
+  const qrcodeEl = document.getElementById('qrcode')!;
+  const copyBtn = document.getElementById('remoteCopyBtn') as HTMLElement;
   qrcodeEl.innerHTML = '';
   const host = window.location.hostname;
   const port = window.location.port;
   // NB: path is /remote/ (not /remote.html) after the Phase-6 reshuffle.
   const remoteUrl = `${location.protocol}//${host}${port ? ':' + port : ''}/remote/?id=${state.roomId}`;
   new QRCode(qrcodeEl, { text: remoteUrl, width: 200, height: 200 });
-  urlEl.textContent = remoteUrl;
+  copyBtn.dataset.url = remoteUrl;
+  // Reset to default state in case the modal is reopened after a copy.
+  resetCopyBtn(copyBtn);
   dom.remoteModal.classList.add('active');
   closeSidebar();
 }
 
-export function closeRemoteModal() {
+function resetCopyBtn(btn: HTMLElement): void {
+  btn.classList.remove('copied');
+  const label = btn.querySelector('.remote-copy-label');
+  const icon = btn.querySelector('.remote-copy-icon use');
+  if (label) label.textContent = '複製連結';
+  if (icon) icon.setAttribute('href', '#icon-copy');
+}
+
+async function copyRemoteUrl(): Promise<void> {
+  const btn = document.getElementById('remoteCopyBtn') as HTMLElement;
+  const url = btn.dataset.url;
+  if (!url) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      // Fallback for non-secure contexts (e.g. http LAN) — clipboard API is gated to HTTPS/localhost.
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    btn.classList.add('copied');
+    btn.querySelector('.remote-copy-label')!.textContent = '已複製';
+    btn.querySelector('.remote-copy-icon use')!.setAttribute('href', '#icon-check');
+    setTimeout(() => resetCopyBtn(btn), 1500);
+  } catch (err) {
+    console.error('Failed to copy remote URL', err);
+  }
+}
+
+export function closeRemoteModal(): void {
   dom.remoteModal.classList.remove('active');
 }
 

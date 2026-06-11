@@ -1,25 +1,31 @@
 const params = new URLSearchParams(location.search);
 const docId = params.get("src");
-const $form = document.getElementById("edit-form");
-const $status = document.getElementById("status");
-const $date = document.getElementById("presentation-date");
-const $title = document.getElementById("title");
-const $list = document.getElementById("reporter-list");
-const $add = document.getElementById("add-reporter");
-const $save = document.getElementById("save-btn");
+const $form = document.getElementById("edit-form") as HTMLFormElement;
+const $status = document.getElementById("status") as HTMLElement;
+const $date = document.getElementById("presentation-date") as HTMLInputElement;
+const $title = document.getElementById("title") as HTMLInputElement;
+const $list = document.getElementById("reporter-list") as HTMLUListElement;
+const $add = document.getElementById("add-reporter") as HTMLButtonElement;
+const $save = document.getElementById("save-btn") as HTMLButtonElement;
 
-function showStatus(msg, kind = "info") {
+interface EditData {
+  presentation_date: string;
+  title: string;
+  unit_report: string[];
+}
+
+function showStatus(msg: string, kind: string = "info"): void {
   $status.hidden = false;
   $status.textContent = msg;
   $status.dataset.kind = kind;
 }
 
-function clearStatus() {
+function clearStatus(): void {
   $status.hidden = true;
   $status.textContent = "";
 }
 
-function reporterRow(value = "") {
+function reporterRow(value: string = ""): HTMLLIElement {
   const li = document.createElement("li");
   li.className = "reporter-row";
   const input = document.createElement("input");
@@ -36,12 +42,13 @@ function reporterRow(value = "") {
     li.remove();
     updateSaveState();
   });
-  li.append(input, remove);
+  li.appendChild(input);
+  li.appendChild(remove);
   return li;
 }
 
-function updateSaveState() {
-  const reporters = [...$list.querySelectorAll("input")]
+function updateSaveState(): void {
+  const reporters = [...$list.querySelectorAll<HTMLInputElement>("input")]
     .map((i) => i.value.trim())
     .filter((v) => v.length > 0);
   const ok =
@@ -51,7 +58,7 @@ function updateSaveState() {
   $save.disabled = !ok;
 }
 
-function seedForm(data) {
+function seedForm(data: EditData): void {
   $date.value = data.presentation_date;
   $title.value = data.title;
   $list.innerHTML = "";
@@ -67,9 +74,9 @@ $add.addEventListener("click", () => {
 $date.addEventListener("input", updateSaveState);
 $title.addEventListener("input", updateSaveState);
 
-$form.addEventListener("submit", async (e) => {
+$form.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
-  const unit_report = [...$list.querySelectorAll("input")]
+  const unit_report = [...$list.querySelectorAll<HTMLInputElement>("input")]
     .map((i) => i.value.trim())
     .filter((v) => v.length > 0);
   const payload = {
@@ -80,25 +87,25 @@ $form.addEventListener("submit", async (e) => {
   $save.disabled = true;
   showStatus("儲存中…");
   try {
-    const res = await fetch(`/api/edit/${encodeURIComponent(docId)}`, {
+    const res = await fetch(`/api/edit/${encodeURIComponent(docId!)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: "unknown" }));
+      const body = await res.json().catch(() => ({ error: "unknown" })) as { error?: string };
       showStatus(`儲存失敗：${body.error || res.status}`, "error");
       $save.disabled = false;
       return;
     }
-    location.href = `/slides/?src=${encodeURIComponent(docId)}`;
+    location.href = `/slides/?src=${encodeURIComponent(docId!)}`;
   } catch (err) {
-    showStatus(`儲存失敗：${err.message}`, "error");
+    showStatus(`儲存失敗：${(err as Error).message}`, "error");
     $save.disabled = false;
   }
 });
 
-async function init() {
+async function init(): Promise<void> {
   if (!docId) {
     showStatus("缺少 ?src=<doc_id> 參數", "error");
     return;
@@ -107,12 +114,12 @@ async function init() {
   try {
     const res = await fetch(`/api/edit/${encodeURIComponent(docId)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await res.json() as EditData;
     seedForm(data);
     clearStatus();
     $form.hidden = false;
   } catch (err) {
-    showStatus(`無法載入：${err.message}`, "error");
+    showStatus(`無法載入：${(err as Error).message}`, "error");
   }
 }
 

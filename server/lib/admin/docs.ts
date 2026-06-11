@@ -43,8 +43,7 @@ export async function handleDocPatch(
   if (!record) return jsonResponse({ error: "not-found" }, 404);
 
   const patch: { is_public?: number; title?: string } = {};
-  if (typeof body.is_public === "boolean") patch.is_public = body.is_public ? 1 : 0;
-  if (typeof body.is_public === "number") patch.is_public = body.is_public ? 1 : 0;
+  if (typeof body.is_public === "boolean" || typeof body.is_public === "number") patch.is_public = body.is_public ? 1 : 0;
   if (typeof body.title === "string") patch.title = body.title;
 
   if (Object.keys(patch).length === 0) {

@@ -100,8 +100,7 @@ export async function handlePlaylistPatch(
     if (ids === null) return jsonResponse({ error: "bad-doc-ids" }, 400);
     patch.doc_ids = ids;
   }
-  if (typeof body.is_public === "boolean") patch.is_public = body.is_public ? 1 : 0;
-  if (typeof body.is_public === "number") patch.is_public = body.is_public ? 1 : 0;
+  if (typeof body.is_public === "boolean" || typeof body.is_public === "number") patch.is_public = body.is_public ? 1 : 0;
 
   if (Object.keys(patch).length === 0) {
     return jsonResponse({ error: "no-changes" }, 400);

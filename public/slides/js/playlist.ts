@@ -9,7 +9,15 @@ import { updateModKeyDisplay } from './modals.js';
 const ARTICLE_OPEN = '<article class="slide-content">';
 const ARTICLE_CLOSE = '</article>';
 
-async function fetchDocBody(docId) {
+interface PlaylistResponse {
+  playlist: {
+    id: string;
+    title: string;
+    doc_ids: string[];
+  };
+}
+
+async function fetchDocBody(docId: string): Promise<string> {
   let res = await fetch(`/api/docs/${docId}`);
   if (!res.ok) {
     // First-time load — sync from Google, then retry.
@@ -26,14 +34,14 @@ async function fetchDocBody(docId) {
   return html.slice(start + ARTICLE_OPEN.length, end);
 }
 
-export async function loadPlaylist(id) {
+export async function loadPlaylist(id: string): Promise<void> {
   try {
     const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`);
     if (!res.ok) {
       dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">找不到 playlist (${res.status})</p>`;
       return;
     }
-    const { playlist } = await res.json();
+    const { playlist } = (await res.json()) as PlaylistResponse;
     if (!playlist.doc_ids || playlist.doc_ids.length === 0) {
       dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">「${playlist.title}」沒有文件</p>`;
       return;
@@ -56,7 +64,7 @@ export async function loadPlaylist(id) {
     const images = dom.manuscript.querySelectorAll('img');
     if (images.length > 0) {
       await Promise.all(Array.from(images).map(img =>
-        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+        img.complete ? Promise.resolve() : new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); })
       ));
     }
     await convertTablesToImages();
@@ -70,11 +78,12 @@ export async function loadPlaylist(id) {
     syncRemoteState();
     resetNavHideTimer();
   } catch (err) {
-    dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">Playlist 載入失敗: ${err.message}</p>`;
+    const message = err instanceof Error ? err.message : String(err);
+    dom.manuscript.innerHTML = `<p style="color:#ff6b6b;font-size:24px;">Playlist 載入失敗: ${message}</p>`;
   }
 }
 
-function updatePlaylistBadge() {
+function updatePlaylistBadge(): void {
   if (!state.playlistState) return;
   let badge = document.getElementById('playlistBadge');
   if (!badge) {

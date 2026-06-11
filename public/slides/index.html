@@ -70,6 +70,21 @@
       <polyline points="1 20 1 14 7 14"/>
       <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
     </symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </symbol>
+    <symbol id="icon-toc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="8" y1="6" x2="20" y2="6"/>
+      <line x1="8" y1="12" x2="20" y2="12"/>
+      <line x1="8" y1="18" x2="20" y2="18"/>
+      <circle cx="4" cy="6" r="1" fill="currentColor"/>
+      <circle cx="4" cy="12" r="1" fill="currentColor"/>
+      <circle cx="4" cy="18" r="1" fill="currentColor"/>
+    </symbol>
     <symbol id="icon-prev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="15 18 9 12 15 6"/>
     </symbol>
@@ -90,7 +105,7 @@
 
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
-    <span class="lightbox-close">&times;</span>
+    <span class="lightbox-close" id="lightboxClose">&times;</span>
     <div class="lightbox-zoom-info" id="lightboxZoomInfo">100%</div>
     <div class="lightbox-content">
       <div class="lightbox-image-wrap">
@@ -145,11 +160,6 @@
         <button class="icon-btn" id="fullscreenBtn" data-tooltip="全螢幕" aria-label="全螢幕">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-fullscreen"/></svg>
         </button>
-        <button class="icon-btn" id="toggleNavBtn" data-tooltip="隱藏導航列" aria-label="隱藏導航列">
-          <svg width="20" height="20" aria-hidden="true" focusable="false">
-            <use id="toggleNavIcon" href="#icon-eye-open"/>
-          </svg>
-        </button>
         <button class="icon-btn" id="remoteBtn" data-tooltip="遙控器" aria-label="遙控器">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-remote"/></svg>
         </button>
@@ -172,7 +182,10 @@
     <h2>掃描 QR Code 開啟遙控器</h2>
     <p>使用手機掃描下方 QR Code</p>
     <div id="qrcode"></div>
-    <div class="remote-url" id="remoteUrl"></div>
+    <button class="remote-copy-btn" id="remoteCopyBtn" type="button" aria-label="複製遙控器連結">
+      <svg class="remote-copy-icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#icon-copy"/></svg>
+      <span class="remote-copy-label">複製連結</span>
+    </button>
     <div class="remote-status" id="remoteStatus">等待連線...</div>
   </div>
 
@@ -235,6 +248,12 @@
           <input type="number" id="gotoPageInput" min="1" placeholder="頁碼...">
           <button id="gotoPageBtn">跳轉</button>
         </div>
+        <div class="goto-toc-controls">
+          <span class="goto-toc-controls-label">顯示細目</span>
+          <button class="goto-toc-toggle" id="gotoTocToggle" role="switch" aria-checked="false" aria-label="顯示細目">
+            <span class="goto-toc-toggle-thumb"></span>
+          </button>
+        </div>
         <div class="goto-toc" id="gotoToc"></div>
       </div>
       <div class="goto-panel goto-panel-hidden" id="gotoPanelGrid">
@@ -245,18 +264,36 @@
 
   <!-- 主要 Flex 布局 -->
   <div class="app-layout">
-    <!-- 左側面板 -->
+    <!-- 左側面板 — 三段佈局：
+         上：頁碼指示器（下推留 logo 位）
+         中：目錄按鈕（垂直置中）
+         下：navigator → hamburger → refresh（由下往上） -->
     <aside class="left-panel">
-      <button class="hamburger-btn" id="hamburgerBtn" aria-label="開啟選單" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-      <button class="refresh-btn" id="refreshBtn" title="重新載入 / 同步" aria-label="重新載入">
-        <svg width="24" height="24" aria-hidden="true" focusable="false"><use href="#icon-refresh"/></svg>
-      </button>
       <div class="page-indicator">
         <span class="current" id="currentPage">1</span>
         <span class="separator">───</span>
         <span class="total" id="totalPages">?</span>
+      </div>
+
+      <button class="toc-btn" id="tocBtn" title="目錄 (G)" aria-label="目錄">
+        <svg width="24" height="24" aria-hidden="true" focusable="false"><use href="#icon-toc"/></svg>
+      </button>
+
+      <div class="left-panel-bottom">
+        <button class="refresh-btn" id="refreshBtn" title="重新載入 / 同步" aria-label="重新載入">
+          <svg width="24" height="24" aria-hidden="true" focusable="false"><use href="#icon-refresh"/></svg>
+        </button>
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="開啟選單" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="slide-nav" id="slideNav">
+          <button id="prevBtn" aria-label="上一頁">
+            <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-prev"/></svg>
+          </button>
+          <button id="nextBtn" aria-label="下一頁">
+            <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-next"/></svg>
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -267,16 +304,6 @@
           <!-- 內容將由 JavaScript 動態載入 -->
           <p class="loading-message">載入中...</p>
         </article>
-      </div>
-
-      <!-- 導航列（在 content-area 內，用 absolute） -->
-      <div class="slide-nav" id="slideNav">
-        <button id="prevBtn" aria-label="上一頁">
-          <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-prev"/></svg>
-        </button>
-        <button id="nextBtn" aria-label="下一頁">
-          <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-next"/></svg>
-        </button>
       </div>
     </main>
   </div>

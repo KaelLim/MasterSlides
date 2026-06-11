@@ -1,14 +1,14 @@
 // Pagination + writing-mode shell — orchestrates paginate() from paginator.ts
 // for the viewer. Shared state (currentWritingMode, allPageElements) lives in
 // state.js so other modules read/write the same identity.
-import { state, dom } from './state.js';
+import { state, dom, type WritingMode } from './state.js';
 import { paginate, showPage } from './paginator.ts';
 
-export function isVerticalMode() {
+export function isVerticalMode(): boolean {
   return state.currentWritingMode === 'vertical-rl';
 }
 
-export function setWritingMode(mode) {
+export function setWritingMode(mode: WritingMode): void {
   state.currentWritingMode = mode;
   if (mode === 'horizontal-tb') document.body.classList.add('horizontal-mode');
   else document.body.classList.remove('horizontal-mode');
@@ -28,30 +28,30 @@ export function setWritingMode(mode) {
   }
 }
 
-export function updatePageCount() {
+export function updatePageCount(): void {
   const pageCount = document.querySelectorAll('.slide-page').length;
   state.totalPages = Math.max(1, pageCount);
-  dom.totalPagesEl.textContent = state.totalPages;
+  dom.totalPagesEl.textContent = String(state.totalPages);
   if (state.currentPage >= state.totalPages) state.currentPage = state.totalPages - 1;
-  dom.currentPageEl.textContent = state.currentPage + 1;
+  dom.currentPageEl.textContent = String(state.currentPage + 1);
 }
 
-export function goToPage(page) {
+export function goToPage(page: number): void {
   if (page < 0 || page >= state.totalPages) return;
   state.currentPage = page;
   showPage(page);
-  dom.currentPageEl.textContent = state.currentPage + 1;
+  dom.currentPageEl.textContent = String(state.currentPage + 1);
 }
 
-export function prevPage() {
+export function prevPage(): void {
   goToPage(state.currentPage - 1);
 }
 
-export function nextPage() {
+export function nextPage(): void {
   goToPage(state.currentPage + 1);
 }
 
-export function repaginate() {
+export function repaginate(): void {
   // Deep-clone canonical elements so paginate's in-place splits never touch
   // the originals captured at load.
   const article = document.createElement('article');

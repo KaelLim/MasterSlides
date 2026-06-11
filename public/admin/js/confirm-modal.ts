@@ -15,13 +15,23 @@
 // Resolves true when the primary (danger/caution) button is clicked.
 // Resolves false on cancel, ESC, or backdrop click.
 
+export type ConfirmTone = "danger" | "caution";
+
+export interface ConfirmDestructiveOptions {
+  title?: string;
+  body?: string;
+  dangerLabel?: string;
+  cancelLabel?: string;
+  tone?: ConfirmTone;
+}
+
 export function confirmDestructive({
   title,
   body,
   dangerLabel = "確定",
   cancelLabel = "取消",
   tone = "danger",
-} = {}) {
+}: ConfirmDestructiveOptions = {}): Promise<boolean> {
   return new Promise((resolve) => {
     const wrap = document.createElement("div");
     wrap.className = "modal-backdrop";
@@ -38,25 +48,26 @@ export function confirmDestructive({
     `;
     document.body.appendChild(wrap);
 
-    const cleanup = (value) => {
+    const cleanup = (value: boolean): void => {
       document.removeEventListener("keydown", onKey);
       wrap.remove();
       resolve(value);
     };
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent): void => {
       if (e.key === "Escape") { e.preventDefault(); cleanup(false); }
       else if (e.key === "Enter") { e.preventDefault(); cleanup(true); }
     };
     document.addEventListener("keydown", onKey);
 
-    wrap.addEventListener("click", (e) => {
+    wrap.addEventListener("click", (e: MouseEvent) => {
       if (e.target === wrap) { cleanup(false); return; }
-      const btn = e.target.closest("[data-cm]");
+      const target = e.target as Element | null;
+      const btn = target?.closest<HTMLElement>("[data-cm]");
       if (!btn) return;
       cleanup(btn.dataset.cm === "confirm");
     });
 
     // Focus the cancel button by default — safer landing target for ENTER-happy users.
-    queueMicrotask(() => wrap.querySelector('[data-cm="cancel"]')?.focus());
+    queueMicrotask(() => wrap.querySelector<HTMLButtonElement>('[data-cm="cancel"]')?.focus());
   });
 }

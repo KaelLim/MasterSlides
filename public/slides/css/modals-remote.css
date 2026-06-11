@@ -59,16 +59,38 @@
   margin-bottom: 20px;
 }
 
-.remote-url {
+/* 複製遙控器連結按鈕 — 取代過去直接顯示完整 URL 的字串。
+ * 顯示文字長 URL 對手機掃 QR 的場景沒幫助、佔螢幕，而需要 copy URL
+ * 給第二台裝置時一個 icon 即可。 */
+.remote-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.1);
-  padding: 10px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 18px;
   border-radius: 8px;
-  font-family: monospace;
-  font-size: 14px;
   color: var(--color-primary);
-  word-break: break-all;
-  max-width: 90%;
-  text-align: center;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.remote-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.remote-copy-btn.copied {
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.remote-copy-icon {
+  flex-shrink: 0;
 }
 
 .remote-status {

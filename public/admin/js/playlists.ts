@@ -6,34 +6,47 @@ import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
 import "./help-modal.js";
 
-const contentEl = document.getElementById("content");
-const countEl = document.getElementById("count");
-const filterEl = document.getElementById("playlistsFilter");
-const selectionBarEl = document.getElementById("selectionBar");
-const selectionCountEl = document.getElementById("selectionCount");
+interface Playlist {
+  id: number;
+  title: string;
+  doc_ids: unknown[];
+  created_at?: string;
+  is_public: number | boolean;
+}
 
-function fmtDate(s) {
+interface ProgressToast {
+  update(body: string): void;
+  dismiss: () => void;
+}
+
+const contentEl = document.getElementById("content")!;
+const countEl = document.getElementById("count")!;
+const filterEl = document.getElementById("playlistsFilter") as HTMLInputElement;
+const selectionBarEl = document.getElementById("selectionBar")!;
+const selectionCountEl = document.getElementById("selectionCount")!;
+
+function fmtDate(s: string | undefined | null): string {
   if (!s) return "";
   const t = new Date(s.replace(" ", "T") + "Z");
   if (Number.isNaN(t.getTime())) return s;
   return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
 }
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+function escapeHTML(s: unknown): string {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => (({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  } as Record<string, string>)[c]!));
 }
 
-let playlists = [];
+let playlists: Playlist[] = [];
 let page = 0;
 let filterQ = "";
 
 // Multi-select state.
-const selectedIds = new Set();
+const selectedIds = new Set<number>();
 let highlightedIndex = -1;
 let lastShiftAnchorIndex = -1;
 
-async function refresh() {
+async function refresh(): Promise<void> {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
   const res = await fetch("/api/admin/playlists", { credentials: "same-origin" });
   if (!res.ok) {
@@ -47,12 +60,12 @@ async function refresh() {
     if (btn) btn.addEventListener("click", refresh);
     return;
   }
-  playlists = (await res.json()).playlists;
+  playlists = ((await res.json()) as { playlists: Playlist[] }).playlists;
   page = 0;
   render();
 }
 
-function filteredPlaylists() {
+function filteredPlaylists(): Playlist[] {
   const q = filterQ.trim().toLowerCase();
   if (!q) return playlists;
   return playlists.filter((p) =>
@@ -61,11 +74,11 @@ function filteredPlaylists() {
   );
 }
 
-function currentVisible() {
+function currentVisible(): Playlist[] {
   return slice(filteredPlaylists(), page);
 }
 
-function render() {
+function render(): void {
   const list = filteredPlaylists();
   countEl.textContent = filterQ
     ? `${list.length} / ${playlists.length} 筆`
@@ -149,9 +162,9 @@ function render() {
     </table>
     <div class="pager" id="pager"></div>
   `;
-  contentEl.querySelector("tbody").addEventListener("click", onAction);
-  contentEl.querySelector("tbody").addEventListener("change", onAction);
-  const headerCheck = contentEl.querySelector("#selectAllVisible");
+  contentEl.querySelector("tbody")!.addEventListener("click", onAction);
+  contentEl.querySelector("tbody")!.addEventListener("change", onAction);
+  const headerCheck = contentEl.querySelector<HTMLInputElement>("#selectAllVisible");
   if (headerCheck) {
     headerCheck.addEventListener("change", () => {
       const v = headerCheck.checked;
@@ -166,7 +179,7 @@ function render() {
     targetEl: contentEl.querySelector("#pager"),
     total: list.length,
     page,
-    onChange: (next) => {
+    onChange: (next: number) => {
       page = next;
       highlightedIndex = -1;
       render();
@@ -176,19 +189,19 @@ function render() {
   updateSelectionBar();
 }
 
-function updateSelectionBar() {
+function updateSelectionBar(): void {
   const n = selectedIds.size;
-  if (n === 0) { selectionBarEl.hidden = true; return; }
-  selectionBarEl.hidden = false;
+  if (n === 0) { (selectionBarEl as HTMLElement).hidden = true; return; }
+  (selectionBarEl as HTMLElement).hidden = false;
   selectionCountEl.textContent = `已選 ${n} 個`;
 }
 
-function highlightRow(nextIndex) {
+function highlightRow(nextIndex: number): void {
   const visible = currentVisible();
   if (visible.length === 0) return;
   const clamped = Math.max(0, Math.min(visible.length - 1, nextIndex));
   highlightedIndex = clamped;
-  const trs = contentEl.querySelectorAll("tbody tr");
+  const trs = contentEl.querySelectorAll<HTMLTableRowElement>("tbody tr");
   trs.forEach((tr, i) => {
     if (i === clamped) {
       tr.classList.add("is-highlighted");
@@ -201,11 +214,12 @@ function highlightRow(nextIndex) {
   });
 }
 
-async function onAction(e) {
+async function onAction(e: Event): Promise<void> {
+  const target = e.target as HTMLElement;
   // Row select checkbox
-  const checkTarget = e.target.closest("input.row-check");
+  const checkTarget = target.closest<HTMLInputElement>("input.row-check");
   if (checkTarget && e.type === "change") {
-    const tr = checkTarget.closest("tr");
+    const tr = checkTarget.closest<HTMLTableRowElement>("tr")!;
     const id = Number(tr.dataset.id);
     const rowIndex = Number(tr.dataset.rowIndex);
     if (checkTarget.checked) selectedIds.add(id);
@@ -214,14 +228,14 @@ async function onAction(e) {
     lastShiftAnchorIndex = rowIndex;
     updateSelectionBar();
     const visible = currentVisible();
-    const headerCheck = contentEl.querySelector("#selectAllVisible");
+    const headerCheck = contentEl.querySelector<HTMLInputElement>("#selectAllVisible");
     if (headerCheck) {
       headerCheck.checked = visible.every((p) => selectedIds.has(p.id));
     }
     return;
   }
-  if (e.type === "click" && checkTarget && e.shiftKey && lastShiftAnchorIndex >= 0) {
-    const tr = checkTarget.closest("tr");
+  if (e.type === "click" && checkTarget && (e as MouseEvent).shiftKey && lastShiftAnchorIndex >= 0) {
+    const tr = checkTarget.closest<HTMLTableRowElement>("tr")!;
     const rowIndex = Number(tr.dataset.rowIndex);
     const visible = currentVisible();
     const [lo, hi] = rowIndex < lastShiftAnchorIndex
@@ -240,10 +254,10 @@ async function onAction(e) {
     return;
   }
 
-  const t = e.target.closest("[data-action]");
+  const t = target.closest<HTMLElement>("[data-action]");
   if (!t) return;
   if (t.dataset.action === "select") return;
-  const tr = t.closest("tr");
+  const tr = t.closest<HTMLTableRowElement>("tr")!;
   const id = Number(tr.dataset.id);
   const p = playlists.find((x) => x.id === id);
   const action = t.dataset.action;
@@ -265,7 +279,8 @@ async function onAction(e) {
     return;
   }
   if (action === "toggle") {
-    const next = t.checked;
+    const tInput = t as HTMLInputElement;
+    const next = tInput.checked;
     if (next === true) {
       const ok = await confirmDestructive({
         title: "設為公開",
@@ -275,12 +290,12 @@ async function onAction(e) {
         tone: "caution",
       });
       if (!ok) {
-        t.checked = false;
+        tInput.checked = false;
         return;
       }
     }
-    const toggleLabel = t.closest(".toggle");
-    const togglePublic = async () => {
+    const toggleLabel = tInput.closest<HTMLElement>(".toggle");
+    const togglePublic = async (): Promise<void> => {
       if (toggleLabel) toggleLabel.classList.add("is-toggling");
       try {
         const res = await fetch(`/api/admin/playlists/${id}`, {
@@ -290,12 +305,12 @@ async function onAction(e) {
           body: JSON.stringify({ is_public: next }),
         });
         if (!res.ok) {
-          const err = new Error(`HTTP ${res.status}`);
+          const err = new Error(`HTTP ${res.status}`) as Error & { status?: number };
           err.status = res.status;
           throw err;
         }
         if (p) p.is_public = next ? 1 : 0;
-        t.checked = next;
+        tInput.checked = next;
       } finally {
         if (toggleLabel) toggleLabel.classList.remove("is-toggling");
       }
@@ -308,8 +323,9 @@ async function onAction(e) {
         body: next ? `「${title}」已公開` : `「${title}」已改為草稿`,
       });
     } catch (err) {
-      t.checked = !next;
-      const { message } = classifyHttpError(err.status || 0);
+      tInput.checked = !next;
+      const status = (err as { status?: number } | null)?.status || 0;
+      const { message } = classifyHttpError(status);
       notify({
         tone: "error",
         title: "公開狀態切換失敗",
@@ -325,7 +341,7 @@ async function onAction(e) {
   }
 }
 
-async function deletePlaylist(id) {
+async function deletePlaylist(id: number): Promise<void> {
   const p = playlists.find((x) => x.id === id);
   const ok = await confirmDestructive({
     title: "刪除 Playlist",
@@ -351,20 +367,21 @@ async function deletePlaylist(id) {
 }
 
 // ── Progress toast helper ────────────────────────────────────────
-function makeProgressToast(initialBody) {
-  const dismiss = notify({ tone: "caution", body: initialBody, durationMs: 0 });
-  const stack = document.querySelector(".ds-toast-stack");
-  const li = stack ? stack.lastElementChild : null;
-  const messageEl = li ? li.querySelector(".ds-toast__message") : null;
+function makeProgressToast(initialBody: string): ProgressToast {
+  // Address the specific li returned by notify() to avoid the race where a
+  // concurrent notify() between creation and lookup would point us at the
+  // wrong toast via lastElementChild.
+  const handle = notify({ tone: "caution", body: initialBody, durationMs: 0 });
+  const messageEl = handle.element.querySelector(".ds-toast__message");
   return {
-    update(body) { if (messageEl) messageEl.textContent = body; },
-    dismiss,
+    update(body: string): void { if (messageEl) messageEl.textContent = body; },
+    dismiss: handle.dismiss,
   };
 }
 
 // ── Bulk operations ──────────────────────────────────────────────
-selectionBarEl.addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-bulk]");
+selectionBarEl.addEventListener("click", async (e: Event) => {
+  const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-bulk]");
   if (!btn) return;
   const op = btn.dataset.bulk;
   if (op === "clear") { selectedIds.clear(); render(); return; }
@@ -373,7 +390,7 @@ selectionBarEl.addEventListener("click", async (e) => {
   if (op === "set-draft") { await bulkSetPublic(false); return; }
 });
 
-async function bulkDelete() {
+async function bulkDelete(): Promise<void> {
   const ids = Array.from(selectedIds);
   if (ids.length === 0) return;
   const ok = await confirmDestructive({
@@ -415,7 +432,7 @@ async function bulkDelete() {
   }
 }
 
-async function bulkSetPublic(makePublic) {
+async function bulkSetPublic(makePublic: boolean): Promise<void> {
   const ids = Array.from(selectedIds);
   if (ids.length === 0) return;
   if (makePublic) {

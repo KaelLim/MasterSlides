@@ -6,13 +6,43 @@ import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
 import "./help-modal.js";
 
-const contentEl = document.getElementById("content");
-const docsCountEl = document.getElementById("docsCount");
-const filterEl = document.getElementById("docsFilter");
-const selectionBarEl = document.getElementById("selectionBar");
-const selectionCountEl = document.getElementById("selectionCount");
+interface Doc {
+  doc_id: string;
+  title?: string;
+  is_public?: number | boolean;
+  created_at?: string;
+}
 
-function fmtDate(s) {
+interface Playlist {
+  doc_ids?: string[];
+}
+
+interface DocsResponse {
+  docs: Doc[];
+}
+
+interface PlaylistsResponse {
+  playlists?: Playlist[];
+}
+
+interface FetchDocResponse {
+  success?: boolean;
+  error?: string;
+  title?: string;
+  doc_id: string;
+}
+
+interface HttpError extends Error {
+  status?: number;
+}
+
+const contentEl = document.getElementById("content")!;
+const docsCountEl = document.getElementById("docsCount")!;
+const filterEl = document.getElementById("docsFilter") as HTMLInputElement;
+const selectionBarEl = document.getElementById("selectionBar")!;
+const selectionCountEl = document.getElementById("selectionCount")!;
+
+function fmtDate(s: string | undefined): string {
   // Drust stores "YYYY-MM-DD HH:MM:SS" UTC. Show local YYYY-MM-DD.
   if (!s) return "";
   const t = new Date(s.replace(" ", "T") + "Z");
@@ -23,32 +53,32 @@ function fmtDate(s) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function escapeHTML(s) {
+function escapeHTML(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  }[c] as string));
 }
 
-let docs = [];
+let docs: Doc[] = [];
 let page = 0;
 let filterQ = "";
 // docId → number of playlists that reference it. Populated in refresh() so
 // renderTable() can show the 在 N 個 playlist badge without re-fetching.
-let playlistCountByDocId = new Map();
+let playlistCountByDocId: Map<string, number> = new Map();
 
 // Multi-select state.
-const selectedDocIds = new Set();
+const selectedDocIds: Set<string> = new Set();
 let highlightedIndex = -1;     // index within the currently visible page slice
 let lastShiftAnchorIndex = -1; // for shift-click range selection
 
-async function fetchPlaylistCounts() {
+async function fetchPlaylistCounts(): Promise<void> {
   // Best-effort: a failure here just leaves the counts empty so the column
   // falls back to 未使用 rather than blocking the whole dashboard.
   try {
     const res = await fetch("/api/admin/playlists", { credentials: "same-origin" });
     if (!res.ok) { playlistCountByDocId = new Map(); return; }
-    const { playlists } = await res.json();
-    const map = new Map();
+    const { playlists } = (await res.json()) as PlaylistsResponse;
+    const map: Map<string, number> = new Map();
     for (const p of (playlists || [])) {
       for (const id of (p.doc_ids || [])) {
         map.set(id, (map.get(id) || 0) + 1);
@@ -60,7 +90,7 @@ async function fetchPlaylistCounts() {
   }
 }
 
-async function refresh() {
+async function refresh(): Promise<void> {
   contentEl.innerHTML = `<div class="loading-state">載入中…</div>`;
   const res = await fetch("/api/admin/docs", { credentials: "same-origin" });
   if (!res.ok) {
@@ -74,7 +104,7 @@ async function refresh() {
     if (btn) btn.addEventListener("click", refresh);
     return;
   }
-  docs = (await res.json()).docs;
+  docs = ((await res.json()) as DocsResponse).docs;
   // Run after docs so a slow playlist fetch doesn't delay the first paint of
   // the table; we re-render once counts arrive.
   await fetchPlaylistCounts();
@@ -82,7 +112,7 @@ async function refresh() {
   renderTable();
 }
 
-function filteredDocs() {
+function filteredDocs(): Doc[] {
   const q = filterQ.trim().toLowerCase();
   if (!q) return docs;
   return docs.filter((d) =>
@@ -96,14 +126,14 @@ function filteredDocs() {
 // reload — even if the user later deletes every doc and returns to a zero
 // state.
 const FIRST_RUN_KEY = "admin_seen_v1";
-function hasSeenFirstRun() {
+function hasSeenFirstRun(): boolean {
   try { return localStorage.getItem(FIRST_RUN_KEY) === "1"; }
   catch { return true; /* if storage is blocked, suppress the banner */ }
 }
-function markFirstRunSeen() {
+function markFirstRunSeen(): void {
   try { localStorage.setItem(FIRST_RUN_KEY, "1"); } catch { /* noop */ }
 }
-function renderFirstRunBanner() {
+function renderFirstRunBanner(): string {
   if (hasSeenFirstRun()) return "";
   return `
     <div class="ds-first-run" id="firstRunBanner" role="status">
@@ -118,7 +148,7 @@ function renderFirstRunBanner() {
     </div>
   `;
 }
-function wireFirstRunBanner() {
+function wireFirstRunBanner(): void {
   const btn = contentEl.querySelector("#firstRunDismiss");
   if (!btn) return;
   btn.addEventListener("click", () => {
@@ -128,7 +158,7 @@ function wireFirstRunBanner() {
   });
 }
 
-function renderTable() {
+function renderTable(): void {
   const list = filteredDocs();
   docsCountEl.textContent = filterQ
     ? `${list.length} / ${docs.length} 筆`
@@ -154,10 +184,10 @@ function renderTable() {
   // Clamp page after a delete shrinks the list past the current page bounds.
   const pages = totalPages(list.length);
   if (page >= pages) page = pages - 1;
-  const visible = slice(list, page);
+  const visible: Doc[] = slice(list, page);
   if (highlightedIndex >= visible.length) highlightedIndex = visible.length - 1;
 
-  const rows = visible.map((d, i) => {
+  const rows = visible.map((d: Doc, i: number) => {
     const stateLabel = d.is_public
       ? `<span class="state state--public">公開</span>`
       : `<span class="state state--draft">草稿</span>`;
@@ -224,9 +254,9 @@ function renderTable() {
     <div class="pager" id="pager"></div>
   `;
 
-  contentEl.querySelector("tbody").addEventListener("click", onRowAction);
-  contentEl.querySelector("tbody").addEventListener("change", onRowAction);
-  const headerCheck = contentEl.querySelector("#selectAllVisible");
+  contentEl.querySelector("tbody")!.addEventListener("click", onRowAction);
+  contentEl.querySelector("tbody")!.addEventListener("change", onRowAction);
+  const headerCheck = contentEl.querySelector("#selectAllVisible") as HTMLInputElement | null;
   if (headerCheck) {
     headerCheck.addEventListener("change", () => {
       const v = headerCheck.checked;
@@ -241,7 +271,7 @@ function renderTable() {
     targetEl: contentEl.querySelector("#pager"),
     total: list.length,
     page,
-    onChange: (next) => {
+    onChange: (next: number) => {
       page = next;
       highlightedIndex = -1;
       renderTable();
@@ -251,21 +281,21 @@ function renderTable() {
   updateSelectionBar();
 }
 
-function updateSelectionBar() {
+function updateSelectionBar(): void {
   const n = selectedDocIds.size;
   if (n === 0) {
-    selectionBarEl.hidden = true;
+    (selectionBarEl as HTMLElement).hidden = true;
     return;
   }
-  selectionBarEl.hidden = false;
+  (selectionBarEl as HTMLElement).hidden = false;
   selectionCountEl.textContent = `已選 ${n} 份`;
 }
 
-function currentVisible() {
+function currentVisible(): Doc[] {
   return slice(filteredDocs(), page);
 }
 
-function highlightRow(nextIndex) {
+function highlightRow(nextIndex: number): void {
   const visible = currentVisible();
   if (visible.length === 0) return;
   const clamped = Math.max(0, Math.min(visible.length - 1, nextIndex));
@@ -285,17 +315,15 @@ function highlightRow(nextIndex) {
   });
 }
 
-async function onRowAction(e) {
+async function onRowAction(e: Event): Promise<void> {
+  const evtTarget = e.target as Element;
   // Multi-select checkbox: handle separately so click doesn't bubble into the
   // generic row-action path.
-  const checkTarget = e.target.closest("input.row-check");
+  const checkTarget = evtTarget.closest("input.row-check") as HTMLInputElement | null;
   if (checkTarget && e.type === "change") {
-    const tr = checkTarget.closest("tr");
-    const docId = tr.dataset.docId;
+    const tr = checkTarget.closest("tr") as HTMLTableRowElement;
+    const docId = tr.dataset.docId!;
     const rowIndex = Number(tr.dataset.rowIndex);
-    if (e.shiftKey || (e instanceof MouseEvent && e.shiftKey)) {
-      // shiftKey not normally present on `change`; the click path handles range.
-    }
     if (checkTarget.checked) selectedDocIds.add(docId);
     else selectedDocIds.delete(docId);
     tr.classList.toggle("is-selected", checkTarget.checked);
@@ -303,15 +331,15 @@ async function onRowAction(e) {
     updateSelectionBar();
     // Update header select-all reflection.
     const visible = currentVisible();
-    const headerCheck = contentEl.querySelector("#selectAllVisible");
+    const headerCheck = contentEl.querySelector("#selectAllVisible") as HTMLInputElement | null;
     if (headerCheck) {
       headerCheck.checked = visible.every((d) => selectedDocIds.has(d.doc_id));
     }
     return;
   }
   // Shift-click range extension fires on click (the change comes after).
-  if (e.type === "click" && checkTarget && e.shiftKey && lastShiftAnchorIndex >= 0) {
-    const tr = checkTarget.closest("tr");
+  if (e.type === "click" && checkTarget && (e as MouseEvent).shiftKey && lastShiftAnchorIndex >= 0) {
+    const tr = checkTarget.closest("tr") as HTMLTableRowElement;
     const rowIndex = Number(tr.dataset.rowIndex);
     const visible = currentVisible();
     const [lo, hi] = rowIndex < lastShiftAnchorIndex
@@ -331,12 +359,12 @@ async function onRowAction(e) {
     return;
   }
 
-  const target = e.target.closest("[data-action]");
+  const target = evtTarget.closest("[data-action]") as HTMLElement | null;
   if (!target) return;
   // Skip the select checkbox here — it has its own handler above.
   if (target.dataset.action === "select") return;
-  const tr = target.closest("tr");
-  const docId = tr.dataset.docId;
+  const tr = target.closest("tr") as HTMLTableRowElement;
+  const docId = tr.dataset.docId!;
   const action = target.dataset.action;
 
   if (action === "view") {
@@ -348,7 +376,8 @@ async function onRowAction(e) {
     return;
   }
   if (action === "toggle") {
-    const next = target.checked;
+    const checkboxTarget = target as HTMLInputElement;
+    const next = checkboxTarget.checked;
     if (next === true) {
       const ok = await confirmDestructive({
         title: "設為公開",
@@ -358,12 +387,12 @@ async function onRowAction(e) {
         tone: "caution",
       });
       if (!ok) {
-        target.checked = false;
+        checkboxTarget.checked = false;
         return;
       }
     }
     const toggleLabel = target.closest(".toggle");
-    const togglePublic = async () => {
+    const togglePublic = async (): Promise<void> => {
       if (toggleLabel) toggleLabel.classList.add("is-toggling");
       try {
         const res = await fetch(`/api/admin/docs/${encodeURIComponent(docId)}`, {
@@ -373,13 +402,13 @@ async function onRowAction(e) {
           body: JSON.stringify({ is_public: next }),
         });
         if (!res.ok) {
-          const err = new Error(`HTTP ${res.status}`);
+          const err = new Error(`HTTP ${res.status}`) as HttpError;
           err.status = res.status;
           throw err;
         }
         const d = docs.find((x) => x.doc_id === docId);
         if (d) d.is_public = next ? 1 : 0;
-        target.checked = next;
+        checkboxTarget.checked = next;
       } finally {
         if (toggleLabel) toggleLabel.classList.remove("is-toggling");
       }
@@ -393,8 +422,9 @@ async function onRowAction(e) {
         body: next ? `「${title}」已公開` : `「${title}」已改為草稿`,
       });
     } catch (err) {
-      target.checked = !next;
-      const { message } = classifyHttpError(err.status || 0);
+      checkboxTarget.checked = !next;
+      const status = (err as HttpError).status || 0;
+      const { message } = classifyHttpError(status);
       notify({
         tone: "error",
         title: "公開狀態切換失敗",
@@ -410,7 +440,7 @@ async function onRowAction(e) {
   }
 }
 
-async function deleteDoc(docId) {
+async function deleteDoc(docId: string): Promise<void> {
   const d = docs.find((x) => x.doc_id === docId);
   const ok = await confirmDestructive({
     title: "刪除文件",
@@ -437,8 +467,8 @@ async function deleteDoc(docId) {
 }
 
 // ── Bulk operations ──────────────────────────────────────────────
-selectionBarEl.addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-bulk]");
+selectionBarEl.addEventListener("click", async (e: Event) => {
+  const btn = (e.target as Element).closest("[data-bulk]") as HTMLElement | null;
   if (!btn) return;
   const op = btn.dataset.bulk;
   if (op === "clear") {
@@ -462,19 +492,19 @@ selectionBarEl.addEventListener("click", async (e) => {
 
 // Sticky progress toast helper. notify() returns a dismiss thunk and we
 // poke its message <p> directly to avoid spamming the stack on each tick.
-function makeProgressToast(initialBody) {
-  const dismiss = notify({ tone: "caution", body: initialBody, durationMs: 0 });
-  // The most recent toast is the last child of .ds-toast-stack.
-  const stack = document.querySelector(".ds-toast-stack");
-  const li = stack ? stack.lastElementChild : null;
-  const messageEl = li ? li.querySelector(".ds-toast__message") : null;
+function makeProgressToast(initialBody: string): { update: (body: string) => void; dismiss: () => void } {
+  // Use notify()'s returned element directly — addressing this specific toast
+  // avoids the race where a concurrent notify() call between create-and-query
+  // would have us poke the wrong toast's message via lastElementChild.
+  const handle = notify({ tone: "caution", body: initialBody, durationMs: 0 });
+  const messageEl = handle.element.querySelector(".ds-toast__message");
   return {
-    update(body) { if (messageEl) messageEl.textContent = body; },
-    dismiss,
+    update(body: string) { if (messageEl) messageEl.textContent = body; },
+    dismiss: handle.dismiss,
   };
 }
 
-async function bulkDelete() {
+async function bulkDelete(): Promise<void> {
   const ids = Array.from(selectedDocIds);
   if (ids.length === 0) return;
   const ok = await confirmDestructive({
@@ -517,7 +547,7 @@ async function bulkDelete() {
   fetchPlaylistCounts().then(() => renderTable());
 }
 
-async function bulkSetPublic(makePublic) {
+async function bulkSetPublic(makePublic: boolean): Promise<void> {
   const ids = Array.from(selectedDocIds);
   if (ids.length === 0) return;
   if (makePublic) {
@@ -647,8 +677,8 @@ bindHotkey({
 });
 
 // ── New-doc modal ───────────────────────────────────────────────
-document.getElementById("newDocBtn").addEventListener("click", openNewDocModal);
-function openNewDocModal() {
+document.getElementById("newDocBtn")!.addEventListener("click", openNewDocModal);
+function openNewDocModal(): void {
   const wrap = document.createElement("div");
   wrap.className = "modal-backdrop";
   wrap.innerHTML = `
@@ -665,10 +695,10 @@ function openNewDocModal() {
     </div>
   `;
   document.body.appendChild(wrap);
-  const close = () => wrap.remove();
-  wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
-  wrap.querySelector("#newDocCancel").addEventListener("click", close);
-  wrap.querySelector("#share-guide-link").addEventListener("click", (e) => {
+  const close = (): void => { wrap.remove(); };
+  wrap.addEventListener("click", (e: MouseEvent) => { if (e.target === wrap) close(); });
+  wrap.querySelector("#newDocCancel")!.addEventListener("click", close);
+  wrap.querySelector("#share-guide-link")!.addEventListener("click", (e: Event) => {
     e.preventDefault();
     close();
     // Defer dispatch so the new-doc modal is fully removed before the help
@@ -679,10 +709,10 @@ function openNewDocModal() {
       }));
     });
   });
-  wrap.querySelector("#newDocSubmit").addEventListener("click", async () => {
-    const url = wrap.querySelector("#newDocUrl").value.trim();
-    const errEl = wrap.querySelector("#newDocErr");
-    const submitBtn = wrap.querySelector("#newDocSubmit");
+  wrap.querySelector("#newDocSubmit")!.addEventListener("click", async () => {
+    const url = (wrap.querySelector("#newDocUrl") as HTMLInputElement).value.trim();
+    const errEl = wrap.querySelector("#newDocErr")!;
+    const submitBtn = wrap.querySelector("#newDocSubmit") as HTMLButtonElement;
     if (!/\/document\/d\/[a-zA-Z0-9_-]+/.test(url)) {
       errEl.textContent = "請貼入完整的 Google Docs 網址";
       return;
@@ -697,7 +727,7 @@ function openNewDocModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as FetchDocResponse;
       if (!res.ok || !body.success) {
         errEl.textContent = body.error || `匯入失敗（HTTP ${res.status}）`;
         submitBtn.disabled = false;
@@ -711,7 +741,7 @@ function openNewDocModal() {
         location.href = `/edit/?src=${encodeURIComponent(body.doc_id)}`;
       }, 800);
     } catch (err) {
-      errEl.textContent = `網路錯誤：${err.message}`;
+      errEl.textContent = `網路錯誤：${(err as Error).message}`;
       submitBtn.disabled = false;
       submitBtn.textContent = "匯入";
     }

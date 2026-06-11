@@ -7,29 +7,51 @@ import { notify, classifyHttpError } from "./notify.js";
 import { bindHotkey } from "./hotkeys.js";
 import "./help-modal.js";
 
-const params = new URLSearchParams(location.search);
-const playlistId = params.get("id") ? Number(params.get("id")) : null;
+interface Doc {
+  doc_id: string;
+  title?: string;
+  created_at?: string;
+  is_public?: number | boolean;
+  missing?: boolean;
+}
 
-const titleEl = document.getElementById("title");
-const isPublicEl = document.getElementById("isPublic");
-const availableEl = document.getElementById("available");
-const selectedEl = document.getElementById("selected");
-const availablePagerEl = document.getElementById("availablePager");
-const filterEl = document.getElementById("filter");
-const selectedFilterEl = document.getElementById("selectedFilter");
-const selectedCountEl = document.getElementById("selectedCount");
-const saveBtn = document.getElementById("saveBtn");
-const statusEl = document.getElementById("status");
-const pageTitleEl = document.getElementById("pageTitle");
+interface DocsResponse {
+  docs: Doc[];
+}
+
+interface Playlist {
+  title: string;
+  is_public: number | boolean;
+  doc_ids: string[];
+}
+
+interface PlaylistResponse {
+  playlist: Playlist;
+}
+
+const params = new URLSearchParams(location.search);
+const playlistId: number | null = params.get("id") ? Number(params.get("id")) : null;
+
+const titleEl = document.getElementById("title") as HTMLInputElement;
+const isPublicEl = document.getElementById("isPublic") as HTMLInputElement;
+const availableEl = document.getElementById("available")!;
+const selectedEl = document.getElementById("selected")!;
+const availablePagerEl = document.getElementById("availablePager")!;
+const filterEl = document.getElementById("filter") as HTMLInputElement;
+const selectedFilterEl = document.getElementById("selectedFilter") as HTMLInputElement | null;
+const selectedCountEl = document.getElementById("selectedCount")!;
+const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement;
+const statusEl = document.getElementById("status")!;
+const pageTitleEl = document.getElementById("pageTitle")!;
 
 if (playlistId) pageTitleEl.textContent = "編輯 Playlist";
 
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+function escapeHTML(s: unknown): string {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => (({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  } as Record<string, string>)[c]!));
 }
-function fmtDate(s) {
+function fmtDate(s: string | undefined | null): string {
   if (!s) return "";
   const t = new Date(s.replace(" ", "T") + "Z");
   if (Number.isNaN(t.getTime())) return s;
@@ -37,19 +59,19 @@ function fmtDate(s) {
 }
 
 // Authoritative model: arrays of doc objects.
-let publicDocs = [];              // [{doc_id, title, created_at, ...}, ...] — all is_public=1, sorted by created_at desc
-let selected = [];                 // [{doc_id, title}, ...] in display order
+let publicDocs: Doc[] = [];              // [{doc_id, title, created_at, ...}, ...] — all is_public=1, sorted by created_at desc
+let selected: Doc[] = [];                 // [{doc_id, title}, ...] in display order
 let availablePage = 0;
 let isDirty = false;
-let pendingJustAdded = null;       // doc_id to highlight after next renderSelected()
-const markDirty = () => { isDirty = true; };
-const prefersReducedMotion = () =>
-  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let pendingJustAdded: string | null = null;       // doc_id to highlight after next renderSelected()
+const markDirty = (): void => { isDirty = true; };
+const prefersReducedMotion = (): boolean =>
+  !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
-async function loadDocs() {
+async function loadDocs(): Promise<void> {
   const res = await fetch("/api/admin/docs", { credentials: "same-origin" });
   if (!res.ok) throw new Error(`/api/admin/docs → ${res.status}`);
-  const all = (await res.json()).docs;
+  const all = ((await res.json()) as DocsResponse).docs;
   // Server already returns created_at desc; keeping the sort explicit here
   // so the picker is robust if the server contract changes.
   publicDocs = all
@@ -57,7 +79,7 @@ async function loadDocs() {
     .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
 }
 
-async function loadPlaylistIfEdit() {
+async function loadPlaylistIfEdit(): Promise<void> {
   if (!playlistId) return;
   const res = await fetch(`/api/admin/playlists/${playlistId}`, { credentials: "same-origin" });
   if (!res.ok) {
@@ -69,17 +91,17 @@ async function loadPlaylistIfEdit() {
     notify({ tone: "error", title: "Playlist 載入失敗", body: message });
     return;
   }
-  const p = (await res.json()).playlist;
+  const p = ((await res.json()) as PlaylistResponse).playlist;
   titleEl.value = p.title;
   isPublicEl.checked = !!p.is_public;
   // Build selected[] in original order. Docs not currently public are kept
   // by their doc_id so editing doesn't silently drop them; their title
   // falls back to the doc_id.
-  const byId = new Map(publicDocs.map((d) => [d.doc_id, d]));
+  const byId = new Map<string, Doc>(publicDocs.map((d) => [d.doc_id, d]));
   selected = p.doc_ids.map((id) => byId.get(id) || { doc_id: id, title: id, missing: true });
 }
 
-function filteredAvailable() {
+function filteredAvailable(): Doc[] {
   const q = filterEl.value.trim().toLowerCase();
   const inSelected = new Set(selected.map((d) => d.doc_id));
   return publicDocs.filter((d) => {
@@ -90,7 +112,7 @@ function filteredAvailable() {
   });
 }
 
-function renderAvailable() {
+function renderAvailable(): void {
   const list = filteredAvailable();
   if (list.length === 0) {
     availableEl.innerHTML = `<div class="empty">
@@ -105,7 +127,7 @@ function renderAvailable() {
   const pages = totalPages(list.length);
   if (availablePage >= pages) availablePage = pages - 1;
   const visible = slice(list, availablePage);
-  availableEl.innerHTML = visible.map((d) => `
+  availableEl.innerHTML = visible.map((d: Doc) => `
     <div class="item" data-doc-id="${escapeHTML(d.doc_id)}">
       <div class="title">
         <span class="title-text">${escapeHTML(d.title || d.doc_id)}</span>
@@ -123,21 +145,21 @@ function renderAvailable() {
     targetEl: availablePagerEl,
     total: list.length,
     page: availablePage,
-    onChange: (next) => { availablePage = next; renderAvailable(); availableEl.scrollTop = 0; },
+    onChange: (next: number) => { availablePage = next; renderAvailable(); availableEl.scrollTop = 0; },
   });
 }
 
-function selectedFilterQuery() {
+function selectedFilterQuery(): string {
   return selectedFilterEl ? selectedFilterEl.value.trim().toLowerCase() : "";
 }
 
-function matchesSelectedFilter(d, q) {
+function matchesSelectedFilter(d: Doc, q: string): boolean {
   if (!q) return true;
   return (d.title || "").toLowerCase().includes(q) ||
          d.doc_id.toLowerCase().includes(q);
 }
 
-function renderSelected() {
+function renderSelected(): void {
   const total = selected.length;
   const q = selectedFilterQuery();
   const visibleCount = q
@@ -145,7 +167,7 @@ function renderSelected() {
     : total;
 
   const has = total > 0;
-  selectedCountEl.style.display = has ? "" : "none";
+  (selectedCountEl as HTMLElement).style.display = has ? "" : "none";
   if (has) {
     selectedCountEl.textContent = (q && visibleCount < total)
       ? `已加入 ${total} 份 (顯示 ${visibleCount})`
@@ -213,7 +235,7 @@ function renderSelected() {
 
   // Apply the recent-add pulse + scroll into view if there's a pending one.
   if (pendingJustAdded) {
-    const newEl = selectedEl.querySelector(`.item[data-doc-id="${CSS.escape(pendingJustAdded)}"]`);
+    const newEl = selectedEl.querySelector<HTMLElement>(`.item[data-doc-id="${CSS.escape(pendingJustAdded)}"]`);
     const docId = pendingJustAdded;
     pendingJustAdded = null;
     if (newEl) {
@@ -226,17 +248,17 @@ function renderSelected() {
       }
       setTimeout(() => {
         // Element may have been re-rendered; query fresh.
-        const fresh = selectedEl.querySelector(`.item[data-doc-id="${CSS.escape(docId)}"]`);
+        const fresh = selectedEl.querySelector<HTMLElement>(`.item[data-doc-id="${CSS.escape(docId)}"]`);
         if (fresh) fresh.classList.remove("just-added");
       }, 1500);
     }
   }
 }
 
-availableEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-action='add']");
+availableEl.addEventListener("click", (e: MouseEvent) => {
+  const btn = (e.target as Element).closest<HTMLElement>("[data-action='add']");
   if (!btn) return;
-  const docId = btn.closest(".item").dataset.docId;
+  const docId = btn.closest<HTMLElement>(".item")!.dataset.docId;
   const d = publicDocs.find((x) => x.doc_id === docId);
   if (!d) return;
   selected.push(d);
@@ -246,20 +268,20 @@ availableEl.addEventListener("click", (e) => {
   renderSelected();
 });
 
-selectedEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-action]");
+selectedEl.addEventListener("click", (e: MouseEvent) => {
+  const btn = (e.target as Element).closest<HTMLElement>("[data-action]");
   if (!btn) return;
-  const item = btn.closest(".item");
+  const item = btn.closest<HTMLElement>(".item")!;
   const i = Number(item.dataset.index);
   const action = btn.dataset.action;
   if (action === "remove") {
     selected.splice(i, 1);
     markDirty();
   } else if (action === "up" && i > 0) {
-    [selected[i - 1], selected[i]] = [selected[i], selected[i - 1]];
+    [selected[i - 1], selected[i]] = [selected[i]!, selected[i - 1]!];
     markDirty();
   } else if (action === "down" && i < selected.length - 1) {
-    [selected[i + 1], selected[i]] = [selected[i], selected[i + 1]];
+    [selected[i + 1], selected[i]] = [selected[i]!, selected[i + 1]!];
     markDirty();
   }
   renderAvailable();
@@ -276,32 +298,32 @@ isPublicEl.addEventListener("change", markDirty);
 // ── Drag-and-drop reorder for the selected list ──────────────────
 // Uses native HTML5 drag-and-drop. ↑/↓ buttons stay for keyboard users.
 // Listeners are delegated on selectedEl so re-renders don't leak handlers.
-let dragSrcIndex = null;
+let dragSrcIndex: number | null = null;
 
-selectedEl.addEventListener("dragstart", (e) => {
-  const item = e.target.closest(".item");
+selectedEl.addEventListener("dragstart", (e: DragEvent) => {
+  const item = (e.target as Element).closest<HTMLElement>(".item");
   if (!item || !selectedEl.contains(item)) return;
   dragSrcIndex = Number(item.dataset.index);
   item.classList.add("dragging");
   try {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(dragSrcIndex));
+    e.dataTransfer!.effectAllowed = "move";
+    e.dataTransfer!.setData("text/plain", String(dragSrcIndex));
   } catch {
     /* some browsers reject setData in certain contexts — fine, we use dragSrcIndex */
   }
 });
 
-selectedEl.addEventListener("dragover", (e) => {
+selectedEl.addEventListener("dragover", (e: DragEvent) => {
   if (dragSrcIndex === null) return;
   e.preventDefault();
-  try { e.dataTransfer.dropEffect = "move"; } catch { /* noop */ }
+  try { e.dataTransfer!.dropEffect = "move"; } catch { /* noop */ }
 });
 
-selectedEl.addEventListener("drop", (e) => {
+selectedEl.addEventListener("drop", (e: DragEvent) => {
   if (dragSrcIndex === null) return;
   e.preventDefault();
   // Find the target row based on cursor position.
-  const items = Array.from(selectedEl.querySelectorAll(".item"))
+  const items = Array.from(selectedEl.querySelectorAll<HTMLElement>(".item"))
     .filter((el) => el.style.display !== "none");
   let targetIndex = selected.length - 1;
   for (const el of items) {
@@ -317,30 +339,30 @@ selectedEl.addEventListener("drop", (e) => {
   // splice removed src first; if target was after src in the pre-splice
   // array, its destination index shifts down by one.
   const adjusted = targetIndex > dragSrcIndex ? targetIndex - 1 : targetIndex;
-  selected.splice(adjusted, 0, moved);
+  selected.splice(adjusted, 0, moved!);
   dragSrcIndex = null;
   markDirty();
   renderAvailable();
   renderSelected();
 });
 
-selectedEl.addEventListener("dragend", (e) => {
-  const item = e.target.closest(".item");
+selectedEl.addEventListener("dragend", (e: DragEvent) => {
+  const item = (e.target as Element).closest<HTMLElement>(".item");
   if (item) item.classList.remove("dragging");
   // Clean up any stragglers in case dragend fires on a different node.
-  selectedEl.querySelectorAll(".item.dragging").forEach((el) => el.classList.remove("dragging"));
+  selectedEl.querySelectorAll<HTMLElement>(".item.dragging").forEach((el) => el.classList.remove("dragging"));
   dragSrcIndex = null;
 });
 
 // Native browser guard for tab close / hard reload / address-bar navigation.
-window.addEventListener("beforeunload", (e) => {
+window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
   if (isDirty) e.preventDefault();
 });
 
 // Soft guard for the "取消" link — same-page modal, no native dialog.
-const cancelLink = document.querySelector(".footer-bar a.secondary");
+const cancelLink = document.querySelector<HTMLAnchorElement>(".footer-bar a.secondary");
 if (cancelLink) {
-  cancelLink.addEventListener("click", async (e) => {
+  cancelLink.addEventListener("click", async (e: MouseEvent) => {
     if (!isDirty) return;
     e.preventDefault();
     const ok = await confirmDestructive({
@@ -352,7 +374,7 @@ if (cancelLink) {
     });
     if (ok) {
       isDirty = false;
-      window.location.href = cancelLink.getAttribute("href");
+      window.location.href = cancelLink.getAttribute("href")!;
     }
   });
 }
@@ -373,7 +395,7 @@ saveBtn.addEventListener("click", async () => {
 
   saveBtn.disabled = true;
   saveBtn.classList.add("is-loading");
-  const saveLabel = saveBtn.querySelector(".save-btn-label");
+  const saveLabel = saveBtn.querySelector<HTMLElement>(".save-btn-label");
   if (saveLabel) saveLabel.textContent = "儲存中…";
   else saveBtn.textContent = "儲存中…";
   statusEl.textContent = "";
@@ -395,7 +417,7 @@ saveBtn.addEventListener("click", async () => {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = (await res.json().catch(() => ({}))) as { error?: string };
     const { message } = classifyHttpError(res.status);
     const detail = e.error || message;
     statusEl.textContent = `儲存失敗：${detail}`;
@@ -447,14 +469,14 @@ bindHotkey({
     // If a filter is focused, clear focus first; otherwise fall through
     // to the cancel link (with the dirty guard built into its handler).
     if (document.activeElement === filterEl || document.activeElement === selectedFilterEl) {
-      document.activeElement.blur();
+      (document.activeElement as HTMLElement).blur();
       return;
     }
     // Use the link's existing click handler (with its dirty-guard) when set;
     // for a clean state fall back to direct navigation.
     if (cancelLink) {
       if (isDirty) cancelLink.click();
-      else window.location.href = cancelLink.getAttribute("href");
+      else window.location.href = cancelLink.getAttribute("href")!;
     }
   },
 });
@@ -466,5 +488,5 @@ try {
   renderAvailable();
   renderSelected();
 } catch (err) {
-  statusEl.textContent = `載入失敗：${err.message}`;
+  statusEl.textContent = `載入失敗：${(err as Error).message}`;
 }

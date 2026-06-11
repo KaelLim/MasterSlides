@@ -2,21 +2,26 @@
 // inline "如何分享 Google Docs" guide, and FAQ. Listens for the global
 // CustomEvent("admin:open-help") so any page (dashboard, playlists,
 // playlist-edit) and any hotkey/help link can open it.
-import { getBindings, formatBinding } from "./hotkeys.js";
+import { getBindings, formatBinding, type HotkeyBinding } from "./hotkeys.js";
 
-const prefersReducedMotion = () =>
-  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+interface OpenHelpOptions {
+  scrollTo?: string;
+}
 
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+const prefersReducedMotion = (): boolean =>
+  !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function escapeHTML(s: unknown): string {
+  const map: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  };
+  return String(s ?? "").replace(/[&<>"']/g, (c) => map[c] ?? c);
 }
 
 // Render a single <dt> showing one or more <kbd> tokens for a binding.
 // Combos like Cmd+S are rendered as <kbd>⌘</kbd> + <kbd>S</kbd> with a
 // "+" separator so each modifier shows in its own pill.
-function renderKbd(b) {
+function renderKbd(b: HotkeyBinding): string {
   const formatted = formatBinding(b); // e.g. "⌘+S" or "Shift+?" or "j"
   const parts = formatted.split("+");
   return parts
@@ -26,24 +31,24 @@ function renderKbd(b) {
 
 // Group bindings by scope and de-duplicate identical labels within a scope
 // (e.g. j and ArrowDown both labelled "下一列" — show as "j / ↓").
-function groupBindings() {
+function groupBindings(): Array<[string, Map<string, string[]>]> {
   const bindings = getBindings();
   // Map<scope, Map<label, kbd-html[]>>
-  const byScope = new Map();
-  const arrowMap = {
+  const byScope: Map<string, Map<string, string[]>> = new Map();
+  const arrowMap: Record<string, string> = {
     ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→",
   };
   for (const b of bindings) {
     if (!b.label) continue;
     const scope = b.scope || "其他";
     if (!byScope.has(scope)) byScope.set(scope, new Map());
-    const labelMap = byScope.get(scope);
+    const labelMap = byScope.get(scope)!;
     // Render with arrow-friendly shorthand for ArrowUp/Down etc.
     const display = arrowMap[b.key]
       ? `<kbd>${arrowMap[b.key]}</kbd>`
       : renderKbd(b);
     if (!labelMap.has(b.label)) labelMap.set(b.label, []);
-    labelMap.get(b.label).push(display);
+    labelMap.get(b.label)!.push(display);
   }
   // Preserve a sensible scope order: 全域 → 瀏覽 → 選取 → 編輯 → 其他.
   const order = ["全域", "瀏覽", "選取", "編輯", "其他"];
@@ -53,7 +58,7 @@ function groupBindings() {
   return sorted;
 }
 
-function buildHotkeyList() {
+function buildHotkeyList(): string {
   const groups = groupBindings();
   if (groups.length === 0) {
     return `<p class="help-note">這個頁面尚未註冊任何快速鍵。</p>`;
@@ -72,9 +77,9 @@ function buildHotkeyList() {
   }).join("");
 }
 
-let currentWrap = null;
+let currentWrap: HTMLDivElement | null = null;
 
-export function openHelp({ scrollTo } = {}) {
+export function openHelp({ scrollTo }: OpenHelpOptions = {}): void {
   // Idempotent — re-opening just re-focuses the existing modal.
   if (currentWrap) {
     if (scrollTo) {
@@ -136,19 +141,20 @@ export function openHelp({ scrollTo } = {}) {
   document.body.appendChild(wrap);
   currentWrap = wrap;
 
-  const cleanup = () => {
+  const cleanup = (): void => {
     document.removeEventListener("keydown", onKey);
     wrap.remove();
     if (currentWrap === wrap) currentWrap = null;
   };
-  const onKey = (e) => {
+  const onKey = (e: KeyboardEvent): void => {
     if (e.key === "Escape") { e.preventDefault(); cleanup(); }
   };
   document.addEventListener("keydown", onKey);
 
-  wrap.addEventListener("click", (e) => {
+  wrap.addEventListener("click", (e: MouseEvent) => {
     if (e.target === wrap) { cleanup(); return; }
-    const closeBtn = e.target.closest("#helpClose");
+    const target = e.target as Element | null;
+    const closeBtn = target?.closest("#helpClose");
     if (closeBtn) cleanup();
   });
 
@@ -162,23 +168,25 @@ export function openHelp({ scrollTo } = {}) {
         });
       }
     }
-    wrap.querySelector("#helpClose")?.focus();
+    (wrap.querySelector("#helpClose") as HTMLElement | null)?.focus();
   });
 }
 
 // CustomEvent gateway — any page or any binding can dispatch
 // `admin:open-help` and the modal opens. event.detail.scrollTo may
 // contain a CSS selector to scroll into view (e.g. ".help-share-guide").
-window.addEventListener("admin:open-help", (e) => {
-  openHelp(e.detail || {});
+window.addEventListener("admin:open-help", (e: Event) => {
+  const detail = (e as CustomEvent<OpenHelpOptions>).detail || {};
+  openHelp(detail);
 });
 
 // Delegated handler for any element marked data-action="open-help".
 // Lets empty states and other links open the modal without re-wiring
 // the listener on every render. Optional data-scroll-to attribute is
 // passed through.
-document.addEventListener("click", (e) => {
-  const el = e.target.closest('[data-action="open-help"]');
+document.addEventListener("click", (e: MouseEvent) => {
+  const target = e.target as Element | null;
+  const el = target?.closest('[data-action="open-help"]') as HTMLElement | null;
   if (!el) return;
   e.preventDefault();
   const scrollTo = el.dataset.scrollTo || undefined;

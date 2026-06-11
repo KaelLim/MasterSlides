@@ -1,25 +1,25 @@
 import { state, dom } from './state.js';
 
 // Callback to notify remote of lightbox state changes
-export const lightboxCallbacks = { onStateChange: null };
+export const lightboxCallbacks: { onStateChange: (() => void) | null } = { onStateChange: null };
 
-function getPinchDistance(touches) {
+function getPinchDistance(touches: TouchList): number {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function updateLightboxTransform() {
+function updateLightboxTransform(): void {
   dom.lightboxImg.style.transform = `translate(${state.lbPosX}px, ${state.lbPosY}px) scale(${state.lbZoom})`;
 }
 
-function showZoomInfo() {
+function showZoomInfo(): void {
   dom.lightboxZoomInfo.textContent = Math.round(state.lbZoom * 100) + '%';
   dom.lightboxZoomInfo.classList.add('show');
   setTimeout(() => dom.lightboxZoomInfo.classList.remove('show'), 1000);
 }
 
-export function setLightboxZoom(zoom) {
+export function setLightboxZoom(zoom: number): void {
   state.lbZoom = Math.max(0.5, Math.min(5, zoom));
   if (state.lbZoom <= 1) {
     state.lbPosX = 0;
@@ -30,7 +30,7 @@ export function setLightboxZoom(zoom) {
   lightboxCallbacks.onStateChange?.();
 }
 
-export function resetLightboxZoom() {
+export function resetLightboxZoom(): void {
   state.lbZoom = 1;
   state.lbPosX = 0;
   state.lbPosY = 0;
@@ -38,14 +38,14 @@ export function resetLightboxZoom() {
   showZoomInfo();
 }
 
-export function panLightbox(dx, dy) {
+export function panLightbox(dx: number, dy: number): void {
   if (state.lbZoom <= 1) return;
   state.lbPosX += dx;
   state.lbPosY += dy;
   updateLightboxTransform();
 }
 
-export function openLightbox(src, caption) {
+export function openLightbox(src: string, caption: string): void {
   resetLightboxZoom();
   dom.lightboxImg.src = src;
   dom.lightboxCaption.textContent = caption || '';
@@ -53,45 +53,47 @@ export function openLightbox(src, caption) {
   lightboxCallbacks.onStateChange?.();
 }
 
-export function closeLightbox() {
+export function closeLightbox(): void {
   dom.lightbox.classList.remove('active');
   resetLightboxZoom();
   lightboxCallbacks.onStateChange?.();
 }
 
-export function initLightbox() {
+export function initLightbox(): void {
   // Click image to open lightbox
-  dom.manuscript.addEventListener('click', (e) => {
-    if (e.target.tagName === 'IMG') {
-      openLightbox(e.target.src, e.target.alt);
+  dom.manuscript.addEventListener('click', (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      openLightbox(img.src, img.alt);
     }
   });
 
   // Close button
-  document.querySelector('.lightbox-close').onclick = closeLightbox;
+  dom.lightboxClose.onclick = closeLightbox;
 
   // Click backdrop to close
-  dom.lightbox.onclick = (e) => {
+  dom.lightbox.onclick = (e: MouseEvent) => {
     if (e.target === dom.lightbox) closeLightbox();
   };
 
   // Zoom buttons
-  document.getElementById('zoomInBtn').onclick = () => setLightboxZoom(state.lbZoom + 0.25);
-  document.getElementById('zoomOutBtn').onclick = () => setLightboxZoom(state.lbZoom - 0.25);
-  document.getElementById('zoomResetBtn').onclick = resetLightboxZoom;
+  dom.zoomInBtn.onclick = () => setLightboxZoom(state.lbZoom + 0.25);
+  dom.zoomOutBtn.onclick = () => setLightboxZoom(state.lbZoom - 0.25);
+  dom.zoomResetBtn.onclick = resetLightboxZoom;
 
   // Mouse wheel zoom
-  dom.lightboxImg.addEventListener('wheel', (e) => {
+  dom.lightboxImg.addEventListener('wheel', (e: WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setLightboxZoom(state.lbZoom + delta);
   });
 
   // Prevent default image drag
-  dom.lightboxImg.addEventListener('dragstart', (e) => e.preventDefault());
+  dom.lightboxImg.addEventListener('dragstart', (e: DragEvent) => e.preventDefault());
 
   // Mouse drag
-  dom.lightboxImg.addEventListener('mousedown', (e) => {
+  dom.lightboxImg.addEventListener('mousedown', (e: MouseEvent) => {
     e.preventDefault();
     if (state.lbZoom > 1) {
       state.lbIsDragging = true;
@@ -101,7 +103,7 @@ export function initLightbox() {
     }
   });
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('mousemove', (e: MouseEvent) => {
     if (state.lbIsDragging) {
       e.preventDefault();
       state.lbPosX = e.clientX - state.lbStartX;
@@ -118,7 +120,7 @@ export function initLightbox() {
   });
 
   // Touch: double-tap to zoom
-  dom.lightboxImg.addEventListener('touchend', (e) => {
+  dom.lightboxImg.addEventListener('touchend', (e: TouchEvent) => {
     const now = Date.now();
     if (now - state.lbLastTap < 300 && e.touches.length === 0) {
       e.preventDefault();
@@ -132,7 +134,7 @@ export function initLightbox() {
   });
 
   // Touch: pinch zoom & drag
-  dom.lightboxImg.addEventListener('touchstart', (e) => {
+  dom.lightboxImg.addEventListener('touchstart', (e: TouchEvent) => {
     if (e.touches.length === 2) {
       state.lbPinchStartDist = getPinchDistance(e.touches);
       state.lbPinchStartZoom = state.lbZoom;
@@ -143,7 +145,7 @@ export function initLightbox() {
     }
   });
 
-  dom.lightboxImg.addEventListener('touchmove', (e) => {
+  dom.lightboxImg.addEventListener('touchmove', (e: TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
       const dist = getPinchDistance(e.touches);

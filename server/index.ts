@@ -139,7 +139,7 @@ const server = Bun.serve({
     // API: GET/POST /api/edit/:id
     // Match the charset enforced by extractDocId / handleGetDoc so a
     // malformed path can't be string-interpolated into upstream URLs.
-    if (pathname === "/api/edit/" || pathname.startsWith("/api/edit/")) {
+    if (pathname.startsWith("/api/edit/")) {
       const id = pathname.replace(/^\/api\/edit\//, "").replace(/\/$/, "");
       if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
         return Response.json({ error: "invalid_doc_id" }, { status: 400 });

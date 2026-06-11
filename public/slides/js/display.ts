@@ -5,9 +5,9 @@ import { setWritingMode } from './pagination.js';
 // ===========================
 // Font Size
 // ===========================
-export function setFontScale(scale, save = true) {
+export function setFontScale(scale: number, save: boolean = true): void {
   state.fontScale = scale;
-  document.documentElement.style.setProperty('--font-scale', scale);
+  document.documentElement.style.setProperty('--font-scale', scale.toString());
   dom.fontSizeDisplayEl.textContent = Math.round(scale * 100) + '%';
   if (save) {
     localStorage.setItem(STORAGE_KEYS.fontSize, scale.toString());
@@ -18,8 +18,8 @@ export function setFontScale(scale, save = true) {
   }, 50);
 }
 
-export function increaseFontSize() {
-  const idx = FONT_SCALES.indexOf(state.fontScale);
+export function increaseFontSize(): void {
+  const idx = FONT_SCALES.indexOf(state.fontScale as typeof FONT_SCALES[number]);
   if (idx < FONT_SCALES.length - 1) {
     setFontScale(FONT_SCALES[idx + 1]);
   } else if (idx === -1) {
@@ -28,8 +28,8 @@ export function increaseFontSize() {
   }
 }
 
-export function decreaseFontSize() {
-  const idx = FONT_SCALES.indexOf(state.fontScale);
+export function decreaseFontSize(): void {
+  const idx = FONT_SCALES.indexOf(state.fontScale as typeof FONT_SCALES[number]);
   if (idx > 0) {
     setFontScale(FONT_SCALES[idx - 1]);
   } else if (idx === -1) {
@@ -41,8 +41,8 @@ export function decreaseFontSize() {
 // ===========================
 // Font Family
 // ===========================
-export function applyFont(fontFamily, save = true) {
-  let fontValue;
+export function applyFont(fontFamily: string, save: boolean = true): void {
+  let fontValue: string;
   if (fontFamily === 'DFKai-SB') {
     fontValue = '"DFKai-SB", "BiauKai", "標楷體", serif';
   } else {
@@ -55,49 +55,23 @@ export function applyFont(fontFamily, save = true) {
 }
 
 // ===========================
-// Orientation
-// ===========================
-export function setVerticalMode() {
-  // setWritingMode() handles the body class + toggle buttons' .active + aria-pressed.
-  setWritingMode('vertical-rl');
-  localStorage.setItem(STORAGE_KEYS.orientation, 'vertical');
-  dom.manuscript.style.transform = '';
-  state.currentPage = 0;
-  setTimeout(() => {
-    updatePageCount();
-    goToPage(0);
-  }, 50);
-}
-
-export function setHorizontalMode() {
-  setWritingMode('horizontal-tb');
-  localStorage.setItem(STORAGE_KEYS.orientation, 'horizontal');
-  dom.manuscript.style.transform = '';
-  state.currentPage = 0;
-  setTimeout(() => {
-    updatePageCount();
-    goToPage(0);
-  }, 50);
-}
-
-// ===========================
 // Sidebar
 // ===========================
-export function openSidebar() {
+export function openSidebar(): void {
   dom.sidebar.classList.add('open');
   dom.sidebarOverlay.classList.add('visible');
   dom.hamburgerBtn.classList.add('active');
   dom.hamburgerBtn.setAttribute('aria-expanded', 'true');
 }
 
-export function closeSidebar() {
+export function closeSidebar(): void {
   dom.sidebar.classList.remove('open');
   dom.sidebarOverlay.classList.remove('visible');
   dom.hamburgerBtn.classList.remove('active');
   dom.hamburgerBtn.setAttribute('aria-expanded', 'false');
 }
 
-export function toggleSidebar() {
+export function toggleSidebar(): void {
   if (dom.sidebar.classList.contains('open')) {
     closeSidebar();
   } else {
@@ -108,7 +82,7 @@ export function toggleSidebar() {
 // ===========================
 // Fullscreen
 // ===========================
-export function toggleFullscreen() {
+export function toggleFullscreen(): void {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(err => {
       console.log('無法進入全螢幕:', err);
@@ -118,8 +92,8 @@ export function toggleFullscreen() {
   }
 }
 
-export function updateFullscreenButton() {
-  const btn = document.getElementById('fullscreenBtn');
+export function updateFullscreenButton(): void {
+  const btn = document.getElementById('fullscreenBtn')!;
   if (document.fullscreenElement) {
     btn.classList.add('active');
     btn.dataset.tooltip = '退出全螢幕';
@@ -134,37 +108,32 @@ export function updateFullscreenButton() {
 // ===========================
 // Navigation Bar Visibility
 // ===========================
-export function showNav() {
+export function showNav(): void {
   if (state.navPermanentlyHidden) return;
   dom.slideNav.classList.remove('auto-hidden');
   resetNavHideTimer();
 }
 
-export function hideNav() {
+export function hideNav(): void {
   dom.slideNav.classList.add('auto-hidden');
 }
 
-export function resetNavHideTimer() {
+export function resetNavHideTimer(): void {
   if (state.navHideTimeout) clearTimeout(state.navHideTimeout);
   state.navHideTimeout = setTimeout(hideNav, 3000);
 }
 
-export function toggleNavVisibility() {
+// Kept for the `N` keyboard shortcut. The on-screen icon button was removed
+// (it lived in the sidebar's icon-btn-row); when slide-nav moved into the
+// left-panel it stopped occluding content, so a UI control is no longer
+// warranted — but the keypress + persistence still work.
+export function toggleNavVisibility(): void {
   state.navPermanentlyHidden = !state.navPermanentlyHidden;
-  const useEl = document.getElementById('toggleNavIcon');
-  const btnEl = document.getElementById('toggleNavBtn');
-
   if (state.navPermanentlyHidden) {
     dom.slideNav.style.display = 'none';
-    useEl.setAttribute('href', '#icon-eye-closed');
-    btnEl.dataset.tooltip = '顯示導航列';
-    btnEl.setAttribute('aria-label', '顯示導航列');
     localStorage.setItem(STORAGE_KEYS.navHidden, 'true');
   } else {
     dom.slideNav.style.display = 'flex';
-    useEl.setAttribute('href', '#icon-eye-open');
-    btnEl.dataset.tooltip = '隱藏導航列';
-    btnEl.setAttribute('aria-label', '隱藏導航列');
     localStorage.setItem(STORAGE_KEYS.navHidden, 'false');
   }
 }
@@ -172,7 +141,7 @@ export function toggleNavVisibility() {
 // ===========================
 // Load Settings from localStorage
 // ===========================
-export function loadSettings() {
+export function loadSettings(): void {
   const savedScale = localStorage.getItem(STORAGE_KEYS.fontSize);
   if (savedScale) {
     let scale = parseFloat(savedScale);
@@ -192,16 +161,12 @@ export function loadSettings() {
   const savedFont = localStorage.getItem(STORAGE_KEYS.fontFamily);
   if (savedFont) {
     applyFont(savedFont, false);
-    document.getElementById('fontSelect').value = savedFont;
+    (document.getElementById('fontSelect') as HTMLSelectElement | null)!.value = savedFont;
   }
 
   const savedNavHidden = localStorage.getItem(STORAGE_KEYS.navHidden);
   if (savedNavHidden === 'true') {
     state.navPermanentlyHidden = true;
     dom.slideNav.style.display = 'none';
-    document.getElementById('toggleNavIcon').setAttribute('href', '#icon-eye-closed');
-    const btnEl = document.getElementById('toggleNavBtn');
-    btnEl.dataset.tooltip = '顯示導航列';
-    btnEl.setAttribute('aria-label', '顯示導航列');
   }
 }

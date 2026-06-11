@@ -1,8 +1,8 @@
 import { dom } from './state.js';
 
-let canvas = null;
-let ctx = null;
-let blurOverlay = null;
+let canvas: HTMLCanvasElement | null = null;
+let ctx: CanvasRenderingContext2D | null = null;
+let blurOverlay: HTMLDivElement | null = null;
 let active = false;
 let mouseX = -1;
 let mouseY = -1;
@@ -15,11 +15,11 @@ const OVERLAY_ALPHA = 0.75;
 // to mute body text into a haze while keeping rough layout legible.
 const BLUR_PX = 3;
 
-function getSpotlightRadius() {
+function getSpotlightRadius(): number {
   return window.innerWidth * 0.1; // 20vw diameter = 10vw radius
 }
 
-function createCanvas() {
+function createCanvas(): void {
   // Blur layer sits underneath the dark canvas so the outer ring gets
   // both blurred (by this overlay) and darkened (by the canvas above).
   // The spotlight area is masked transparent here AND cut out of the
@@ -57,7 +57,7 @@ function createCanvas() {
   resizeCanvas();
 }
 
-function resizeCanvas() {
+function resizeCanvas(): void {
   if (!canvas) return;
   canvas.width = dom.contentArea.clientWidth;
   canvas.height = dom.contentArea.clientHeight;
@@ -67,44 +67,45 @@ function resizeCanvas() {
 // Mask the blur layer so its backdrop-filter only applies outside the
 // spotlight. Inside the circle the mask is transparent → the element
 // isn't rendered → no blur there → content reads sharp.
-function applyBlurMask() {
+function applyBlurMask(): void {
   if (!blurOverlay) return;
   const r = getSpotlightRadius();
   const gradient = `radial-gradient(circle at ${mouseX}px ${mouseY}px, transparent 0px, transparent ${r * 0.95}px, black ${r * 1.05}px)`;
   blurOverlay.style.mask = gradient;
-  blurOverlay.style.webkitMask = gradient;
+  (blurOverlay.style as CSSStyleDeclaration & { webkitMask: string }).webkitMask = gradient;
 }
 
-function getPos(e) {
+function getPos(e: MouseEvent | TouchEvent): { x: number; y: number } {
   const rect = dom.contentArea.getBoundingClientRect();
-  if (e.touches && e.touches.length > 0) {
+  if ('touches' in e && e.touches.length > 0) {
     return {
-      x: e.touches[0].clientX - rect.left,
-      y: e.touches[0].clientY - rect.top
+      x: e.touches[0]!.clientX - rect.left,
+      y: e.touches[0]!.clientY - rect.top
     };
   }
+  const me = e as MouseEvent;
   return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: me.clientX - rect.left,
+    y: me.clientY - rect.top
   };
 }
 
-function drawSpotlight() {
-  const w = canvas.width;
-  const h = canvas.height;
+function drawSpotlight(): void {
+  const w = canvas!.width;
+  const h = canvas!.height;
   const radius = getSpotlightRadius();
 
-  ctx.clearRect(0, 0, w, h);
+  ctx!.clearRect(0, 0, w, h);
 
   // Dark overlay over the whole content area.
-  ctx.fillStyle = `rgba(0, 0, 0, ${OVERLAY_ALPHA})`;
-  ctx.fillRect(0, 0, w, h);
+  ctx!.fillStyle = `rgba(0, 0, 0, ${OVERLAY_ALPHA})`;
+  ctx!.fillRect(0, 0, w, h);
 
   // Cut a circle out of that overlay. Sharper edge than before — the inner
   // 92% of the radius is fully transparent (clean cut), only the outer 8%
   // fades to maintain a soft halo seam against the dark surround.
-  ctx.globalCompositeOperation = 'destination-out';
-  const gradient = ctx.createRadialGradient(
+  ctx!.globalCompositeOperation = 'destination-out';
+  const gradient = ctx!.createRadialGradient(
     mouseX, mouseY, radius * 0.85,
     mouseX, mouseY, radius
   );
@@ -112,17 +113,17 @@ function drawSpotlight() {
   gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.95)');
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-  ctx.beginPath();
-  ctx.arc(mouseX, mouseY, radius, 0, Math.PI * 2);
-  ctx.fillStyle = gradient;
-  ctx.fill();
+  ctx!.beginPath();
+  ctx!.arc(mouseX, mouseY, radius, 0, Math.PI * 2);
+  ctx!.fillStyle = gradient;
+  ctx!.fill();
 
-  ctx.globalCompositeOperation = 'source-over';
+  ctx!.globalCompositeOperation = 'source-over';
 
   // Warm halo straddling the cutout edge. Brighter alphas than before to
   // give the boundary a stage-light glow that pops against the darker
   // OVERLAY_ALPHA outside.
-  const glowGradient = ctx.createRadialGradient(
+  const glowGradient = ctx!.createRadialGradient(
     mouseX, mouseY, radius * 0.65,
     mouseX, mouseY, radius * 1.2
   );
@@ -133,15 +134,15 @@ function drawSpotlight() {
   glowGradient.addColorStop(0.9, 'rgba(255, 180, 80, 0.06)');
   glowGradient.addColorStop(1,   'rgba(255, 160, 60, 0)');
 
-  ctx.beginPath();
-  ctx.arc(mouseX, mouseY, radius * 1.2, 0, Math.PI * 2);
-  ctx.fillStyle = glowGradient;
-  ctx.fill();
+  ctx!.beginPath();
+  ctx!.arc(mouseX, mouseY, radius * 1.2, 0, Math.PI * 2);
+  ctx!.fillStyle = glowGradient;
+  ctx!.fill();
 
   applyBlurMask();
 }
 
-function onMouseMove(e) {
+function onMouseMove(e: MouseEvent): void {
   if (!active) return;
   const pos = getPos(e);
   mouseX = pos.x;
@@ -149,7 +150,7 @@ function onMouseMove(e) {
   drawSpotlight();
 }
 
-function onTouchMove(e) {
+function onTouchMove(e: TouchEvent): void {
   if (!active) return;
   e.preventDefault();
   const pos = getPos(e);
@@ -158,47 +159,51 @@ function onTouchMove(e) {
   drawSpotlight();
 }
 
-export function toggleLaser() {
+export function toggleLaser(): void {
+  // Defensive guard: if a remote-control message lands before initLaser() has
+  // created the canvas/blurOverlay, no-op rather than crash on `canvas!`.
+  if (!canvas || !blurOverlay || !ctx) return;
   active = !active;
   if (active) {
-    canvas.style.display = 'block';
-    canvas.style.pointerEvents = 'auto';
-    canvas.style.cursor = 'none';
-    blurOverlay.style.display = 'block';
+    canvas!.style.display = 'block';
+    canvas!.style.pointerEvents = 'auto';
+    canvas!.style.cursor = 'none';
+    blurOverlay!.style.display = 'block';
     const laserBtn = document.getElementById('laserBtn');
     laserBtn?.classList.add('active');
     laserBtn?.setAttribute('aria-pressed', 'true');
     // Draw initial state (full dark until mouse moves)
     if (mouseX < 0) {
-      mouseX = canvas.width / 2;
-      mouseY = canvas.height / 2;
+      mouseX = canvas!.width / 2;
+      mouseY = canvas!.height / 2;
     }
     drawSpotlight();
   } else {
-    canvas.style.display = 'none';
-    canvas.style.pointerEvents = 'none';
-    canvas.style.cursor = '';
-    blurOverlay.style.display = 'none';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas!.style.display = 'none';
+    canvas!.style.pointerEvents = 'none';
+    canvas!.style.cursor = '';
+    blurOverlay!.style.display = 'none';
+    ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
     const laserBtn = document.getElementById('laserBtn');
     laserBtn?.classList.remove('active');
     laserBtn?.setAttribute('aria-pressed', 'false');
   }
 }
 
-export function isLaserActive() {
+export function isLaserActive(): boolean {
   return active;
 }
 
-export function initLaser() {
+export function initLaser(): void {
   createCanvas();
 
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-  canvas.addEventListener('touchstart', (e) => {
+  canvas!.addEventListener('mousemove', onMouseMove as EventListener);
+  canvas!.addEventListener('touchmove', onTouchMove as EventListener, { passive: false });
+  canvas!.addEventListener('touchstart', (e: Event) => {
     if (!active) return;
-    e.preventDefault();
-    const pos = getPos(e);
+    const te = e as TouchEvent;
+    te.preventDefault();
+    const pos = getPos(te);
     mouseX = pos.x;
     mouseY = pos.y;
     drawSpotlight();

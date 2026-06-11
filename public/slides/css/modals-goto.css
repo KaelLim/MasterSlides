@@ -11,7 +11,13 @@
   z-index: var(--z-modal);
   display: flex;
   justify-content: center;
-  align-items: center;
+  /* Pin .goto-content to the upper portion of the viewport rather than
+   * vertically centering it — the close button now sits at top: 20px and the
+   * content reads from a natural top-anchored position. padding-top leaves
+   * room for the close button. */
+  align-items: flex-start;
+  padding-top: 72px;
+  box-sizing: border-box;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s, visibility 0.15s;
@@ -35,8 +41,10 @@
 
 .goto-content {
   width: 90%;
-  max-width: 50%;
-  max-height: 80vh;
+  /* TOC mode: 72% max-width (was 50%) — old viewport was eye-straining for the
+     senior audience this deck is built for. */
+  max-width: 72%;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -56,13 +64,13 @@
 }
 .goto-input-wrap input {
   flex: 1;
-  height: 56px;
-  padding: 0 16px;
+  height: 64px;
+  padding: 0 20px;
   border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.1);
   color: #fff;
-  font-size: 24px;
+  font-size: 28px;
   font-family: inherit;
   outline: none;
   text-align: center;
@@ -70,13 +78,13 @@
 .goto-input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
 .goto-input-wrap input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent); }
 .goto-input-wrap button {
-  height: 56px;
-  padding: 0 24px;
+  height: 64px;
+  padding: 0 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--color-primary);
   color: var(--color-bg-base);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
@@ -99,43 +107,96 @@
 .goto-toc-item {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
-  border-radius: 8px;
+  padding: 14px 16px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.1s;
-  gap: 14px;
+  gap: 18px;
 }
 .goto-toc-item:hover { background: rgba(255,255,255,0.08); }
 .goto-toc-item .toc-page {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   color: var(--color-primary);
-  border-radius: 8px;
-  font-size: 18px;
+  border-radius: 10px;
+  font-size: 24px;
   font-weight: 700;
 }
 .goto-toc-item .toc-text {
   flex: 1;
   color: var(--color-text-secondary);
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.goto-toc-item[data-level="1"] .toc-text { font-size: 28px; font-weight: 600; color: #fff; }
-.goto-toc-item[data-level="2"] .toc-text { padding-left: 16px; }
-.goto-toc-item[data-level="3"] .toc-text { padding-left: 32px; font-size: 22px; color: rgba(255,255,255,0.7); }
+/* Level 1 = doc <h2> (post-promotion top-level) — biggest, white, bold. */
+.goto-toc-item[data-level="1"] .toc-text { font-size: 34px; font-weight: 600; color: #fff; }
+.goto-toc-item[data-level="2"] .toc-text { padding-left: 20px; }
+.goto-toc-item[data-level="3"] .toc-text { padding-left: 40px; font-size: 26px; color: rgba(255,255,255,0.7); }
 .goto-toc-empty {
   color: rgba(255,255,255,0.4);
-  font-size: 20px;
+  font-size: 22px;
   text-align: center;
-  padding: 24px 0;
+  padding: 28px 0;
+}
+
+/* "顯示細目" toggle row — controls whether the TOC includes doc <h3>/<h4>
+ * (data-level 2/3) or only the top-level <h2> (data-level 1). The default
+ * is collapsed (only level 1) because that's the table-of-contents view
+ * the user actually wants 90% of the time. */
+.goto-toc-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 4px 4px;
+  flex-shrink: 0;
+}
+.goto-toc-controls-label {
+  color: rgba(255,255,255,0.85);
+  font-size: 24px;
+  font-weight: 500;
+}
+.goto-toc-toggle {
+  position: relative;
+  width: 72px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.goto-toc-toggle:hover {
+  border-color: rgba(255,255,255,0.3);
+}
+.goto-toc-toggle[aria-checked="true"] {
+  background: color-mix(in srgb, var(--color-primary) 60%, transparent);
+  border-color: var(--color-primary);
+}
+.goto-toc-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  transition: transform 0.18s ease;
+}
+.goto-toc-toggle[aria-checked="true"] .goto-toc-toggle-thumb {
+  transform: translateX(34px);
+  background: #fff;
 }
 
 /* ===========================
@@ -152,12 +213,12 @@
 }
 .goto-tab {
   flex: 1;
-  padding: 12px 0;
+  padding: 16px 0;
   border: none;
   border-radius: 8px;
   background: transparent;
   color: rgba(255,255,255,0.5);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -232,7 +293,7 @@
   pointer-events: none;
 }
 /* Mirrors .print-page-bg — paints the theme background and applies the
- * content-area padding (10/20) so the inner clip equals the live
+ * content-area padding (60/80) so the inner clip equals the live
  * manuscript-container size. */
 .goto-preview-bg {
   width: 100%;
@@ -242,7 +303,9 @@
   background-position: center;
   background-repeat: no-repeat;
   background-color: var(--color-bg-base);
-  padding: 10px 20px;
+  /* Must match .content-area + .print-page-bg padding so the grid preview
+     tiles measure against the same inner box as the live render. */
+  padding: 40px 60px;
   box-sizing: border-box;
 }
 /* Mirrors .print-page-clip — restores the container-type:size chain so

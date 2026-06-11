@@ -23,7 +23,7 @@ export async function fetchMarkdown(docId: string): Promise<string> {
   }
 
   const text = await res.text();
-  if (!text || text.length === 0) {
+  if (!text) {
     throw new Error("文件內容為空");
   }
 

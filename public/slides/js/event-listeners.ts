@@ -1,11 +1,11 @@
 import { state, dom } from './state.js';
 import { prevPage, nextPage, repaginate, setWritingMode } from './pagination.js';
-import { toggleSidebar, closeSidebar, showNav, toggleFullscreen, updateFullscreenButton, toggleNavVisibility } from './display.js';
+import { toggleSidebar, closeSidebar, showNav, toggleFullscreen, updateFullscreenButton } from './display.js';
 import { increaseFontSize, decreaseFontSize, applyFont } from './font.js';
 import { initLaser, toggleLaser } from './laser.js';
 import { initSearch } from './search.js';
 import { initLightbox } from './lightbox.js';
-import { initGotoModal } from './goto.js';
+import { initGotoModal, showGoToPageDialog } from './goto.js';
 import { initHelpModal } from './modals.js';
 import { initContextMenu } from './context-menu.js';
 import { exportPDF } from './pdf-export.js';
@@ -15,18 +15,18 @@ import { syncRemoteState } from './remote-control.js';
 
 let eventsInit = false;
 
-export function initEventListeners() {
+export function initEventListeners(): void {
   if (eventsInit) return;
   eventsInit = true;
 
-  document.getElementById('prevBtn').onclick = () => { prevPage(); syncRemoteState(); };
-  document.getElementById('nextBtn').onclick = () => { nextPage(); syncRemoteState(); };
+  document.getElementById('prevBtn')!.onclick = () => { prevPage(); syncRemoteState(); };
+  document.getElementById('nextBtn')!.onclick = () => { nextPage(); syncRemoteState(); };
   dom.hamburgerBtn.onclick = toggleSidebar;
   dom.sidebarOverlay.onclick = closeSidebar;
-  document.getElementById('fontDecrease').onclick = decreaseFontSize;
-  document.getElementById('fontIncrease').onclick = increaseFontSize;
-  const verticalBtn = document.getElementById('verticalBtn');
-  const horizontalBtn = document.getElementById('horizontalBtn');
+  document.getElementById('fontDecrease')!.onclick = decreaseFontSize;
+  document.getElementById('fontIncrease')!.onclick = increaseFontSize;
+  const verticalBtn = document.getElementById('verticalBtn')!;
+  const horizontalBtn = document.getElementById('horizontalBtn')!;
   verticalBtn.onclick = () => {
     // setWritingMode() syncs the toggle buttons' .active + aria-pressed.
     setWritingMode('vertical-rl');
@@ -38,14 +38,14 @@ export function initEventListeners() {
     state.currentPage = 0;
     repaginate();
   };
-  document.getElementById('fontSelect').onchange = function () { applyFont(this.value); };
-  document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
+  (document.getElementById('fontSelect') as HTMLSelectElement | null)!.onchange = function (this: GlobalEventHandlers) { applyFont((this as HTMLSelectElement).value); };
+  document.getElementById('fullscreenBtn')!.onclick = toggleFullscreen;
   document.addEventListener('fullscreenchange', updateFullscreenButton);
-  document.getElementById('toggleNavBtn').onclick = toggleNavVisibility;
-  document.getElementById('laserBtn').onclick = toggleLaser;
+  document.getElementById('laserBtn')!.onclick = toggleLaser;
   initLaser();
-  document.getElementById('exportPdfBtn').onclick = exportPDF;
-  document.getElementById('refreshBtn').onclick = refresh;
+  document.getElementById('exportPdfBtn')!.onclick = exportPDF;
+  document.getElementById('refreshBtn')!.onclick = refresh;
+  document.getElementById('tocBtn')!.onclick = showGoToPageDialog;
 
   initHelpModal();
   initGotoModal();
@@ -54,7 +54,7 @@ export function initEventListeners() {
   document.addEventListener('keydown', handleKeydown);
   document.addEventListener('mousemove', showNav);
 
-  let resizeTimer;
+  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   // Track the last manuscript dimensions so we can skip rebuilds on
   // resize events that didn't actually change the content area —
   // e.g. an iframe exiting fullscreen fires a resize that nets to the
@@ -90,7 +90,7 @@ export function initEventListeners() {
   //  2. Horizontal swipe > 50px flips pages — but only when no modal /
   //     sidebar / lightbox is open. Those have their own gesture handlers
   //     and a document-level swipe would otherwise steal taps inside them.
-  function isModalActive() {
+  function isModalActive(): boolean {
     return (
       dom.sidebar?.classList.contains('open') ||
       dom.lightbox?.classList.contains('active') ||
@@ -101,12 +101,12 @@ export function initEventListeners() {
   }
   let touchStartX = 0;
   let touchStartY = 0;
-  document.addEventListener('touchstart', (e) => {
+  document.addEventListener('touchstart', (e: TouchEvent) => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
     showNav();
   }, { passive: true });
-  document.addEventListener('touchend', (e) => {
+  document.addEventListener('touchend', (e: TouchEvent) => {
     if (isModalActive()) return;
     const diffX = touchStartX - e.changedTouches[0].screenX;
     const diffY = Math.abs(touchStartY - e.changedTouches[0].screenY);

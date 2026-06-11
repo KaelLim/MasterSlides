@@ -15,9 +15,9 @@ const CTX_ICONS = {
   orientation: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/></svg>',
   fullscreen: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
   help: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-};
+} as const;
 
-function toggleOrientation() {
+function toggleOrientation(): void {
   // setWritingMode() now syncs the toggle buttons' .active + aria-pressed,
   // so callers only need to flip the mode and repaginate.
   setWritingMode(isVerticalMode() ? 'horizontal-tb' : 'vertical-rl');
@@ -25,7 +25,11 @@ function toggleOrientation() {
   repaginate();
 }
 
-const CTX_ITEMS = [
+type CtxItem =
+  | { divider: true; id?: undefined; icon?: undefined; label?: undefined; action?: undefined }
+  | { divider?: false; id: string; icon: string; label: string; action: () => void };
+
+const CTX_ITEMS: CtxItem[] = [
   { id: 'ctx-spotlight', icon: CTX_ICONS.spotlight, label: '聚光燈', action: toggleLaser },
   { id: 'ctx-search', icon: CTX_ICONS.search, label: '文字搜尋', action: openSearch },
   { id: 'ctx-pdf', icon: CTX_ICONS.pdf, label: '匯出 PDF', action: exportPDF },
@@ -37,14 +41,14 @@ const CTX_ITEMS = [
   { id: 'ctx-help', icon: CTX_ICONS.help, label: '快捷鍵說明', action: showHelpModal },
 ];
 
-let ctxMenu = null;
-let longPressTimer = null;
+let ctxMenu: HTMLDivElement | null = null;
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-function getOrientationLabel() {
+function getOrientationLabel(): string {
   return isVerticalMode() ? '切換為橫書' : '切換為直書';
 }
 
-function buildMenu() {
+function buildMenu(): void {
   ctxMenu = document.createElement('div');
   ctxMenu.className = 'context-menu';
   ctxMenu.id = 'contextMenu';
@@ -52,55 +56,55 @@ function buildMenu() {
     if (item.divider) {
       const d = document.createElement('div');
       d.className = 'context-menu-divider';
-      ctxMenu.appendChild(d);
+      ctxMenu!.appendChild(d);
       return;
     }
     const btn = document.createElement('button');
     btn.className = 'context-menu-item';
     btn.id = item.id;
     btn.innerHTML = `<span class="context-menu-icon">${item.icon}</span><span class="context-menu-label">${item.label}</span>`;
-    btn.addEventListener('click', (e) => { e.stopPropagation(); hideMenu(); item.action(); });
-    ctxMenu.appendChild(btn);
+    btn.addEventListener('click', (e: MouseEvent) => { e.stopPropagation(); hideMenu(); item.action(); });
+    ctxMenu!.appendChild(btn);
   });
   document.body.appendChild(ctxMenu);
 }
 
-function showMenu(x, y) {
+function showMenu(x: number, y: number): void {
   if (!ctxMenu) buildMenu();
-  const ol = ctxMenu.querySelector('#ctx-orientation .context-menu-label');
+  const ol = ctxMenu!.querySelector('#ctx-orientation .context-menu-label');
   if (ol) ol.textContent = getOrientationLabel();
-  ctxMenu.style.left = x + 'px';
-  ctxMenu.style.top = y + 'px';
-  ctxMenu.classList.add('active');
+  ctxMenu!.style.left = x + 'px';
+  ctxMenu!.style.top = y + 'px';
+  ctxMenu!.classList.add('active');
   requestAnimationFrame(() => {
-    const r = ctxMenu.getBoundingClientRect();
-    if (r.right > window.innerWidth) ctxMenu.style.left = (x - r.width) + 'px';
-    if (r.bottom > window.innerHeight) ctxMenu.style.top = (y - r.height) + 'px';
+    const r = ctxMenu!.getBoundingClientRect();
+    if (r.right > window.innerWidth) ctxMenu!.style.left = (x - r.width) + 'px';
+    if (r.bottom > window.innerHeight) ctxMenu!.style.top = (y - r.height) + 'px';
   });
 }
 
-function hideMenu() {
+function hideMenu(): void {
   if (ctxMenu) ctxMenu.classList.remove('active');
 }
 
-export function initContextMenu() {
+export function initContextMenu(): void {
   buildMenu();
-  document.addEventListener('contextmenu', (e) => {
-    if (e.target.closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar')) return;
+  document.addEventListener('contextmenu', (e: MouseEvent) => {
+    if ((e.target as Element).closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar')) return;
     e.preventDefault();
     showMenu(e.clientX, e.clientY);
   });
-  document.addEventListener('click', (e) => {
-    if (ctxMenu?.classList.contains('active') && !ctxMenu.contains(e.target)) hideMenu();
+  document.addEventListener('click', (e: MouseEvent) => {
+    if (ctxMenu?.classList.contains('active') && !ctxMenu.contains(e.target as Node)) hideMenu();
   });
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Escape' && ctxMenu?.classList.contains('active')) { hideMenu(); e.stopPropagation(); }
   }, true);
-  document.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar,.context-menu,.slide-nav,.left-panel')) return;
-    const t = e.touches[0];
+  document.addEventListener('touchstart', (e: TouchEvent) => {
+    if ((e.target as Element).closest('.sidebar,.help-modal,.remote-modal,.goto-modal,.search-bar,.context-menu,.slide-nav,.left-panel')) return;
+    const t = e.touches[0]!;
     longPressTimer = setTimeout(() => showMenu(t.clientX, t.clientY), 600);
   }, { passive: true });
-  document.addEventListener('touchmove', () => { clearTimeout(longPressTimer); }, { passive: true });
-  document.addEventListener('touchend', () => { clearTimeout(longPressTimer); }, { passive: true });
+  document.addEventListener('touchmove', () => { if (longPressTimer) clearTimeout(longPressTimer); }, { passive: true });
+  document.addEventListener('touchend', () => { if (longPressTimer) clearTimeout(longPressTimer); }, { passive: true });
 }

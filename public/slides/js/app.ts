@@ -6,7 +6,7 @@ import { loadPlaylist } from './playlist.js';
 import { initEventListeners } from './event-listeners.js';
 import { initRemote } from './remote-control.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
   initDOM();
   const params = new URLSearchParams(window.location.search);
   const src = params.get('src');

@@ -5,10 +5,8 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  /* padding 放在這裡，container 在內層。
-     goto-preview-bg / print-page-bg / goto.js 的 cell-aspect 算式都鏡像
-     這對數值，改動要三邊同步、不然縮圖跟 PDF 會跟 live 對不上。 */
-  padding: 10px 20px;
+  /* padding 放在這裡，container 在內層 */
+  padding: 40px 60px;
 }
 
 .manuscript-container {
@@ -35,7 +33,10 @@ body.horizontal-mode .manuscript {
 
 body.horizontal-mode h1,
 body.horizontal-mode h2,
+body.horizontal-mode h3,
 body.horizontal-mode h4,
+body.horizontal-mode h5,
+body.horizontal-mode h6,
 body.horizontal-mode p,
 body.horizontal-mode ul,
 body.horizontal-mode ol,
@@ -54,11 +55,8 @@ body.horizontal-mode li {
 
 /* ===========================
    標題樣式
-   h3 carries font-size only — no color/weight/letter-spacing/margin
-   override, so <strong> inside it remains the only highlight on the
-   line and surrounding spacing tracks body prose.
    =========================== */
-h1, h2, h4 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-family-body);
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -67,26 +65,49 @@ h1, h2, h4 {
   margin: 0;
 }
 
+/* H1: hidden entirely. The doc's title is already shown on the synthesized
+   first-slide (.first-slide-title); the body H1 would duplicate it. */
 h1 {
+  display: none;
+}
+
+/* Headings promoted one level visually: docs author writes ## / ### / ####
+   and they render at H1 / H2 / H3 prominence on screen. So <h2> picks up
+   the old <h1>'s styling, <h3> the old <h2>'s, <h4> the old <h3>'s. */
+h2 {
   font-size: calc(clamp(48px, 8cqi, 100px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-primary);
   font-weight: 700;
   margin-right: 1.5rem;
 }
 
-h2 {
+/* Standalone H2 = section divider slide → center it in the page (both axes).
+   After the H1→H2 visual promotion, docs `## 章節` is the new top-level
+   heading and inherits the old H1's center-in-page behavior. The :has rule
+   matches a slide-page whose sole child is an h2; flex centering resolves
+   correctly in both vertical-rl and horizontal-tb writing modes because
+   main/cross axes follow the container's writing mode. Zero the h2 margin
+   so the centering isn't visually offset. */
+.slide-page:has(> h2:only-child) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide-page:has(> h2:only-child) > h2 {
+  margin: 0;
+}
+
+h3 {
   font-size: calc(clamp(42px, 7cqi, 90px) * var(--font-scale) * var(--mode-scale));
   color: var(--color-primary);
   font-weight: 600;
 }
 
-h3 {
-  font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
-}
-
-h4 {
-  font-size: calc(clamp(30px, 5cqi, 70px) * var(--font-scale) * var(--mode-scale));
-  color: var(--color-primary-light);
+/* H4 and below are uniform — same size + white color, no extra break-before. */
+h4, h5, h6 {
+  font-size: calc(clamp(36px, 6cqi, 80px) * var(--font-scale) * var(--mode-scale));
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 /* ===========================
@@ -125,28 +146,14 @@ li::marker {
 
 /* ===========================
    重點（粗體）
-   Global rule — applies to <strong>/<b> anywhere in slide content
-   (paragraphs, list items, headings, table cells). No more-specific
-   selector should reintroduce a color for these elements.
-
-   The [style*="font-weight:…"] siblings catch the case where Google
-   Docs export emits bold as `<span style="font-weight:700">…</span>`
-   instead of `**…**` — marked passes that span through verbatim,
-   so the strong/b selectors would otherwise miss it. Covers 600–900
-   weights with or without the colon-space.
+   Global: every <strong>/<b> renders in regulation yellow regardless of
+   container (heading-table cells, first-slide panels, list items, etc.).
+   !important defeats any nested context that sets `color` on a parent
+   with higher specificity than this single-tag selector.
    =========================== */
-strong, b,
-[style*="font-weight:bold"],
-[style*="font-weight: bold"],
-[style*="font-weight:600"],
-[style*="font-weight: 600"],
-[style*="font-weight:700"],
-[style*="font-weight: 700"],
-[style*="font-weight:800"],
-[style*="font-weight: 800"],
-[style*="font-weight:900"],
-[style*="font-weight: 900"] {
-  color: var(--color-highlight);
+strong, b {
+  color: var(--color-highlight) !important;
+  font-weight: 700;
 }
 
 /* ===========================
@@ -183,7 +190,10 @@ img {
 
 .heading-table h1,
 .heading-table h2,
-.heading-table h4 {
+.heading-table h3,
+.heading-table h4,
+.heading-table h5,
+.heading-table h6 {
   writing-mode: horizontal-tb;
   text-orientation: mixed;
   text-align: center;
@@ -195,22 +205,22 @@ img {
 }
 
 .heading-table h1 {
+  display: none;
+}
+
+.heading-table h2 {
   font-size: calc(clamp(36px, 5cqi, 72px) * var(--font-scale));
   color: var(--color-primary);
 }
 
-.heading-table h2 {
+.heading-table h3 {
   font-size: calc(clamp(32px, 4.5cqi, 64px) * var(--font-scale));
   color: var(--color-primary);
 }
 
-.heading-table h3 {
+.heading-table h4, .heading-table h5, .heading-table h6 {
   font-size: calc(clamp(28px, 4cqi, 56px) * var(--font-scale));
-}
-
-.heading-table h4 {
-  font-size: calc(clamp(24px, 3.5cqi, 48px) * var(--font-scale));
-  color: var(--color-primary-light);
+  color: var(--color-text-primary);
 }
 
 .heading-table table {
@@ -242,6 +252,20 @@ img {
   letter-spacing: 0.05em;
 }
 
+/* convertTablesToImages (table-canvas.js) replaces <table> with <img src=data:>
+   inside the wrapper. The generic .slide-page img rule caps at 100cqw — full
+   container width — which ignores .heading-table's 2cqi padding and lets the
+   image kiss (or cross) the slide edge. Constrain it to 100% of the wrapper's
+   content box so the padding survives. % is safe here because .heading-table
+   forces horizontal-tb.
+   Selector chained with .slide-page to outrank the later `.slide-page img`
+   block (both single-class otherwise → same specificity → source order wins
+   the wrong way). */
+.slide-page .heading-table img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
 /* ===========================
    分頁線（hr = page break）
    paginator.ts treats <hr> as a page boundary by element type;
@@ -269,9 +293,17 @@ hr {
   box-sizing: border-box;
 }
 
+/* Per-page image sizing — overrides the manuscript-level 80cqw/cqh
+   defaults so an image alone on its page can fill the slide-page rather
+   than the container. cqw/cqh (not %) because in writing-mode: vertical-rl
+   a child of an auto-block-sized <p> sees `100%` as the parent's
+   content-driven block size — which is the image itself, creating a
+   circular constraint that lets wide images overflow. Container query
+   units always resolve against .manuscript-container regardless of the
+   intermediate parent's writing mode. */
 .slide-page img {
-  max-width: 100%;
-  max-height: 100%;
+  max-width: 100cqw;
+  max-height: 100cqh;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -291,10 +323,7 @@ hr {
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
-  justify-content: space-around;
-  /* Track the .content-area / .goto-preview-bg / .print-page-bg
-     padding (10/20). Change all four in lockstep. */
-  padding: 10px 20px;
+  justify-content: space-between;
   box-sizing: border-box;
 }
 

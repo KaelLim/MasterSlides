@@ -2,6 +2,9 @@ node_modules/
 .DS_Store
 data/
 public/slides/dist/
+public/admin/dist/
+public/edit/dist/
+public/remote/dist/
 .env
 key.md
 *.secret

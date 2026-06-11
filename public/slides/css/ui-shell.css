@@ -1,5 +1,11 @@
 /* ===========================
-   左側面板（漢堡 + 頁碼）
+   左側面板
+   3 段 flex column + justify-content: space-between:
+     Top:    .page-indicator
+     Middle: .toc-btn          ← 中間（自然居中於剩餘空間）
+     Bottom: .left-panel-bottom (refresh + hamburger + slide-nav)
+   space-between 在 3 個 flex item 時，第一個貼頂、第三個貼底、
+   第二個的 margin auto 兩側相等 → 完美垂直置中。
    =========================== */
 .left-panel {
   width: var(--left-panel-width);
@@ -7,7 +13,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   padding: 20px 0;
+}
+
+/* 底部按鈕群：refresh / hamburger / slide-nav 依序由上往下，
+ * 整組釘在 left-panel 底部（透過上方 justify-content: space-between）。 */
+.left-panel-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 
 .hamburger-btn {
@@ -24,7 +40,6 @@
   align-items: center;
   gap: 6px;
   padding: 0;
-  margin-bottom: 30px;
 }
 
 .hamburger-btn:hover {
@@ -71,11 +86,33 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  margin-bottom: 30px;
   transition: background 0.15s;
 }
 
 .refresh-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* 目錄 (TOC) button — middle flex item of .left-panel; its position is
+ * the natural by-product of justify-content: space-between on the parent.
+ * Visual treatment mirrors hamburger/refresh. */
+.toc-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.toc-btn:hover {
   background: rgba(0, 0, 0, 0.7);
 }
 
@@ -102,6 +139,11 @@
   border-radius: 16px;
   padding: 16px 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  /* 上方預留空間：直播團隊會在此位置疊放 Tzu Chi logo；
+   * 沒有 margin 的話 logo 會直接蓋住頁碼。
+   * 數值跟 .left-panel 的 padding-top (20px) 一起，
+   * 總共把頁碼下推到視窗頂端約 140px 處。 */
+  margin-top: 120px;
 }
 
 .page-indicator .current {

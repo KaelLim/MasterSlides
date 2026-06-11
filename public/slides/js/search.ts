@@ -1,14 +1,14 @@
 import { dom, isMac } from './state.js';
 import { goToPage, isVerticalMode } from './navigation.js';
 
-let matches = [];
+let matches: HTMLElement[] = [];
 let currentIndex = -1;
-let searchBar = null;
-let searchInput = null;
-let searchCount = null;
-let debounceTimer = null;
+let searchBar: HTMLElement | null = null;
+let searchInput: HTMLInputElement | null = null;
+let searchCount: HTMLElement | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-function getPageForElement(el) {
+function getPageForElement(el: HTMLElement): number {
   const containerWidth = dom.manuscriptContainer.clientWidth;
   const containerHeight = dom.manuscriptContainer.clientHeight;
   if (isVerticalMode()) {
@@ -18,18 +18,18 @@ function getPageForElement(el) {
   }
 }
 
-function clearHighlights() {
-  const marks = dom.manuscript.querySelectorAll('mark.search-highlight');
+function clearHighlights(): void {
+  const marks = dom.manuscript.querySelectorAll<HTMLElement>('mark.search-highlight');
   marks.forEach(mark => {
-    const parent = mark.parentNode;
-    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+    const parent = mark.parentNode!;
+    parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark);
     parent.normalize();
   });
   matches = [];
   currentIndex = -1;
 }
 
-function performSearch(query) {
+function performSearch(query: string): void {
   clearHighlights();
   if (!query || query.trim() === '') {
     updateCount();
@@ -43,16 +43,16 @@ function performSearch(query) {
     null
   );
 
-  const textNodes = [];
-  let node;
+  const textNodes: Text[] = [];
+  let node: Node | null;
   while ((node = walker.nextNode())) {
-    if (node.textContent.toLowerCase().includes(term)) {
-      textNodes.push(node);
+    if ((node.textContent ?? '').toLowerCase().includes(term)) {
+      textNodes.push(node as Text);
     }
   }
 
   textNodes.forEach(textNode => {
-    const text = textNode.textContent;
+    const text = textNode.textContent ?? '';
     const lowerText = text.toLowerCase();
     const fragment = document.createDocumentFragment();
     let lastIndex = 0;
@@ -78,26 +78,26 @@ function performSearch(query) {
       fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
     }
 
-    textNode.parentNode.replaceChild(fragment, textNode);
+    textNode.parentNode!.replaceChild(fragment, textNode);
   });
 
-  matches = Array.from(dom.manuscript.querySelectorAll('mark.search-highlight'));
+  matches = Array.from(dom.manuscript.querySelectorAll<HTMLElement>('mark.search-highlight'));
   if (matches.length > 0) {
     goToMatch(0);
   }
   updateCount();
 }
 
-function goToMatch(index) {
+function goToMatch(index: number): void {
   if (matches.length === 0) return;
 
   // Remove current highlight
   if (currentIndex >= 0 && currentIndex < matches.length) {
-    matches[currentIndex].classList.remove('current');
+    matches[currentIndex]!.classList.remove('current');
   }
 
   currentIndex = index;
-  const mark = matches[currentIndex];
+  const mark = matches[currentIndex]!;
   mark.classList.add('current');
 
   // Navigate to the page containing this match
@@ -107,49 +107,55 @@ function goToMatch(index) {
   updateCount();
 }
 
-function updateCount() {
+function updateCount(): void {
   if (matches.length === 0) {
-    searchCount.textContent = searchInput.value ? '無結果' : '';
+    searchCount!.textContent = searchInput!.value ? '無結果' : '';
   } else {
-    searchCount.textContent = `${currentIndex + 1}/${matches.length}`;
+    searchCount!.textContent = `${currentIndex + 1}/${matches.length}`;
   }
 }
 
-export function nextMatch() {
+export function nextMatch(): void {
   if (matches.length === 0) return;
   goToMatch((currentIndex + 1) % matches.length);
 }
 
-export function prevMatch() {
+export function prevMatch(): void {
   if (matches.length === 0) return;
   goToMatch((currentIndex - 1 + matches.length) % matches.length);
 }
 
-export function openSearch() {
-  searchBar.classList.add('active');
-  searchInput.focus();
-  searchInput.select();
+export function openSearch(): void {
+  searchBar!.classList.add('active');
+  searchInput!.focus();
+  searchInput!.select();
 }
 
-export function closeSearch() {
-  searchBar.classList.remove('active');
-  searchInput.value = '';
+export function closeSearch(): void {
+  searchBar!.classList.remove('active');
+  searchInput!.value = '';
   clearHighlights();
   updateCount();
 }
 
-export function isSearchOpen() {
-  return searchBar && searchBar.classList.contains('active');
+export function isSearchOpen(): boolean {
+  return !!searchBar && searchBar.classList.contains('active');
 }
 
-export function searchFor(keyword) {
+export function searchFor(keyword: string): void {
   if (!searchBar) return;
   searchBar.classList.add('active');
-  searchInput.value = keyword;
+  searchInput!.value = keyword;
   performSearch(keyword);
 }
 
-export function getSearchState() {
+export interface SearchState {
+  searchQuery: string;
+  searchCount: number;
+  searchIndex: number;
+}
+
+export function getSearchState(): SearchState {
   return {
     searchQuery: searchInput ? searchInput.value : '',
     searchCount: matches.length,
@@ -157,26 +163,26 @@ export function getSearchState() {
   };
 }
 
-export function initSearch() {
+export function initSearch(): void {
   searchBar = document.getElementById('searchBar');
-  searchInput = document.getElementById('searchInput');
+  searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
   searchCount = document.getElementById('searchCount');
 
   // Input with debounce
-  searchInput.addEventListener('input', () => {
+  searchInput!.addEventListener('input', () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      performSearch(searchInput.value);
+      performSearch(searchInput!.value);
     }, 200);
   });
 
   // Keyboard in search input
-  searchInput.addEventListener('keydown', (e) => {
+  searchInput!.addEventListener('keydown', (e: KeyboardEvent) => {
     e.stopPropagation();
     const hasModKey = isMac ? e.metaKey : e.ctrlKey;
     if (hasModKey && e.key === 'f') {
       e.preventDefault(); // Prevent browser native search
-      searchInput.select();
+      searchInput!.select();
     } else if (e.key === 'Enter') {
       if (e.shiftKey) {
         prevMatch();
@@ -189,7 +195,7 @@ export function initSearch() {
   });
 
   // Buttons
-  document.getElementById('searchNext').onclick = nextMatch;
-  document.getElementById('searchPrev').onclick = prevMatch;
-  document.getElementById('searchClose').onclick = closeSearch;
+  document.getElementById('searchNext')!.onclick = nextMatch;
+  document.getElementById('searchPrev')!.onclick = prevMatch;
+  document.getElementById('searchClose')!.onclick = closeSearch;
 }

@@ -11,7 +11,13 @@ import { setFontScale, increaseFontSize, decreaseFontSize } from './font.js';
 import { exportPDF } from './pdf-export.js';
 import { syncRemoteState } from './remote-control.js';
 
-const HOTKEYS = {
+type ActionName =
+  | 'next' | 'prev' | 'first' | 'last' | 'goto'
+  | 'fullscreen' | 'sidebar' | 'orientation' | 'toggleNav'
+  | 'remoteQR' | 'laser' | 'help' | 'escape'
+  | 'fontUp' | 'fontDown' | 'fontReset' | 'search' | 'exportPDF';
+
+const HOTKEYS: Record<string, ActionName> = {
   'ArrowRight': 'next', ' ': 'next', 'PageDown': 'next',
   'ArrowLeft': 'prev', 'PageUp': 'prev',
   'Home': 'first', 'End': 'last',
@@ -26,18 +32,18 @@ const HOTKEYS = {
   'Escape': 'escape',
 };
 
-const COMBO_KEYS = {
+const COMBO_KEYS: Record<string, ActionName> = {
   'Enter': 'fullscreen', '=': 'fontUp', '+': 'fontUp',
   '-': 'fontDown', '0': 'fontReset',
   ',': 'sidebar', 'f': 'search', 'p': 'exportPDF',
 };
 
-function closeLightboxIfActive() {
+function closeLightboxIfActive(): boolean {
   if (dom.lightbox.classList.contains('active')) { closeLightbox(); return true; }
   return false;
 }
 
-const ACTIONS = {
+const ACTIONS: Record<ActionName, () => void> = {
   next: () => { if (!closeLightboxIfActive()) nextPage(); syncRemoteState(); },
   prev: () => { if (!closeLightboxIfActive()) prevPage(); syncRemoteState(); },
   first: () => { if (!closeLightboxIfActive()) goToPage(0); syncRemoteState(); },
@@ -63,8 +69,9 @@ const ACTIONS = {
   exportPDF: exportPDF,
 };
 
-export function handleKeydown(e) {
-  const tag = e.target.tagName.toLowerCase();
+export function handleKeydown(e: KeyboardEvent): void {
+  const target = e.target as HTMLElement | null;
+  const tag = target ? target.tagName.toLowerCase() : '';
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
   const mod = isMac ? e.metaKey : e.ctrlKey;

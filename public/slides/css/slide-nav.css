@@ -1,12 +1,13 @@
 /* ===========================
-   導航列（absolute 定位）
+   導航列
+   Lives at the bottom of .left-panel (panel is 100px wide → buttons
+   stack vertically). DOM order: prev on top, next below.
+   z-index kept so the auto-hide opacity transition still wins over
+   any future overlay that might float into the panel area.
    =========================== */
 .slide-nav {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 10px;
   z-index: var(--z-nav);
 }
@@ -144,9 +145,14 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Active 狀態用「藍底白字」會跟非 active 的「白底白字」對比不夠，
+ * icon 跟文字幾乎看不出來。改成 tinted background + primary 色文字 +
+ * primary 邊框 — 對比一眼可辨，跟 .goto-tab.active 的處理一致。 */
 .toggle-group button.active {
-  background: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
   border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .font-select {

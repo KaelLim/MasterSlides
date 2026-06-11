@@ -2,7 +2,12 @@
   "name": "slides",
   "type": "module",
   "scripts": {
-    "build": "bun build public/slides/js/app.js --outfile public/slides/dist/app.js",
+    "build": "bun run build:slides && bun run build:admin && bun run build:edit && bun run build:remote",
+    "build:slides": "bun build public/slides/js/app.ts --outfile public/slides/dist/app.js",
+    "build:admin": "bun build public/admin/js/dashboard.ts --outfile public/admin/dist/dashboard.js",
+    "build:edit": "bun build public/edit/edit.ts --outfile public/edit/dist/edit.js",
+    "build:remote": "bun build public/remote/remote.ts --outfile public/remote/dist/remote.js",
+    "typecheck": "bunx tsc --noEmit",
     "dev": "bun --watch server/index.ts",
     "start": "bun server/index.ts"
   },
