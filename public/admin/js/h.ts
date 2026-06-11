@@ -38,7 +38,22 @@ function applyProps(el: Element, props: AnyProps | null | undefined, isSvg = fal
   if (!props) return;
   for (const key of Object.keys(props)) {
     const v = props[key];
-    if (v == null || v === false) continue;
+    if (v == null) continue;
+
+    // ARIA tristate attributes (and a few HTML attrs that ALSO require an
+    // explicit "true"/"false" string rather than presence-or-absence): when
+    // a boolean comes in, write the literal string. Without this, our CSS
+    // selectors like [aria-selected="true"] never match (boolean true → "").
+    if (typeof v === 'boolean' && (
+      key.startsWith('aria-') || key === 'draggable' || key === 'contenteditable' || key === 'spellcheck'
+    )) {
+      el.setAttribute(key, v ? 'true' : 'false');
+      continue;
+    }
+    // For non-ARIA boolean attributes (disabled, hidden, required, ...),
+    // false = absent, true = empty-string attribute (standard HTML).
+    if (v === false) continue;
+
     if (key === 'class' || key === 'className') {
       el.setAttribute('class', String(v));
     } else if (key === 'style' && typeof v === 'object' && v !== null) {

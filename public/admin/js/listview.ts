@@ -67,8 +67,21 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
   let attached = false;
   let mo: MutationObserver | null = null;
 
-  // ----- state-patch helpers -----
-  const patch = (p: Partial<ListState>): void => props.setState((s) => ({ ...s, ...p }));
+  // ----- local state mirror -----
+  // props.state was captured-by-reference at construction time, and the host
+  // (dashboard.ts) replaces listStates.docs with a brand-new object on every
+  // setState — so reading `props.state.X` always returns the original initial
+  // values. We mirror state locally and update on every patch so render(),
+  // computeView(), onKeyDown(), etc. read fresh values.
+  let curState: ListState = props.state;
+  let rendering = false; // suppresses recursive render() inside patch()
+  let firstRender = true; // only restore scrollTop on initial paint
+
+  const patch = (p: Partial<ListState>): void => {
+    curState = { ...curState, ...p };
+    props.setState((s) => ({ ...s, ...p }));
+    if (!rendering) render();
+  };
 
   // Range computations rebuilt each render — keep helpers local to render().
   // ---------------------------------------------------------------
@@ -81,7 +94,7 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
     curPage: number;
     totalPages: number;
   } {
-    const { query = '', sort } = props.state;
+    const { query = '', sort } = curState;
     const q = query.trim().toLowerCase();
     let arr: T[] = q ? props.items.filter((it) => props.matchFn(it, q)) : props.items.slice();
     if (sort && props.sortFns[sort.key]) {
@@ -90,7 +103,7 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
     }
     const filtered = arr;
     const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-    const curPage = Math.min(props.state.page || 1, totalPages);
+    const curPage = Math.min(curState.page || 1, totalPages);
     const start = (curPage - 1) * perPage;
     const visible = filtered.slice(start, start + perPage);
     const visibleIds = visible.map(idOf);
@@ -158,8 +171,7 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
     patch({ selection: next });
   }
   function toggleOne(id: string): void {
-    const sel = props.state.selection;
-    const n = new Set(sel);
+    const n = new Set(curState.selection);
     if (n.has(id)) n.delete(id);
     else n.add(id);
     setSel(n);
@@ -170,13 +182,11 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
 
   // sort ----------------------------------------------------------------
   function setSort(key: string): void {
-    props.setState((s) => {
-      const cur = s.sort;
-      if (cur && cur.key === key) {
-        return { ...s, sort: { key, dir: cur.dir === 'asc' ? 'desc' : 'asc' } };
-      }
-      return { ...s, sort: { key, dir: 'asc' } };
-    });
+    const cur = curState.sort;
+    const next = cur && cur.key === key
+      ? { key, dir: (cur.dir === 'asc' ? 'desc' : 'asc') as 'asc' | 'desc' }
+      : { key, dir: 'asc' as 'asc' | 'desc' };
+    patch({ sort: next });
   }
 
   // pageNums — up to 7 buttons, with "…" placeholders.
@@ -214,7 +224,7 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
     const target = e.target as HTMLElement | null;
     const tag = (target?.tagName || '').toLowerCase();
     const typing = tag === 'input' || tag === 'textarea' || (target?.isContentEditable ?? false);
-    const sel = props.state.selection;
+    const sel = curState.selection;
 
     const { visible, visibleIds } = computeView();
 
@@ -300,12 +310,14 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
   // RENDER
   // ===================================================================
   function render(): void {
+    rendering = true;
     const { filtered, visible, visibleIds, start, curPage, totalPages } = computeView();
-    const { query = '', sort, selection: sel } = props.state;
+    const { query = '', sort, selection: sel } = curState;
 
     // clamp current page if needed
-    if ((props.state.page || 1) !== curPage) {
+    if ((curState.page || 1) !== curPage) {
       // schedule patch — but still render now with the clamped value.
+      // The nested render() is suppressed by the `rendering` guard.
       patch({ page: curPage });
     }
     // clamp kbd focus when page changes
@@ -505,9 +517,14 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
         {
           class: 'tablewrap',
           onScroll: () => {
-            if (scrollEl) {
-              props.setState((s) => ({ ...s, scrollTop: scrollEl!.scrollTop }));
-            }
+            if (!scrollEl) return;
+            const top = scrollEl.scrollTop;
+            // Persist without re-rendering (scroll position has no visible
+            // dependency in the table itself; restoring on first render is
+            // enough). Updating curState here too keeps it in lockstep with
+            // host state for any code that reads curState.scrollTop later.
+            curState = { ...curState, scrollTop: top };
+            props.setState((s) => ({ ...s, scrollTop: top }));
           },
         },
         h(
@@ -652,10 +669,15 @@ export function ListView<T>(props: ListViewProps<T>): HTMLElement {
     if (bulkBar) children.push(bulkBar);
     mount(host, children);
 
-    // Restore scroll position from state (initial render and after re-renders).
-    if (scrollEl && props.state.scrollTop) {
-      scrollEl.scrollTop = props.state.scrollTop;
+    // Restore scroll position ONLY on the very first paint. After that the
+    // user owns scrollTop — re-applying it on every render() (which fires
+    // for kbd focus, mouseEnter, filter, etc.) would snap them back up
+    // every time they scrolled.
+    if (firstRender && scrollEl && curState.scrollTop) {
+      scrollEl.scrollTop = curState.scrollTop;
     }
+    firstRender = false;
+    rendering = false;
   }
 
   render();

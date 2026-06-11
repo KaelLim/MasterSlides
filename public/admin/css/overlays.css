@@ -187,19 +187,12 @@ kbd { font-family: var(--font-mono); font-size: 11.5px; background: var(--surfac
 .tw-seg { display: flex; background: var(--surface-3); border-radius: 8px; padding: 3px; gap: 2px; }
 .tw-seg button { flex: 1; border: 0; background: transparent; cursor: pointer; padding: 6px 4px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: var(--text-2); font-family: var(--font-sans); transition: background .12s, color .12s; }
 .tw-seg button:hover { background: var(--hover); color: var(--text); }
-.tw-seg button[aria-pressed="true"] { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
-.tw-seg button[aria-pressed="true"]:hover { background: var(--surface); color: var(--primary); }
-/* Dark mode: --surface is DARKER than --surface-3 (the track), so the
- * prototype's "pressed=surface" reads as a dimmed pit. Override with a
- * tinted-primary background + outline so the active pill is unmistakable. */
-[data-theme="dark"] .tw-seg button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--primary) 18%, var(--surface-3));
-  color: var(--primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent), var(--shadow-sm);
-}
-[data-theme="dark"] .tw-seg button[aria-pressed="true"]:hover {
-  background: color-mix(in srgb, var(--primary) 22%, var(--surface-3));
-}
+/* Active state: primary-filled pill with white text — universally readable
+ * in both light + dark themes. Replaces the prototype's surface-bg + primary-
+ * text variant which (a) was invisible-on-white in light mode and (b)
+ * inverted into a dimmed pit on dark (since --surface < --surface-3 there). */
+.tw-seg button[aria-pressed="true"] { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.tw-seg button[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
 .tw-swatches { display: flex; gap: 8px; }
 .tw-sw { width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .tw-sw[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--focus-ring); }

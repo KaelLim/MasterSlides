@@ -68,6 +68,14 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   // Current absolute position (null until first drag — then CSS defaults rule).
   let pos: { left: number; top: number } | null = null;
 
+  // Local mirrors of the parent state — opts.theme / opts.density / opts.accent
+  // are captured-by-value at panel construction and never get the parent's
+  // updates after click handlers run. Sync functions consult these mirrors
+  // (NOT opts.*) so active aria-pressed lands on the freshly clicked button.
+  let curTheme: Theme = opts.theme;
+  let curDensity: Density = opts.density;
+  let curAccent: Accent = opts.accent;
+
   const headRow = h('div', { class: 'tweaks-head' },
     h('h3', null, '顯示設定'),
     h('button', {
@@ -81,11 +89,10 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   const themeSeg = h('div', { class: 'tw-seg' },
     ...THEME_OPTS.map(([v, ic, lbl]): HTMLElement => {
       const btn = h('button', {
-        'aria-pressed': opts.theme === v ? 'true' : 'false',
+        'aria-pressed': curTheme === v,
         onClick: (): void => {
+          curTheme = v;
           opts.setTheme(v);
-          // Reflect new pressed state immediately so the panel stays interactive
-          // without forcing a full re-render from dashboard.ts.
           syncThemeButtons();
         },
       },
@@ -100,7 +107,7 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   function syncThemeButtons(): void {
     for (const btn of Array.from(themeSeg.querySelectorAll<HTMLButtonElement>('button'))) {
       const v = btn.dataset.themeValue as Theme | undefined;
-      btn.setAttribute('aria-pressed', v && v === opts.theme ? 'true' : 'false');
+      btn.setAttribute('aria-pressed', v && v === curTheme ? 'true' : 'false');
     }
   }
 
@@ -108,8 +115,9 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   const densitySeg = h('div', { class: 'tw-seg' },
     ...DENSITY_OPTS.map(([v, lbl]): HTMLElement => {
       const btn = h('button', {
-        'aria-pressed': opts.density === v ? 'true' : 'false',
+        'aria-pressed': curDensity === v,
         onClick: (): void => {
+          curDensity = v;
           opts.setDensity(v);
           syncDensityButtons();
         },
@@ -122,7 +130,7 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   function syncDensityButtons(): void {
     for (const btn of Array.from(densitySeg.querySelectorAll<HTMLButtonElement>('button'))) {
       const v = btn.dataset.densityValue as Density | undefined;
-      btn.setAttribute('aria-pressed', v && v === opts.density ? 'true' : 'false');
+      btn.setAttribute('aria-pressed', v && v === curDensity ? 'true' : 'false');
     }
   }
 
@@ -131,10 +139,11 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
     ...(Object.entries(ACCENTS) as Array<[Accent, AccentDef]>).map(([k, a]): HTMLElement => {
       const btn = h('button', {
         class: 'tw-sw',
-        'aria-pressed': opts.accent === k ? 'true' : 'false',
+        'aria-pressed': curAccent === k,
         title: a.name,
         style: { background: a.sw },
         onClick: (): void => {
+          curAccent = k;
           opts.setAccent(k);
           syncSwatches();
         },
@@ -147,7 +156,7 @@ export function showTweaksPanel(opts: TweaksPanelOpts): HTMLElement {
   function syncSwatches(): void {
     for (const btn of Array.from(swatchRow.querySelectorAll<HTMLButtonElement>('button'))) {
       const k = btn.dataset.accentValue as Accent | undefined;
-      btn.setAttribute('aria-pressed', k && k === opts.accent ? 'true' : 'false');
+      btn.setAttribute('aria-pressed', k && k === curAccent ? 'true' : 'false');
     }
   }
 
