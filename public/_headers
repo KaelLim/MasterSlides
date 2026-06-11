@@ -1,0 +1,53 @@
+# Cloudflare Pages cache headers.
+#
+# Default CF Pages serves `cache-control: public, max-age=0, must-revalidate`
+# + ETag, which already revalidates on every request. These rules are belt-
+# and-suspenders for the bundle + CSS surface so a deploy never leaves a
+# user looking at stale JS/CSS — explicit `no-cache` tells every layer
+# (browser, CF edge, corporate proxies) to revalidate before serving.
+#
+# `no-cache` is NOT "do not cache". It means "store it, but ALWAYS ask the
+# origin if it's still fresh before serving". With our ETag the revalidation
+# is a cheap 304 when nothing changed; a fresh body when the deploy bumped
+# the file.
+
+/admin/dist/*
+  Cache-Control: no-cache
+
+/slides/dist/*
+  Cache-Control: no-cache
+
+/edit/dist/*
+  Cache-Control: no-cache
+
+/remote/dist/*
+  Cache-Control: no-cache
+
+/admin/css/*
+  Cache-Control: no-cache
+
+/slides/css/*
+  Cache-Control: no-cache
+
+/remote/*.css
+  Cache-Control: no-cache
+
+# Theme assets that the slides viewer composes into pages (background
+# image + a default theme stylesheet). Same revalidate-always policy so
+# theme updates land immediately.
+/theme/*
+  Cache-Control: no-cache
+
+# HTML shells reference unhashed dist paths, so they MUST revalidate too —
+# otherwise a stale HTML could point at a removed bundle URL.
+/admin/*
+  Cache-Control: no-cache
+
+/slides/index.html
+  Cache-Control: no-cache
+
+/edit/index.html
+  Cache-Control: no-cache
+
+/remote/index.html
+  Cache-Control: no-cache

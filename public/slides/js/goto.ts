@@ -78,11 +78,11 @@ function applyPreviewScale(item: HTMLElement, containerW: number, containerH: nu
   if (!preview) return;
 
   const hasSnapshot = slidePageSnapshot.length > 0;
-  // +120/+80 = .content-area padding (60 horizontal, 40 vertical) doubled,
+  // +160/+120 = .content-area padding (80 horizontal, 60 vertical) doubled,
   // matching the bg-padding the rendered preview applies. Keep in lockstep
   // with the renderPreview block below.
-  const previewW = hasSnapshot ? containerW + 120 : containerW;
-  const previewH = hasSnapshot ? containerH + 80 : containerH;
+  const previewW = hasSnapshot ? containerW + 160 : containerW;
+  const previewH = hasSnapshot ? containerH + 120 : containerH;
 
   const itemW = item.clientWidth;
   const itemH = item.clientHeight;
@@ -131,12 +131,12 @@ function renderPreview(item: Element, containerW: number, containerH: number, ve
     bg.appendChild(clip);
     preview.appendChild(bg);
 
-    // Outer mirrors the print @page (containerW + 60*2, containerH + 40*2)
+    // Outer mirrors the print @page (containerW + 80*2, containerH + 60*2)
     // so bg padding leaves an inner clip of exactly containerW × containerH.
     // Must stay in sync with .content-area / .print-page-bg / .goto-preview-bg
-    // padding (currently 40px 60px = 40 vertical, 60 horizontal).
-    preview.style.width = (containerW + 120) + 'px';
-    preview.style.height = (containerH + 80) + 'px';
+    // padding (currently 60px 80px = 60 vertical, 80 horizontal).
+    preview.style.width = (containerW + 160) + 'px';
+    preview.style.height = (containerH + 120) + 'px';
   } else {
     // Main-stack fallback (no .slide-page divs — CSS columns scroll model):
     // clone the whole manuscript and translate to the target page offset.
@@ -188,7 +188,7 @@ function buildGrid(): void {
   // include the content-area padding (matches PDF print's @page); otherwise
   // we use raw container aspect (no padding wrapper).
   const cellAspect = slidePageSnapshot.length > 0
-    ? `${containerW + 120} / ${containerH + 80}`
+    ? `${containerW + 160} / ${containerH + 120}`
     : `${containerW} / ${containerH}`;
 
   // Create lightweight placeholder items (no cloning yet)

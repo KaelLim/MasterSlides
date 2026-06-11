@@ -23,38 +23,31 @@
   visibility: visible;
 }
 
-/* 圖文容器 - 直式模式（預設） */
+/* 圖文容器 — 上圖、下文（不論 viewer 是直書還是橫書都一樣）。
+ * 之前是左右切版 + caption 跟著 viewer 直書，現改回符合一般圖說的
+ * 上下排列 + 文字一律 horizontal-tb。 */
 .lightbox-content {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 30px;
+  gap: 20px;
   width: 100vw;
   height: 80vh;
 }
 
-/* 橫式模式 */
-body.horizontal-mode .lightbox-content {
-  flex-direction: row;
-}
-
 .lightbox-image-wrap {
-  flex: 1 1 70%;
-  max-width: 70%;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: visible;
 }
 
-/* 無 caption 時圖片可擴展 */
-.lightbox-content:has(.lightbox-caption:empty) .lightbox-image-wrap {
-  max-width: 100%;
-}
-
 .lightbox img {
   max-width: 100%;
-  max-height: 80vh;
+  max-height: 100%;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -68,22 +61,23 @@ body.horizontal-mode .lightbox-content {
 }
 
 .lightbox-caption {
-  flex: 0 0 30%;
+  flex: 0 0 auto;
+  max-width: 90%;
+  max-height: 25%;
+  overflow-y: auto;
   color: white;
-  font-size: calc(clamp(28px, 5cqi, 60px) * var(--font-scale) * var(--mode-scale));
-  line-height: 1.8;
-  letter-spacing: 0.1em;
-  writing-mode: vertical-rl;
+  /* 不乘 --mode-scale：caption 永遠橫書，不該被 vertical 模式的 1.6× 放大。 */
+  font-size: calc(clamp(20px, 3cqi, 36px) * var(--font-scale));
+  line-height: 1.6;
+  letter-spacing: 0.05em;
+  writing-mode: horizontal-tb;
   text-orientation: mixed;
+  text-align: center;
+  padding: 0 12px;
 }
 
 .lightbox-caption:empty {
   display: none;
-}
-
-/* 橫式模式文字 */
-body.horizontal-mode .lightbox-caption {
-  writing-mode: horizontal-tb;
 }
 
 .lightbox-controls {

@@ -1,69 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant" data-theme="dark" data-density="comfortable">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>文件管理 - 簡報後台</title>
-  <script>
-    /* FOUC guard: apply saved theme attribute before CSS resolves. */
-    (function () {
-      try {
-        var t = localStorage.getItem("admin_theme");
-        if (t === "light" || t === "dark") {
-          document.documentElement.setAttribute("data-theme", t);
-        }
-      } catch (_) {}
-    })();
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0,0&display=block">
-  <link rel="stylesheet" href="/admin/css/admin.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>慈濟簡報系統 · 管理後台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/css/tokens.css" />
+  <link rel="stylesheet" href="/admin/css/components.css" />
+  <link rel="stylesheet" href="/admin/css/overlays.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>簡報後台</h1>
-    <nav>
-      <a href="/admin" class="active">文件</a>
-      <a href="/admin/playlists">Playlists</a>
-    </nav>
-    <button id="themeToggle" class="topbar__action" type="button" aria-label="切換主題">
-      <span class="material-symbols-rounded">computer</span>
-    </button>
-  </header>
-
-  <main>
-    <div class="section-header">
-      <h2>文件 <span id="docsCount" style="font-weight:400;color:var(--ink-muted);font-size:14px;margin-left:8px"></span></h2>
-      <div class="actions">
-        <button class="primary" id="newDocBtn">
-          <span class="material-symbols-rounded">add</span>新增文件
-        </button>
-      </div>
-    </div>
-
-    <div class="table-filter-bar">
-      <div class="filter-wrap">
-        <span class="material-symbols-rounded">search</span>
-        <input class="filter" id="docsFilter" type="text" placeholder="搜尋標題或 doc_id（按 / 聚焦）" aria-label="搜尋文件">
-      </div>
-    </div>
-
-    <div id="selectionBar" class="ds-selection-bar" hidden>
-      <span class="ds-selection-bar__count" id="selectionCount">已選 0 份</span>
-      <div class="ds-selection-bar__actions">
-        <button class="secondary" data-bulk="set-public">批次設為公開</button>
-        <button class="secondary" data-bulk="set-draft">批次設為草稿</button>
-        <button class="danger" data-bulk="delete">批次刪除</button>
-        <button class="ghost" data-bulk="clear">清除選取</button>
-      </div>
-    </div>
-
-    <div id="content">
-      <div class="loading-state">載入中…</div>
-    </div>
-  </main>
-
+  <div id="root"></div>
   <script type="module" src="/admin/dist/dashboard.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
     "build:edit": "bun build public/edit/edit.ts --outfile public/edit/dist/edit.js",
     "build:remote": "bun build public/remote/remote.ts --outfile public/remote/dist/remote.js",
     "typecheck": "bunx tsc --noEmit",
+    "deploy": "bash scripts/deploy.sh",
     "dev": "bun --watch server/index.ts",
     "start": "bun server/index.ts"
   },

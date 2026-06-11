@@ -5,8 +5,11 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  /* padding 放在這裡，container 在內層 */
-  padding: 40px 60px;
+  /* padding 放在這裡，container 在內層。
+   * 60/80 是基準值；print.css 的 .print-page-bg、modals-goto.css 的
+   * .goto-preview-bg、goto.ts 的 cell 偏移都要跟著走，不然印出 / 預覽
+   * 跟現場 layout 不一致。 */
+  padding: 60px 80px;
 }
 
 .manuscript-container {

@@ -27,7 +27,7 @@
      against the same inner box. Any future change here must update
      .content-area (manuscript.css), .goto-preview-bg (modals-goto.css),
      and the goto.js cell-aspect math in lockstep. */
-  padding: 40px 60px;
+  padding: 60px 80px;
 }
 
 .print-page-clip {
