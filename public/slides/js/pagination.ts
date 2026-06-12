@@ -5,6 +5,37 @@ import { state, dom, type WritingMode } from './state.js';
 import { paginate, showPage } from './paginator.ts';
 import { applyReporterOverflow } from './first-slide-overflow.js';
 
+// Pause HTML5 media and YouTube iframes before leaving any page so audio
+// doesn't bleed into the next slide. Called at the top of goToPage() — that
+// single entry point covers button clicks, keyboard hotkeys, and remote
+// control commands alike.
+function pauseActiveMedia(): void {
+  dom.manuscript.querySelectorAll<HTMLMediaElement>('video, audio').forEach((el) => el.pause());
+  dom.manuscript.querySelectorAll<HTMLIFrameElement>('iframe').forEach((frame) => {
+    // YouTube IFrame API command — only lands if the iframe was loaded with
+    // enablejsapi=1 (ensured by patchYouTubeIframes below on every repaginate).
+    frame.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }),
+      '*',
+    );
+  });
+}
+
+// Add enablejsapi=1 to YouTube embed URLs so pauseVideo postMessages work.
+// Only rewrites the src when the parameter is absent — avoids spurious reloads.
+function patchYouTubeIframes(): void {
+  dom.manuscript.querySelectorAll<HTMLIFrameElement>('iframe').forEach((frame) => {
+    if (!frame.src.includes('youtube.com/embed/')) return;
+    try {
+      const url = new URL(frame.src);
+      if (!url.searchParams.has('enablejsapi')) {
+        url.searchParams.set('enablejsapi', '1');
+        frame.src = url.toString();
+      }
+    } catch { /* unparseable src — leave as-is */ }
+  });
+}
+
 export function isVerticalMode(): boolean {
   return state.currentWritingMode === 'vertical-rl';
 }
@@ -39,6 +70,7 @@ export function updatePageCount(): void {
 
 export function goToPage(page: number): void {
   if (page < 0 || page >= state.totalPages) return;
+  pauseActiveMedia();
   state.currentPage = page;
   showPage(page);
   dom.currentPageEl.textContent = String(state.currentPage + 1);
@@ -61,6 +93,9 @@ export function repaginate(): void {
   paginate(article, dom.manuscript, state.currentWritingMode);
   updatePageCount();
   goToPage(Math.min(state.currentPage, state.totalPages - 1));
+  // Ensure all YouTube iframes carry enablejsapi=1 so pauseVideo commands
+  // work when the user navigates away while a video is playing.
+  patchYouTubeIframes();
   // After paginate has populated .slide-page divs, truncate the first
   // slide's reporter list if it exceeds the visible cap. Reads from a
   // cached canonical list so font-scale / orientation changes recompute.
