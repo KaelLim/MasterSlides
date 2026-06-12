@@ -176,25 +176,9 @@ export function PlaylistComposer(props: ComposerProps): HTMLElement {
       class: 'input',
       value: title,
       placeholder: '播放清單標題',
-      style: {
-        fontSize: '16px',
-        fontWeight: '700',
-        border: '1px solid transparent',
-        background: 'transparent',
-        padding: '4px 8px',
-      },
+      style: { fontSize: '16px', fontWeight: '700' },
       onInput: (e: Event) => {
         title = (e.target as HTMLInputElement).value;
-      },
-      onFocus: (e: FocusEvent) => {
-        const t = e.target as HTMLInputElement;
-        t.style.background = 'var(--surface-2)';
-        t.style.borderColor = 'var(--border-strong)';
-      },
-      onBlur: (e: FocusEvent) => {
-        const t = e.target as HTMLInputElement;
-        t.style.background = 'transparent';
-        t.style.borderColor = 'transparent';
       },
     }) as HTMLInputElement;
 

@@ -20,12 +20,6 @@ function tenantBase(): string {
   return `${base}/drust/t/${tenant}`;
 }
 
-function anonAuth(): { Authorization: string } {
-  const token = process.env.DRUST_ANON_TOKEN;
-  if (!token) throw new Error("DRUST_ANON_TOKEN must be set");
-  return { Authorization: `Bearer ${token}` };
-}
-
 function serviceAuth(): { Authorization: string } {
   const token = process.env.DRUST_SERVICE_TOKEN;
   if (!token) throw new Error("DRUST_SERVICE_TOKEN must be set");
@@ -46,14 +40,6 @@ async function drustFetchWith(
     throw new Error(`Drust ${init.method || "GET"} ${path} → ${res.status}: ${body}`);
   }
   return res;
-}
-
-async function drustFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  return drustFetchWith(path, init, anonAuth());
-}
-
-async function drustJson<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
-  return (await drustFetch(path, init)).json() as Promise<T>;
 }
 
 async function drustServiceFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -123,7 +109,7 @@ function normalizeRecord(raw: any): DocRecord {
 }
 
 export async function findDocByDocId(docId: string): Promise<DocRecord | null> {
-  const res = await drustJson<{ records: DocRecord[] }>(
+  const res = await drustServiceJson<{ records: DocRecord[] }>(
     `/collections/docs/list`,
     {
       method: "POST",
@@ -186,7 +172,7 @@ export async function updateDoc(
 
 // Admin: full list for dashboard, sorted by created_at desc.
 export async function listAllDocs(): Promise<DocRecord[]> {
-  const res = await drustJson<{ records: DocRecord[] }>(
+  const res = await drustServiceJson<{ records: DocRecord[] }>(
     `/collections/docs/list`,
     {
       method: "POST",
@@ -290,7 +276,7 @@ function normalizePlaylist(raw: any): PlaylistRecord {
 }
 
 export async function listAllPlaylists(): Promise<PlaylistRecord[]> {
-  const res = await drustJson<{ records: PlaylistRecord[] }>(
+  const res = await drustServiceJson<{ records: PlaylistRecord[] }>(
     `/collections/playlists/list`,
     {
       method: "POST",
@@ -307,7 +293,7 @@ export async function listAllPlaylists(): Promise<PlaylistRecord[]> {
 export async function findPlaylist(id: number): Promise<PlaylistRecord | null> {
   try {
     // GET /records/playlists/:id returns { record: { ... } } — unwrap.
-    const raw = await drustJson<{ record: PlaylistRecord }>(`/records/playlists/${id}`);
+    const raw = await drustServiceJson<{ record: PlaylistRecord }>(`/records/playlists/${id}`);
     return normalizePlaylist(raw.record);
   } catch (err: any) {
     if (/→ 404/.test(err.message)) return null;
