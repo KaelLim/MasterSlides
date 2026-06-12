@@ -24,6 +24,26 @@ declare global {
       height?: number;
     },
   ): Promise<HTMLCanvasElement>;
+
+  // PptxGenJS (https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js)
+  // Loosely typed — we only touch a handful of methods. Text/image/background
+  // option bags are Record<string, unknown> rather than the full upstream
+  // union so we don't have to vendor the whole .d.ts.
+  interface PptxTextRun {
+    text: string;
+    options?: Record<string, unknown>;
+  }
+  interface PptxSlide {
+    background: { data?: string; path?: string; color?: string };
+    addText(text: string | PptxTextRun[], options: Record<string, unknown>): void;
+    addImage(options: Record<string, unknown>): void;
+  }
+  class PptxGenJS {
+    layout: string;
+    defineLayout(opts: { name: string; width: number; height: number }): void;
+    addSlide(): PptxSlide;
+    writeFile(opts: { fileName: string }): Promise<string>;
+  }
 }
 
 export {};

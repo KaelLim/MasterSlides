@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
   <link rel="stylesheet" href="/slides/css/slides.css">
 </head>
 <body>
@@ -59,6 +60,16 @@
       <polyline points="14 2 14 8 20 8"/>
       <line x1="12" y1="18" x2="12" y2="12"/>
       <polyline points="9 15 12 18 15 15"/>
+    </symbol>
+    <symbol id="icon-pptx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- presentation screen on a stand + ascending bar chart inside, so it
+           reads as 簡報/PPT rather than a blank monitor -->
+      <rect x="3" y="3" width="18" height="12" rx="1"/>
+      <line x1="12" y1="15" x2="12" y2="18"/>
+      <line x1="8" y1="18" x2="16" y2="18"/>
+      <line x1="8" y1="12" x2="8" y2="10"/>
+      <line x1="12" y1="12" x2="12" y2="8"/>
+      <line x1="16" y1="12" x2="16" y2="6.5"/>
     </symbol>
     <symbol id="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"/>
@@ -149,7 +160,7 @@
     <div class="settings-section">
       <h3>字體選擇</h3>
       <select class="font-select" id="fontSelect">
-        <option value="DFKai-SB" selected>標楷體</option>
+        <option value="標楷體" selected>標楷體</option>
         <option value="Noto Sans TC">Noto Sans TC</option>
         <option value="Noto Serif TC">Noto Serif TC</option>
         <option value="LXGW WenKai TC">LXGW WenKai TC</option>
@@ -168,6 +179,9 @@
         </button>
         <button class="icon-btn" id="exportPdfBtn" data-tooltip="匯出 PDF" aria-label="匯出 PDF">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-pdf"/></svg>
+        </button>
+        <button class="icon-btn" id="exportPptxBtn" data-tooltip="匯出 PPTX（直書，可編輯）" aria-label="匯出 PPTX">
+          <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-pptx"/></svg>
         </button>
         <button class="icon-btn" id="helpBtn" data-tooltip="快捷鍵說明" aria-label="快捷鍵說明">
           <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#icon-help"/></svg>

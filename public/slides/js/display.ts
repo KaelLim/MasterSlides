@@ -1,58 +1,13 @@
-import { state, dom, FONT_SCALES, FONT_SCALE_MIN, FONT_SCALE_MAX, STORAGE_KEYS } from './state.js';
-import { updatePageCount, goToPage } from './navigation.js';
+import { state, dom, FONT_SCALE_MIN, FONT_SCALE_MAX, STORAGE_KEYS } from './state.js';
 import { setWritingMode } from './pagination.js';
+import { isKaiti, KAITI_STACK } from './font.js';
 
-// ===========================
-// Font Size
-// ===========================
-export function setFontScale(scale: number, save: boolean = true): void {
-  state.fontScale = scale;
-  document.documentElement.style.setProperty('--font-scale', scale.toString());
-  dom.fontSizeDisplayEl.textContent = Math.round(scale * 100) + '%';
-  if (save) {
-    localStorage.setItem(STORAGE_KEYS.fontSize, scale.toString());
-  }
-  setTimeout(() => {
-    updatePageCount();
-    goToPage(Math.min(state.currentPage, state.totalPages - 1));
-  }, 50);
-}
-
-export function increaseFontSize(): void {
-  const idx = FONT_SCALES.indexOf(state.fontScale as typeof FONT_SCALES[number]);
-  if (idx < FONT_SCALES.length - 1) {
-    setFontScale(FONT_SCALES[idx + 1]);
-  } else if (idx === -1) {
-    const larger = FONT_SCALES.filter(s => s > state.fontScale);
-    if (larger.length > 0) setFontScale(larger[0]);
-  }
-}
-
-export function decreaseFontSize(): void {
-  const idx = FONT_SCALES.indexOf(state.fontScale as typeof FONT_SCALES[number]);
-  if (idx > 0) {
-    setFontScale(FONT_SCALES[idx - 1]);
-  } else if (idx === -1) {
-    const smaller = FONT_SCALES.filter(s => s < state.fontScale);
-    if (smaller.length > 0) setFontScale(smaller[smaller.length - 1]);
-  }
-}
-
-// ===========================
-// Font Family
-// ===========================
-export function applyFont(fontFamily: string, save: boolean = true): void {
-  let fontValue: string;
-  if (fontFamily === 'DFKai-SB') {
-    fontValue = '"DFKai-SB", "BiauKai", "標楷體", serif';
-  } else {
-    fontValue = `"${fontFamily}", sans-serif`;
-  }
-  document.documentElement.style.setProperty('--font-family-body', fontValue);
-  if (save) {
-    localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
-  }
-}
+// Font size / family helpers live in font.js (the active slide-page model:
+// each setter schedules a repaginate()). The viewer's font UI — keyboard
+// shortcuts and the sidebar A-/A+/select — wire to those. display.js only
+// RESTORES persisted values on load, inline in loadSettings() below, so it
+// has no font setters of its own anymore. The old duplicates here drove the
+// legacy navigation.js scroll model and were the source of the refresh race.
 
 // ===========================
 // Sidebar
@@ -142,13 +97,24 @@ export function toggleNavVisibility(): void {
 // Load Settings from localStorage
 // ===========================
 export function loadSettings(): void {
+  // Restore persisted display settings into state + CSS variables ONLY. We do
+  // NOT trigger re-pagination here: every caller (loader.js, playlist.js) runs
+  // repaginate() immediately after loadSettings, and that single call owns
+  // laying the content into .slide-page divs via the active paginator. Setting
+  // --font-scale synchronously means that repaginate measures overflow at the
+  // correct scale. (Previously this went through a setFontScale() whose
+  // setTimeout drove the legacy navigation.js scroll model — a manuscript
+  // translateY/X transform — which raced repaginate on refresh, pushing the
+  // rendered slide off-screen and corrupting the page count.)
   const savedScale = localStorage.getItem(STORAGE_KEYS.fontSize);
   if (savedScale) {
     let scale = parseFloat(savedScale);
     if (!isNaN(scale) && scale >= FONT_SCALE_MIN) {
       // Clamp any pre-cap stored value (e.g. 1.8) to the new max.
       if (scale > FONT_SCALE_MAX) scale = FONT_SCALE_MAX;
-      setFontScale(scale, false);
+      state.fontScale = scale;
+      document.documentElement.style.setProperty('--font-scale', scale.toString());
+      dom.fontSizeDisplayEl.textContent = Math.round(scale * 100) + '%';
     }
   }
 
@@ -160,8 +126,12 @@ export function loadSettings(): void {
 
   const savedFont = localStorage.getItem(STORAGE_KEYS.fontFamily);
   if (savedFont) {
-    applyFont(savedFont, false);
-    (document.getElementById('fontSelect') as HTMLSelectElement | null)!.value = savedFont;
+    const isKai = isKaiti(savedFont);
+    const fontValue = isKai ? KAITI_STACK : `"${savedFont}", sans-serif`;
+    document.documentElement.style.setProperty('--font-family-body', fontValue);
+    // Legacy 'DFKai-SB' has no matching <option> anymore — map it to '標楷體'.
+    (document.getElementById('fontSelect') as HTMLSelectElement | null)!.value =
+      isKai ? '標楷體' : savedFont;
   }
 
   const savedNavHidden = localStorage.getItem(STORAGE_KEYS.navHidden);

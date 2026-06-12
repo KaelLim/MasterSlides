@@ -250,11 +250,13 @@ export function paginate(
   for (const el of queue) article.removeChild(el);
 
   manuscript.innerHTML = '';
-  // Clear any leftover inline transform from the shared scroll-model code path
-  // (js/slides/navigation.js's goToPage applies translateY/X to dom.manuscript
-  // when no slide-pages exist yet, e.g. when loadSettings → setFontScale fires
-  // its setTimeout during a refresh, before paginate has run). That transform
-  // would otherwise persist and push the entire slide-page model off-screen.
+  // Defense-in-depth: clear any leftover inline transform from the legacy
+  // scroll-model path. navigation.js's goToPage applies translateY/X to
+  // dom.manuscript when no slide-pages exist yet; search.js and goto.js still
+  // route through it. (The old loadSettings → setFontScale refresh race that
+  // first motivated this guard is gone — loadSettings no longer paginates.)
+  // Left in place so a stray transform can never persist and push the entire
+  // slide-page model off-screen.
   manuscript.style.transform = '';
   let current = createSlidePage(manuscript, writingMode);
   // When set, the *next* element starts on a fresh page. Avoids dangling

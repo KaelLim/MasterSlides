@@ -24,7 +24,11 @@
   /* Highlight: regulation yellow — adopted by .search-highlight */
   --color-highlight: #FFFF00;
   --color-bg-base: #1a1a2e;
-  --font-family-body: "MOEStandardKaiti", "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", "楷體-繁", "STKaiti", serif;
+  /* 標楷體 (the localized family name) resolves to BiauKai on macOS and
+     DFKai-SB on Windows, so leading with it picks up the platform's kai
+     without naming "DFKai-SB" literally. Kept in sync with KAITI_STACK in
+     public/slides/js/font.ts — change both together. */
+  --font-family-body: "標楷體", "BiauKai", "MOEStandardKaiti", "Kaiti TC", "楷體-繁", "STKaiti", serif;
   --font-scale: 1;
   --mode-scale: 1.6;  /* 直式 +60% */
   --left-panel-width: 100px;

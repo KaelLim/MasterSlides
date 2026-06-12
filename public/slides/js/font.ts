@@ -27,13 +27,19 @@ export function decreaseFontSize(): void {
   }
 }
 
+// The default brush-kai stack. 標楷體 leads (resolves to BiauKai on macOS,
+// DFKai-SB on Windows) so we never name "DFKai-SB" literally. Kept in sync
+// with --font-family-body in public/slides/css/base.css.
+export const KAITI_STACK = '"標楷體", "BiauKai", "MOEStandardKaiti", "Kaiti TC", "楷體-繁", "STKaiti", serif';
+
+// The kai option's stored value. '標楷體' is current; 'DFKai-SB' is the
+// pre-2026 value still sitting in some users' localStorage — both map here.
+export function isKaiti(fontFamily: string): boolean {
+  return fontFamily === '標楷體' || fontFamily === 'DFKai-SB';
+}
+
 export function applyFont(fontFamily: string, save: boolean = true): void {
-  let fontValue: string;
-  if (fontFamily === 'DFKai-SB') {
-    fontValue = '"DFKai-SB", "BiauKai", "標楷體", serif';
-  } else {
-    fontValue = `"${fontFamily}", sans-serif`;
-  }
+  const fontValue = isKaiti(fontFamily) ? KAITI_STACK : `"${fontFamily}", sans-serif`;
   document.documentElement.style.setProperty('--font-family-body', fontValue);
   if (save) localStorage.setItem(STORAGE_KEYS.fontFamily, fontFamily);
   setTimeout(() => repaginate(), 50);

@@ -9,6 +9,7 @@ import { initGotoModal, showGoToPageDialog } from './goto.js';
 import { initHelpModal } from './modals.js';
 import { initContextMenu } from './context-menu.js';
 import { exportPDF } from './pdf-export.js';
+import { exportPPTX } from './pptx-export.js';
 import { refresh } from './loader.js';
 import { loadPlaylist } from './playlist.js';
 import { handleKeydown } from './keyboard.js';
@@ -45,6 +46,7 @@ export function initEventListeners(): void {
   document.getElementById('laserBtn')!.onclick = toggleLaser;
   initLaser();
   document.getElementById('exportPdfBtn')!.onclick = exportPDF;
+  document.getElementById('exportPptxBtn')!.onclick = exportPPTX;
   // Refresh dispatcher: in playlist mode (state.playlistState set), reload
   // the whole playlist; in single-doc mode, re-sync from Google via
   // loader.refresh(). Previously the button silently no-op'd on playlist
